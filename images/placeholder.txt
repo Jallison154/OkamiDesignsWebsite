@@ -1,0 +1,24 @@
+# Image Placeholders
+
+Add your ceramic vase images to this folder:
+
+1. **vase-1.jpg** - Square format (200x200px recommended)
+   - Single round vase with gradient from dark grey to light beige
+   - Lit from top-left with soft shadow
+
+2. **vase-2.jpg** - Vertical format (300x400px recommended)
+   - Hands holding a tall, slender vase
+   - Textured surface, light beige to speckled grey
+   - Dark background to make vase stand out
+
+3. **vase-3.jpg** - Horizontal format (250x150px recommended)
+   - Collection of vases in shadow
+   - Dark ribbed vase on left, lighter vases behind
+   - Creates depth and dimension
+
+## Image Optimization Tips
+
+- Use WebP format for better compression
+- Optimize file sizes (aim for <100KB each)
+- Ensure high quality but reasonable file sizes
+- Consider using tools like ImageOptim or TinyPNG
