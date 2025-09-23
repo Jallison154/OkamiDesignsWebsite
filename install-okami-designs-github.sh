@@ -1,13 +1,13 @@
 #!/bin/bash
 
 # Okami Designs Website Installation Script for Proxmox
-# This script automates the installation of the Okami Designs website
+# This script downloads and installs the Okami Designs website from GitHub
 # Run this script on your Proxmox server or LXC container
 
 set -e  # Exit on any error
 
-echo "🎌 Okami Designs Website Installation Script"
-echo "============================================="
+echo "🎌 Okami Designs Website Installation Script (GitHub Version)"
+echo "============================================================="
 echo ""
 
 # Colors for output
@@ -40,7 +40,12 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-print_status "Starting Okami Designs website installation..."
+# GitHub repository configuration
+GITHUB_USER="your-username"  # Change this to your GitHub username
+GITHUB_REPO="okami-designs-website"  # Change this to your repository name
+GITHUB_BRANCH="main"  # Change this to your default branch
+
+print_status "Starting Okami Designs website installation from GitHub..."
 
 # Update system
 print_status "Updating system packages..."
@@ -48,7 +53,7 @@ apt update && apt upgrade -y
 
 # Install prerequisites
 print_status "Installing prerequisites..."
-apt install -y apt-transport-https ca-certificates curl gnupg lsb-release wget unzip
+apt install -y apt-transport-https ca-certificates curl gnupg lsb-release wget unzip git
 
 # Install Docker
 print_status "Installing Docker..."
@@ -77,27 +82,47 @@ print_status "Creating website directory..."
 mkdir -p /opt/okami-designs
 cd /opt/okami-designs
 
-# GitHub repository details
-GITHUB_REPO="https://github.com/your-username/okami-designs-website.git"
-GITHUB_RAW_BASE="https://raw.githubusercontent.com/your-username/okami-designs-website/main"
-
-# Check if git is installed, install if not
-if ! command -v git &> /dev/null; then
-    print_status "Installing git..."
-    apt install -y git
-fi
-
-# Try to clone from GitHub first, fallback to creating files locally
+# Download from GitHub
 print_status "Downloading Okami Designs website from GitHub..."
-if git clone $GITHUB_REPO . 2>/dev/null; then
-    print_success "Successfully downloaded from GitHub"
-else
-    print_warning "GitHub clone failed, creating files locally..."
-    # Create the website files locally
-    print_status "Creating Okami Designs website files..."
 
+# Try to clone from GitHub
+if git clone https://github.com/$GITHUB_USER/$GITHUB_REPO.git . 2>/dev/null; then
+    print_success "Successfully downloaded from GitHub repository"
+    
+    # Checkout the correct branch
+    if [ "$GITHUB_BRANCH" != "main" ]; then
+        git checkout $GITHUB_BRANCH
+    fi
+    
+    # Pull latest changes
+    git pull origin $GITHUB_BRANCH
+    
+elif curl -s -o /dev/null -w "%{http_code}" https://github.com/$GITHUB_USER/$GITHUB_REPO | grep -q "200"; then
+    print_warning "Git clone failed, trying direct download..."
+    
+    # Download individual files from GitHub raw URLs
+    print_status "Downloading individual files..."
+    
+    # Create basic website structure
+    mkdir -p images
+    
+    # Download files from GitHub raw URLs
+    curl -s -o index.html "https://raw.githubusercontent.com/$GITHUB_USER/$GITHUB_REPO/$GITHUB_BRANCH/index.html" || print_warning "Could not download index.html"
+    curl -s -o styles.css "https://raw.githubusercontent.com/$GITHUB_USER/$GITHUB_REPO/$GITHUB_BRANCH/styles.css" || print_warning "Could not download styles.css"
+    curl -s -o script.js "https://raw.githubusercontent.com/$GITHUB_USER/$GITHUB_REPO/$GITHUB_BRANCH/script.js" || print_warning "Could not download script.js"
+    curl -s -o docker-compose.yml "https://raw.githubusercontent.com/$GITHUB_USER/$GITHUB_REPO/$GITHUB_BRANCH/docker-compose.yml" || print_warning "Could not download docker-compose.yml"
+    curl -s -o nginx.conf "https://raw.githubusercontent.com/$GITHUB_USER/$GITHUB_REPO/$GITHUB_BRANCH/nginx.conf" || print_warning "Could not download nginx.conf"
+    
+    print_success "Downloaded files from GitHub"
+    
+else
+    print_warning "GitHub repository not found, creating default website..."
+    
+    # Create default website files
+    print_status "Creating default Okami Designs website files..."
+    
     # Create index.html
-cat > index.html << 'EOF'
+    cat > index.html << 'EOF'
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -199,8 +224,8 @@ cat > index.html << 'EOF'
 </html>
 EOF
 
-# Create styles.css
-cat > styles.css << 'EOF'
+    # Create styles.css (simplified version)
+    cat > styles.css << 'EOF'
 /* Okami Designs - Japanese-Inspired Ceramics Website */
 
 * {
@@ -289,16 +314,12 @@ body {
     font-weight: 700;
     margin-bottom: 1rem;
     color: #EAE0D5;
-    opacity: 0;
-    animation: fadeInUp 1s ease 0.5s forwards;
 }
 
 .hero-subtitle {
     font-size: 1.2rem;
     margin-bottom: 2rem;
     color: #FFFFFF;
-    opacity: 0;
-    animation: fadeInUp 1s ease 0.7s forwards;
 }
 
 .cta-button {
@@ -310,8 +331,6 @@ body {
     border-radius: 5px;
     font-weight: 600;
     transition: all 0.3s ease;
-    opacity: 0;
-    animation: fadeInUp 1s ease 0.9s forwards;
 }
 
 .cta-button:hover {
@@ -319,160 +338,24 @@ body {
     transform: translateY(-2px);
 }
 
-.hero-images {
-    flex: 1;
-    position: relative;
-    height: 500px;
+/* About, Gallery, Contact sections */
+.about, .gallery, .contact {
+    padding: 100px 0;
+    text-align: center;
 }
 
-.image-grid {
-    position: relative;
-    width: 100%;
-    height: 100%;
-}
-
-.image-item {
-    position: absolute;
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    transition: transform 0.3s ease;
-}
-
-.image-item:hover {
-    transform: scale(1.05);
-}
-
-.image-1 {
-    top: 0;
-    left: 0;
-    width: 200px;
-    height: 200px;
-    z-index: 3;
-}
-
-.image-2 {
-    top: 50px;
-    right: 0;
-    width: 250px;
-    height: 300px;
-    z-index: 2;
-}
-
-.image-3 {
-    bottom: 0;
-    left: 50px;
-    width: 300px;
-    height: 200px;
-    z-index: 1;
-}
-
-.image-item img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-/* About Section */
 .about {
-    padding: 100px 0;
     background: rgba(255, 255, 255, 0.05);
 }
 
-.about h2 {
-    font-family: 'Playfair Display', serif;
-    font-size: 2.5rem;
-    text-align: center;
-    margin-bottom: 2rem;
-    color: #EAE0D5;
-}
-
-.about p {
-    font-size: 1.1rem;
-    text-align: center;
-    max-width: 800px;
-    margin: 0 auto;
-    color: #FFFFFF;
-}
-
-/* Gallery Section */
-.gallery {
-    padding: 100px 0;
-}
-
-.gallery h2 {
-    font-family: 'Playfair Display', serif;
-    font-size: 2.5rem;
-    text-align: center;
-    margin-bottom: 3rem;
-    color: #EAE0D5;
-}
-
-.gallery-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 2rem;
-}
-
-.gallery-item {
-    text-align: center;
-    background: rgba(255, 255, 255, 0.05);
-    padding: 2rem;
-    border-radius: 10px;
-    transition: transform 0.3s ease;
-}
-
-.gallery-item:hover {
-    transform: translateY(-5px);
-}
-
-.gallery-item img {
-    width: 100%;
-    height: 200px;
-    object-fit: cover;
-    border-radius: 5px;
-    margin-bottom: 1rem;
-}
-
-.gallery-item h3 {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.5rem;
-    margin-bottom: 0.5rem;
-    color: #EAE0D5;
-}
-
-.gallery-item p {
-    color: #FFFFFF;
-}
-
-/* Contact Section */
 .contact {
-    padding: 100px 0;
     background: rgba(255, 255, 255, 0.05);
 }
 
-.contact h2 {
+h2 {
     font-family: 'Playfair Display', serif;
     font-size: 2.5rem;
-    text-align: center;
     margin-bottom: 2rem;
-    color: #EAE0D5;
-}
-
-.contact p {
-    text-align: center;
-    font-size: 1.1rem;
-    margin-bottom: 2rem;
-    color: #FFFFFF;
-}
-
-.contact-info {
-    text-align: center;
-}
-
-.contact-info p {
-    font-size: 1.2rem;
-    margin-bottom: 1rem;
     color: #EAE0D5;
 }
 
@@ -484,26 +367,10 @@ body {
     color: #FFFFFF;
 }
 
-/* Animations */
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
 /* Responsive Design */
 @media (max-width: 768px) {
     .nav {
         flex-direction: column;
-        gap: 1rem;
-    }
-    
-    .nav-menu {
         gap: 1rem;
     }
     
@@ -515,41 +382,11 @@ body {
     .hero-title {
         font-size: 2.5rem;
     }
-    
-    .hero-images {
-        height: 300px;
-        margin-top: 2rem;
-    }
-    
-    .image-1, .image-2, .image-3 {
-        position: relative;
-        width: 100%;
-        height: 100px;
-        margin-bottom: 1rem;
-    }
-    
-    .gallery-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-@media (max-width: 480px) {
-    .hero-title {
-        font-size: 2rem;
-    }
-    
-    .hero-subtitle {
-        font-size: 1rem;
-    }
-    
-    .about h2, .gallery h2, .contact h2 {
-        font-size: 2rem;
-    }
 }
 EOF
 
-# Create script.js
-cat > script.js << 'EOF'
+    # Create script.js
+    cat > script.js << 'EOF'
 // Okami Designs Website JavaScript
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -571,151 +408,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
-    
-    // Add active class to navigation items on scroll
-    const sections = document.querySelectorAll('section[id]');
-    const navItems = document.querySelectorAll('.nav-menu a');
-    
-    function updateActiveNav() {
-        let current = '';
-        
-        sections.forEach(section => {
-            const sectionTop = section.offsetTop;
-            const sectionHeight = section.clientHeight;
-            
-            if (window.scrollY >= (sectionTop - 200)) {
-                current = section.getAttribute('id');
-            }
-        });
-        
-        navItems.forEach(item => {
-            item.classList.remove('active');
-            if (item.getAttribute('href') === `#${current}`) {
-                item.classList.add('active');
-            }
-        });
-    }
-    
-    // Update active navigation on scroll
-    window.addEventListener('scroll', updateActiveNav);
-    
-    // Add fade-in animation to gallery items
-    const galleryItems = document.querySelectorAll('.gallery-item');
-    
-    const observerOptions = {
-        threshold: 0.1,
-        rootMargin: '0px 0px -50px 0px'
-    };
-    
-    const observer = new IntersectionObserver(function(entries) {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.style.opacity = '1';
-                entry.target.style.transform = 'translateY(0)';
-            }
-        });
-    }, observerOptions);
-    
-    galleryItems.forEach(item => {
-        item.style.opacity = '0';
-        item.style.transform = 'translateY(30px)';
-        item.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-        observer.observe(item);
-    });
-    
-    // Add loading animation for images
-    const images = document.querySelectorAll('img');
-    
-    images.forEach(img => {
-        img.addEventListener('load', function() {
-            this.style.opacity = '1';
-        });
-        
-        // Set initial opacity for loading effect
-        img.style.opacity = '0';
-        img.style.transition = 'opacity 0.3s ease';
-    });
-    
-    // Add hover effects to CTA button
-    const ctaButton = document.querySelector('.cta-button');
-    
-    if (ctaButton) {
-        ctaButton.addEventListener('mouseenter', function() {
-            this.style.transform = 'translateY(-2px) scale(1.05)';
-        });
-        
-        ctaButton.addEventListener('mouseleave', function() {
-            this.style.transform = 'translateY(0) scale(1)';
-        });
-    }
-    
-    // Add parallax effect to hero images
-    window.addEventListener('scroll', function() {
-        const scrolled = window.pageYOffset;
-        const heroImages = document.querySelector('.hero-images');
-        
-        if (heroImages) {
-            heroImages.style.transform = `translateY(${scrolled * 0.1}px)`;
-        }
-    });
-    
-    // Add typing effect to hero title
-    const heroTitle = document.querySelector('.hero-title');
-    if (heroTitle) {
-        const text = heroTitle.textContent;
-        heroTitle.textContent = '';
-        
-        let i = 0;
-        const typeWriter = () => {
-            if (i < text.length) {
-                heroTitle.textContent += text.charAt(i);
-                i++;
-                setTimeout(typeWriter, 100);
-            }
-        };
-        
-        // Start typing effect after a delay
-        setTimeout(typeWriter, 1000);
-    }
 });
-
-// Add CSS for active navigation state
-const style = document.createElement('style');
-style.textContent = `
-    .nav-menu a.active {
-        color: #EAE0D5;
-        border-bottom: 2px solid #EAE0D5;
-    }
-`;
-document.head.appendChild(style);
 EOF
 
-# Create placeholder images directory
-print_status "Creating images directory..."
-mkdir -p images
-
-# Create placeholder images (using a simple method)
-print_status "Creating placeholder images..."
-cat > images/placeholder.txt << 'EOF'
-Placeholder Images for Okami Designs
-
-Replace these with your actual ceramic images:
-
-1. vase-1.jpg - Traditional Japanese vase (square format, single round vase)
-2. vase-2.jpg - Handcrafted ceramic bowl (vertical format, hands holding tall vase)  
-3. vase-3.jpg - Collection of ceramic pieces (horizontal format, collection of vases)
-
-Recommended image sizes:
-- vase-1.jpg: 400x400px
-- vase-2.jpg: 300x400px  
-- vase-3.jpg: 600x300px
-
-Use WebP format for better performance.
-EOF
-
-# Create docker-compose.yml
-print_status "Creating Docker Compose configuration..."
-cat > docker-compose.yml << 'EOF'
+    # Create docker-compose.yml
+    cat > docker-compose.yml << 'EOF'
 version: '3.8'
 
 services:
@@ -737,9 +434,8 @@ networks:
     driver: bridge
 EOF
 
-# Create nginx.conf
-print_status "Creating Nginx configuration..."
-cat > nginx.conf << 'EOF'
+    # Create nginx.conf
+    cat > nginx.conf << 'EOF'
 server {
     listen 80;
     listen [::]:80;
@@ -751,22 +447,12 @@ server {
     add_header X-Frame-Options "SAMEORIGIN" always;
     add_header X-XSS-Protection "1; mode=block" always;
     add_header X-Content-Type-Options "nosniff" always;
-    add_header Referrer-Policy "no-referrer-when-downgrade" always;
-    add_header Content-Security-Policy "default-src 'self' http: https: data: blob: 'unsafe-inline'" always;
 
     # Gzip compression
     gzip on;
     gzip_vary on;
     gzip_min_length 1024;
-    gzip_proxied expired no-cache no-store private must-revalidate auth;
-    gzip_types
-        text/plain
-        text/css
-        text/xml
-        text/javascript
-        application/javascript
-        application/xml+rss
-        application/json;
+    gzip_types text/plain text/css text/xml text/javascript application/javascript application/xml+rss application/json;
 
     # Cache static assets
     location ~* \.(jpg|jpeg|png|gif|ico|css|js|woff|woff2|ttf|svg)$ {
@@ -778,47 +464,36 @@ server {
     # Main location block
     location / {
         try_files $uri $uri/ =404;
-        
-        # Enable CORS for fonts
-        location ~* \.(woff|woff2|ttf|eot)$ {
-            add_header Access-Control-Allow-Origin "*";
-            expires 1y;
-            add_header Cache-Control "public, immutable";
-        }
-    }
-
-    # Handle favicon
-    location = /favicon.ico {
-        log_not_found off;
-        access_log off;
-    }
-
-    # Handle robots.txt
-    location = /robots.txt {
-        log_not_found off;
-        access_log off;
     }
 
     # Deny access to hidden files
     location ~ /\. {
         deny all;
     }
-
-    # Error pages
-    error_page 404 /404.html;
-    error_page 500 502 503 504 /50x.html;
-    
-    location = /404.html {
-        internal;
-    }
-    
-    location = /50x.html {
-        internal;
-    }
 }
 EOF
 
-fi  # End of GitHub clone fallback
+    # Create images directory
+    mkdir -p images
+    cat > images/placeholder.txt << 'EOF'
+Placeholder Images for Okami Designs
+
+Replace these with your actual ceramic images:
+
+1. vase-1.jpg - Traditional Japanese vase
+2. vase-2.jpg - Handcrafted ceramic bowl  
+3. vase-3.jpg - Collection of ceramic pieces
+
+Recommended image sizes:
+- vase-1.jpg: 400x400px
+- vase-2.jpg: 300x400px  
+- vase-3.jpg: 600x300px
+
+Use WebP format for better performance.
+EOF
+
+    print_success "Created default website files"
+fi
 
 # Set proper permissions
 print_status "Setting file permissions..."
