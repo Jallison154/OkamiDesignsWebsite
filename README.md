@@ -1,14 +1,19 @@
 # Okami Designs Website
 
-A modern, responsive website for Okami Designs, featuring Japanese-inspired ceramic designs with a sleek dark grey, white, and orange color scheme.
+A modern, responsive "Coming Soon" splash page for Okami Designs with brand colors and professional typography.
+
+## Current Status
+
+**Website is under construction** - Displaying a beautiful splash page with the Okami Designs logo.
 
 ## Features
 
 - **Responsive Design**: Works perfectly on desktop, tablet, and mobile devices
-- **Modern Typography**: Uses Playfair Display (serif) and Inter (sans-serif) fonts
-- **Smooth Animations**: Fade-in effects and hover animations
+- **Modern Typography**: Uses Orbitron (headings) and JetBrains Mono (monospace) fonts
+- **Smooth Animations**: Floating logo, fade-in effects, and shimmer animations
+- **Brand Colors**: Consistent use of Okami Design color palette
 - **SEO Optimized**: Proper meta tags and semantic HTML structure
-- **Performance Optimized**: Compressed assets and efficient loading
+- **Performance Optimized**: Minimal assets and efficient loading
 - **Docker Ready**: Easy deployment with Docker Compose
 - **Cloudflare Compatible**: Works with Cloudflare proxy and SSL
 
@@ -60,18 +65,18 @@ A modern, responsive website for Okami Designs, featuring Japanese-inspired cera
 
 ```
 okami-designs/
-├── index.html                    # Main HTML file
-├── styles.css                    # CSS styles with dark grey/orange theme
-├── script.js                     # JavaScript functionality
+├── index.html                    # Main splash page HTML
+├── index-full-website.html      # Full website (disabled, for future use)
+├── Splash/                       # Splash page assets
+│   ├── HTML.txt                 # Splash page template
+│   └── Okami_Designs_FullW.png  # Logo image
+├── styles.css                    # CSS styles (not used by splash page)
+├── script.js                     # JavaScript (not used by splash page)
 ├── nginx.conf                    # Nginx configuration
 ├── docker-compose.yml            # Docker setup
 ├── install-okami-designs.sh     # Local installation script
 ├── install-okami-designs-github.sh # GitHub installation script
 ├── PROXMOX_INSTALLATION_GUIDE.md # Proxmox setup guide
-├── images/                       # Image assets (create this folder)
-│   ├── vase-1.jpg               # Top-left vase image
-│   ├── vase-2.jpg               # Right-side hands holding vase
-│   └── vase-3.jpg               # Bottom-left vase collection
 └── README.md                     # This file
 ```
 
@@ -95,16 +100,17 @@ The main color scheme uses:
 - Button Hover: White background with orange text
 
 ### Fonts
-- Headers: Playfair Display (serif)
+- Headers: Orbitron (monospace, bold)
+- Status badge: JetBrains Mono (monospace)
 - Body text: Inter (sans-serif)
 
 ### Layout
-The design features:
-- Fixed header with navigation
-- Hero section with overlapping images
-- Responsive grid layout
-- Smooth scroll navigation
+The current splash page features:
+- Centered logo with floating animation
+- "Website Under Construction" message
+- "Coming Soon" status badge with shimmer effect
 - Modern dark theme with orange accents
+- Responsive and mobile-friendly
 
 ## Security Considerations
 
