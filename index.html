@@ -3,21 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ceramix - Creating natural shapes inspired by the natural world</title>
+    <title>Okami Designs - Digital Innovation & Tech Solutions</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
     <header class="header">
         <div class="container">
             <div class="nav-wrapper">
                 <div class="logo">
-                    <h1>Ceramix</h1>
+                    <h1 class="logo-text">OKAMI<span class="logo-accent">DESIGNS</span></h1>
+                    <div class="logo-subtitle">TECH</div>
                 </div>
                 <nav class="nav">
-                    <a href="#work" class="nav-link">WORK</a>
+                    <a href="#projects" class="nav-link">PROJECTS</a>
+                    <a href="#services" class="nav-link">SERVICES</a>
                     <a href="#about" class="nav-link">ABOUT</a>
                     <a href="#contact" class="nav-link contact-btn">CONTACT</a>
                 </nav>
@@ -30,20 +32,55 @@
         <div class="container">
             <div class="hero-section">
                 <div class="hero-content">
-                    <h1 class="hero-title">Ceramix</h1>
-                    <p class="hero-tagline">Creating natural shapes inspired by the natural world.</p>
-                    <button class="cta-button">VIEW WORK</button>
+                    <div class="hero-badge">DIGITAL INNOVATION</div>
+                    <h1 class="hero-title">OKAMI<span class="title-accent">DESIGNS</span></h1>
+                    <p class="hero-tagline">Building the future with cutting-edge technology and innovative digital solutions.</p>
+                    <div class="hero-stats">
+                        <div class="stat-item">
+                            <div class="stat-number">50+</div>
+                            <div class="stat-label">PROJECTS</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">5+</div>
+                            <div class="stat-label">YEARS</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">100%</div>
+                            <div class="stat-label">SATISFACTION</div>
+                        </div>
+                    </div>
+                    <button class="cta-button">EXPLORE PROJECTS</button>
                 </div>
                 
-                <div class="hero-images">
-                    <div class="image-container top-left">
-                        <img src="images/vase-1.jpg" alt="Round ceramic vase" class="hero-image">
+                <div class="hero-visual">
+                    <div class="tech-grid"></div>
+                    <div class="floating-elements">
+                        <div class="tech-element element-1">
+                            <div class="element-icon">⚡</div>
+                            <div class="element-text">FAST</div>
+                        </div>
+                        <div class="tech-element element-2">
+                            <div class="element-icon">🔒</div>
+                            <div class="element-text">SECURE</div>
+                        </div>
+                        <div class="tech-element element-3">
+                            <div class="element-icon">🚀</div>
+                            <div class="element-text">INNOVATIVE</div>
+                        </div>
                     </div>
-                    <div class="image-container right-side">
-                        <img src="images/vase-2.jpg" alt="Hands holding ceramic vase" class="hero-image">
-                    </div>
-                    <div class="image-container bottom-left">
-                        <img src="images/vase-3.jpg" alt="Collection of ceramic vases" class="hero-image">
+                    <div class="code-terminal">
+                        <div class="terminal-header">
+                            <div class="terminal-buttons">
+                                <span class="btn red"></span>
+                                <span class="btn yellow"></span>
+                                <span class="btn green"></span>
+                            </div>
+                            <div class="terminal-title">okami-designs@terminal</div>
+                        </div>
+                        <div class="terminal-content">
+                            <div class="terminal-line">$ npm init okami-project</div>
+                            <div class="terminal-line typing">Initializing cutting-edge tech stack...</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -53,12 +90,23 @@
     <footer class="footer">
         <div class="container">
             <div class="footer-content">
-                <div class="play-control">
-                    <button class="play-btn" id="playBtn">II</button>
+                <div class="footer-links">
+                    <a href="#" class="footer-link">GitHub</a>
+                    <a href="#" class="footer-link">LinkedIn</a>
+                    <a href="#" class="footer-link">Twitter</a>
+                </div>
+                <div class="footer-tech">
+                    <div class="tech-indicator">
+                        <div class="pulse-dot"></div>
+                        <span>SYSTEMS ONLINE</span>
+                    </div>
                 </div>
             </div>
         </div>
     </footer>
+    
+    <!-- Animated background particles -->
+    <div id="particles-js"></div>
 
     <script src="script.js"></script>
 </body>

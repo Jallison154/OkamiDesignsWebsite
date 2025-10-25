@@ -41,9 +41,9 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 # GitHub repository configuration
-GITHUB_USER="your-username"  # Change this to your GitHub username
-GITHUB_REPO="okami-designs-website"  # Change this to your repository name
-GITHUB_BRANCH="main"  # Change this to your default branch
+GITHUB_USER="Jallison154"  # Your GitHub username
+GITHUB_REPO="OkamiDesignsWebsite"  # Your repository name
+GITHUB_BRANCH="main"  # Your default branch
 
 print_status "Starting Okami Designs website installation from GitHub..."
 
