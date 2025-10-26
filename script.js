@@ -125,67 +125,103 @@ function createCodeRain() {
     `;
     document.body.appendChild(codeContainer);
     
-    const characters = '01';
-    const columns = Math.floor(window.innerWidth / 20);
+    // Create lines moving in random directions (horizontal or vertical only)
+    const numLines = 60; // Number of animated lines
     
-    for (let i = 0; i < columns; i++) {
-        createCodeColumn(codeContainer, i * 20, characters);
+    for (let i = 0; i < numLines; i++) {
+        createAnimatedLine(codeContainer);
     }
 }
 
-function createCodeColumn(container, x, characters) {
-    const column = document.createElement('div');
-    column.style.cssText = `
-        position: absolute;
-        left: ${x}px;
-        top: -100px;
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 14px;
-        color: rgba(0, 255, 136, 0.1);
-        line-height: 20px;
-        animation: codeFall ${Math.random() * 10 + 5}s linear infinite;
-        animation-delay: ${Math.random() * 5}s;
-    `;
+function createAnimatedLine(container) {
+    // Randomly choose horizontal or vertical
+    const isHorizontal = Math.random() > 0.5;
     
-    let text = '';
-    for (let i = 0; i < 50; i++) {
-        text += characters[Math.floor(Math.random() * characters.length)] + '<br>';
+    const line = document.createElement('div');
+    const lineLength = Math.random() * 500 + 300; // Random length between 300-800px
+    const startPos = isHorizontal 
+        ? Math.random() * window.innerHeight // Random Y position for horizontal
+        : Math.random() * window.innerWidth; // Random X position for vertical
+    
+    const duration = Math.random() * 10 + 5; // Animation duration 5-15s
+    const delay = Math.random() * 5; // Random delay
+    
+    if (isHorizontal) {
+        // Horizontal line moving left to right
+        line.style.cssText = `
+            position: absolute;
+            left: ${-lineLength}px;
+            top: ${startPos}px;
+            width: ${lineLength}px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(255, 106, 45, 0.2), transparent);
+            animation: moveRight ${duration}s linear infinite;
+            animation-delay: ${delay}s;
+            box-shadow: 0 0 10px rgba(255, 106, 45, 0.3);
+        `;
+    } else {
+        // Vertical line moving top to bottom
+        line.style.cssText = `
+            position: absolute;
+            left: ${startPos}px;
+            top: ${-lineLength}px;
+            width: 2px;
+            height: ${lineLength}px;
+            background: linear-gradient(180deg, transparent, rgba(255, 106, 45, 0.2), transparent);
+            animation: moveDown ${duration}s linear infinite;
+            animation-delay: ${delay}s;
+            box-shadow: 0 0 10px rgba(255, 106, 45, 0.3);
+        `;
     }
-    column.innerHTML = text;
     
-    container.appendChild(column);
+    container.appendChild(line);
     
-    // Add code fall animation
-    if (!document.querySelector('#code-rain-style')) {
-        const codeStyle = document.createElement('style');
-        codeStyle.id = 'code-rain-style';
-        codeStyle.textContent = `
-            @keyframes codeFall {
-                0% { transform: translateY(-100px); }
-                100% { transform: translateY(100vh); }
+    // Add keyframe animations if they don't exist
+    if (!document.querySelector('#line-animations-style')) {
+        const style = document.createElement('style');
+        style.id = 'line-animations-style';
+        style.textContent = `
+            @keyframes moveRight {
+                0% { transform: translateX(0); opacity: 0; }
+                10% { opacity: 1; }
+                90% { opacity: 1; }
+                100% { transform: translateX(${window.innerWidth + lineLength}px); opacity: 0; }
+            }
+            @keyframes moveDown {
+                0% { transform: translateY(0); opacity: 0; }
+                10% { opacity: 1; }
+                90% { opacity: 1; }
+                100% { transform: translateY(${window.innerHeight + lineLength}px); opacity: 0; }
             }
         `;
-        document.head.appendChild(codeStyle);
+        document.head.appendChild(style);
     }
 }
 
 // Terminal typing animation
 function initTerminalAnimation() {
-    const terminalLine = document.querySelector('.terminal-line.typing');
+    const terminalLine = document.getElementById('typing-line');
     if (!terminalLine) return;
     
     const messages = [
-        'Initializing cutting-edge tech stack...',
-        'Loading quantum algorithms...',
-        'Optimizing neural networks...',
-        'Deploying to cloud infrastructure...',
-        'Running security protocols...',
-        'System ready for innovation!'
+        'Engineering creative solution...',
+        'Compiling custom build...',
+        'Initializing fabrication process...',
+        '3D printing component...',
+        'Integrating ESP32 module...',
+        'Calibrating LED systems...',
+        'Deploying automation script...',
+        'System optimization complete!',
+        'Running quality tests...',
+        'Packaging custom solution...',
+        'Shipment ready for delivery.',
+        'All systems operational! ✓'
     ];
     
     let currentMessage = 0;
     let currentChar = 0;
     let isDeleting = false;
+    let messageCount = 0;
     
     function typeWriter() {
         const message = messages[currentMessage];
@@ -198,21 +234,55 @@ function initTerminalAnimation() {
             currentChar++;
         }
         
-        let typeSpeed = isDeleting ? 50 : 100;
+        let typeSpeed = isDeleting ? 30 : 80;
         
         if (!isDeleting && currentChar === message.length) {
-            typeSpeed = 2000; // Pause at end
+            typeSpeed = 2500; // Pause at end
             isDeleting = true;
+            messageCount++;
         } else if (isDeleting && currentChar === 0) {
             isDeleting = false;
-            currentMessage = (currentMessage + 1) % messages.length;
-            typeSpeed = 500;
+            
+            // Cycle through messages but occasionally repeat to show activity
+            if (Math.random() > 0.3 || messageCount % 8 === 0) {
+                currentMessage = (currentMessage + 1) % messages.length;
+            } else {
+                // Sometimes repeat the same message to show continuous work
+                currentMessage = Math.min(messages.length - 1, currentMessage);
+            }
+            
+            typeSpeed = 300;
         }
         
         setTimeout(typeWriter, typeSpeed);
     }
     
+    // Start typing immediately
     typeWriter();
+    
+    // Add additional terminal activity effect
+    addTerminalActivity();
+}
+
+function addTerminalActivity() {
+    const terminalContent = document.getElementById('terminal-content');
+    if (!terminalContent) return;
+    
+    // Add more visual activity indicators
+    const activityIndicator = document.createElement('div');
+    activityIndicator.className = 'terminal-line terminal-status';
+    activityIndicator.textContent = '● Building...';
+    activityIndicator.style.cssText = `
+        color: rgba(0, 255, 136, 0.6);
+        font-size: 11px;
+        margin-top: 5px;
+        animation: pulse-dot 2s ease-in-out infinite;
+    `;
+    
+    // Only add if it doesn't already exist
+    if (!terminalContent.querySelector('.terminal-status')) {
+        terminalContent.appendChild(activityIndicator);
+    }
 }
 
 // Smooth scrolling for navigation

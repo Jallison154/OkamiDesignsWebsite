@@ -1,188 +1,116 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Okami Designs - Coming Soon</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      background: linear-gradient(135deg, #333333 0%, #333333 100%);
-      color: #e6e6e6;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      margin: 0;
-      padding: 20px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    /* Animated background particles */
-    body::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-image: 
-        radial-gradient(circle at 20% 50%, rgba(255, 106, 45, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 80% 80%, rgba(255, 106, 45, 0.1) 0%, transparent 50%);
-      animation: pulse 4s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 0.5; }
-      50% { opacity: 1; }
-    }
-
-    .container {
-      position: relative;
-      z-index: 1;
-      text-align: center;
-      animation: fadeIn 1s ease-in;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .logo {
-      margin-bottom: 30px;
-    }
-
-    .logo img {
-      width: min(400px, 80vw);
-      max-width: 100%;
-      height: auto;
-      filter: drop-shadow(0 10px 30px rgba(255, 106, 45, 0.3));
-      animation: logoFloat 3s ease-in-out infinite;
-    }
-
-    @keyframes logoFloat {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-10px); }
-    }
-
-    .under-construction {
-      margin-top: 40px;
-    }
-
-    h1 {
-      font-family: 'Orbitron', monospace;
-      color: #FF6A2D;
-      font-size: clamp(2rem, 5vw, 3.5rem);
-      font-weight: 900;
-      margin-bottom: 15px;
-      text-shadow: 0 0 20px rgba(255, 106, 45, 0.5);
-      letter-spacing: 3px;
-      text-transform: uppercase;
-    }
-
-    .subtitle {
-      font-family: 'Inter', sans-serif;
-      font-size: clamp(1rem, 2.5vw, 1.3rem);
-      color: #e6e6e6;
-      margin-top: 15px;
-      opacity: 0.9;
-      letter-spacing: 1px;
-    }
-
-    .divider {
-      width: 80px;
-      height: 4px;
-      background: linear-gradient(90deg, transparent, #FF6A2D, transparent);
-      margin: 30px auto;
-      border-radius: 2px;
-    }
-
-    .status {
-      display: inline-block;
-      margin-top: 30px;
-      padding: 12px 30px;
-      background: rgba(255, 106, 45, 0.1);
-      border: 2px solid #FF6A2D;
-      border-radius: 50px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.85rem;
-      font-weight: 600;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .status::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255, 106, 45, 0.3), transparent);
-      animation: shimmer 2s infinite;
-    }
-
-    @keyframes shimmer {
-      0% { left: -100%; }
-      100% { left: 100%; }
-    }
-
-    .social-links {
-      margin-top: 40px;
-      display: flex;
-      gap: 20px;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-
-    .social-link {
-      color: #ff7f11;
-      text-decoration: none;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.85rem;
-      font-weight: 500;
-      letter-spacing: 1px;
-      transition: all 0.3s ease;
-      padding: 8px 16px;
-      border: 1px solid rgba(255, 127, 17, 0.3);
-      border-radius: 5px;
-    }
-
-    .social-link:hover {
-      background: rgba(255, 127, 17, 0.1);
-      transform: translateY(-2px);
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Okami Designs - Engineering Creativity | Custom Builds & Creative Solutions</title>
+    <meta name="description" content="Okami Designs - Engineering Creativity. Custom-built solutions for unique challenges. Montana-based creative engineering studio.">
+    <meta name="author" content="Jonathan Allison, Founder">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="container">
-    <div class="logo">
-      <img src="Splash/Okami_Designs_FullW.png" alt="Okami Designs Logo">
-    </div>
+    <header class="header">
+        <div class="container">
+            <div class="nav-wrapper">
+                <div class="logo">
+                    <img src="images/Okami_Designs_HeadW.png" alt="Okami Designs" class="logo-img">
+                </div>
+                <nav class="nav">
+                    <a href="#projects" class="nav-link">PROJECTS</a>
+                    <a href="services.html" class="nav-link">SERVICES</a>
+                    <a href="#work" class="nav-link">OUR WORK</a>
+                    <a href="contact.html" class="nav-link contact-btn">CONTACT</a>
+                </nav>
+            </div>
+        </div>
+        <div class="header-divider"></div>
+    </header>
+
+    <main class="main">
+        <div class="container">
+            <div class="hero-section">
+                <div class="hero-content">
+                    <div class="hero-badge">ENGINEERING CREATIVITY</div>
+                    <h1 class="hero-title"><span>OKAMI</span><span class="title-accent">DESIGNS</span></h1>
+                    <p class="hero-tagline">Custom-built solutions for unique challenges. From stage systems to one-of-a-kind builds, we turn "impossible" into "that works."</p>
+                    <div class="hero-stats">
+                        <div class="stat-item">
+                            <div class="stat-number">∞</div>
+                            <div class="stat-label">INNOVATION</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">100%</div>
+                            <div class="stat-label">CUSTOM</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">MT</div>
+                            <div class="stat-label">MONTANA</div>
+                        </div>
+                    </div>
+                    
+                    <a href="contact.html" class="cta-button">GET IN TOUCH</a>
+                </div>
+                
+                <div class="hero-visual">
+                    <div class="tech-grid"></div>
+                    <div class="floating-elements">
+                        <div class="tech-element element-1">
+                            <div class="element-icon">🔧</div>
+                            <div class="element-text">BUILD</div>
+                        </div>
+                        <div class="tech-element element-2">
+                            <div class="element-icon">💡</div>
+                            <div class="element-text">CREATE</div>
+                        </div>
+                        <div class="tech-element element-3">
+                            <div class="element-icon">🎯</div>
+                            <div class="element-text">SOLVE</div>
+                        </div>
+                    </div>
+                    <div class="code-terminal">
+                        <div class="terminal-header">
+                            <div class="terminal-buttons">
+                                <span class="btn red"></span>
+                                <span class="btn yellow"></span>
+                                <span class="btn green"></span>
+                            </div>
+                            <div class="terminal-title">okami-designs@terminal</div>
+                        </div>
+                        <div class="terminal-content" id="terminal-content">
+                            <div class="terminal-line">$ okami build custom-solution</div>
+                            <div class="terminal-line" id="typing-line"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+                            <div class="footer-content">
+                <div class="footer-links">
+                    <a href="services.html" class="footer-link">Services</a>
+                    <a href="#projects" class="footer-link">Projects</a>
+                    <a href="contact.html" class="footer-link">Contact</a>
+                </div>
+                <div class="footer-tech">
+                    <div class="tech-indicator">
+                        <div class="pulse-dot"></div>
+                        <span>MONTANA-BASED • ENGINEERING CREATIVITY</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
     
-    <div class="under-construction">
-      <h1>Website Under Construction</h1>
-      <div class="divider"></div>
-      <p class="subtitle">We're building something amazing.<br>Check back soon!</p>
-      
-      <div class="status">
-        Coming Soon
-      </div>
-    </div>
-  </div>
+    <!-- Animated background particles -->
+    <div id="particles-js"></div>
+
+    <script src="script.js"></script>
 </body>
 </html>
+
