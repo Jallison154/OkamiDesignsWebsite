@@ -1,5 +1,23 @@
 // Tech-inspired interactive elements and animations
 document.addEventListener('DOMContentLoaded', function() {
+    // Ensure header is visible immediately
+    const header = document.querySelector('.header');
+    if (header) {
+        header.style.transform = 'translateY(0)';
+        header.style.opacity = '1';
+    }
+    
+    // Add page load animation class
+    document.body.classList.add('page-loading');
+    
+    // Remove loading class after animation completes
+    setTimeout(() => {
+        document.body.classList.remove('page-loading');
+    }, 650);
+    
+    // Initialize page transition
+    initPageTransitions();
+    
     // Initialize particles background
     initParticles();
     
@@ -25,6 +43,149 @@ document.addEventListener('DOMContentLoaded', function() {
     initKeyboardShortcuts();
 });
 
+// Page transition system
+function initPageTransitions() {
+    // Check if overlay already exists
+    let overlay = document.querySelector('.page-transition-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.className = 'page-transition-overlay';
+        document.body.appendChild(overlay);
+    } else {
+        // Reset overlay state on new page load
+        overlay.classList.remove('active');
+        overlay.style.pointerEvents = 'none';
+        overlay.style.opacity = '0';
+    }
+    
+    // Handle all internal navigation links
+    const links = document.querySelectorAll('a[href]');
+    
+    links.forEach(link => {
+        // Remove any existing listeners by cloning the element (clean slate)
+        const newLink = link.cloneNode(true);
+        link.parentNode.replaceChild(newLink, link);
+        
+        newLink.addEventListener('click', function(e) {
+            const href = this.getAttribute('href');
+            
+            // Skip if no href
+            if (!href) {
+                return;
+            }
+            
+            // Skip hash links (same page scrolling)
+            if (href.startsWith('#')) {
+                return;
+            }
+            
+            // Skip external links (http, https, mailto)
+            if (href.startsWith('http') || href.startsWith('mailto:') || href.startsWith('tel:')) {
+                return;
+            }
+            
+            // Only handle internal HTML pages - check if it's an internal page
+            const isInternalPage = href.includes('.html') || 
+                                  href === 'index.html' || 
+                                  href === 'services.html' || 
+                                  href === 'contact.html' ||
+                                  (!href.includes('/') && (href.includes('index') || href.includes('services') || href.includes('contact')));
+            
+            if (!isInternalPage) {
+                return;
+            }
+            
+            e.preventDefault();
+            
+            // Fade out header content smoothly
+            const header = document.querySelector('.header');
+            const navLinks = document.querySelectorAll('.nav-link');
+            const logoImg = document.querySelector('.logo-img');
+            
+            if (header && navLinks.length > 0) {
+                // Fade out navigation links
+                navLinks.forEach(navLink => {
+                    navLink.style.opacity = '0';
+                    navLink.style.transform = 'translateY(-10px)';
+                });
+                
+                // Fade out logo
+                if (logoImg) {
+                    logoImg.style.opacity = '0';
+                    logoImg.style.transform = 'translateY(-10px)';
+                }
+                
+                // Fade out center text
+                const centerText = document.querySelector('.header-center-text');
+                if (centerText) {
+                    centerText.classList.remove('visible');
+                    centerText.style.transform = 'translateY(20px)';
+                    centerText.style.opacity = '0';
+                }
+            }
+            
+            // Show overlay with pointer events after content fades
+            setTimeout(() => {
+                overlay.style.pointerEvents = 'auto';
+                overlay.classList.add('active');
+            }, 200);
+            
+            // Navigate after transition delay
+            setTimeout(() => {
+                window.location.href = href;
+            }, 450);
+        });
+    });
+    
+    // Fade in header content on page load
+    setTimeout(() => {
+        const navLinks = document.querySelectorAll('.nav-link');
+        const logoImg = document.querySelector('.logo-img');
+        
+        navLinks.forEach((navLink, index) => {
+            setTimeout(() => {
+                navLink.style.opacity = '1';
+                navLink.style.transform = 'translateY(0)';
+            }, 100 + (index * 50));
+        });
+        
+        if (logoImg) {
+            setTimeout(() => {
+                logoImg.style.opacity = '1';
+                logoImg.style.transform = 'translateY(0)';
+            }, 50);
+        }
+        
+        // Fade in center text if it exists
+        const centerText = document.querySelector('.header-center-text');
+        if (centerText) {
+            // Reset initial state
+            centerText.classList.remove('visible');
+            centerText.style.opacity = '0';
+            centerText.style.transform = 'translateY(20px)';
+            
+            // Wait a bit then animate in
+            setTimeout(() => {
+                // Force style reset first
+                requestAnimationFrame(() => {
+                    centerText.style.opacity = '0';
+                    centerText.style.transform = 'translateY(20px)';
+                    
+                    // Then add visible class and ensure it stays
+                    requestAnimationFrame(() => {
+                        centerText.classList.add('visible');
+                        // Remove inline styles after animation so CSS takes over
+                        setTimeout(() => {
+                            centerText.style.opacity = '';
+                            centerText.style.transform = '';
+                        }, 700);
+                    });
+                });
+            }, 350);
+        }
+    }, 100);
+}
+
 // Particles.js initialization
 function initParticles() {
     // Create particle system
@@ -43,7 +204,7 @@ function createParticle(container) {
         position: absolute;
         width: 2px;
         height: 2px;
-        background: rgba(0, 255, 136, 0.6);
+        background: rgba(255, 106, 45, 0.4);
         border-radius: 50%;
         pointer-events: none;
         animation: particleFloat ${Math.random() * 20 + 10}s linear infinite;
@@ -80,6 +241,9 @@ document.head.appendChild(style);
 
 // Tech animations
 function initTechAnimations() {
+    // Randomize tech element positions on load
+    randomizeTechElementPositions();
+    
     // Glitch effect on logo
     const logo = document.querySelector('.logo-text');
     if (logo) {
@@ -108,6 +272,99 @@ function initTechAnimations() {
     
     // Matrix-style code rain effect
     createCodeRain();
+}
+
+// Randomize tech element positions
+function randomizeTechElementPositions() {
+    const techElements = document.querySelectorAll('.tech-element');
+    const placedPositions = []; // Track positions to avoid overlaps
+    const badgeSize = 100; // Approximate size of badge in pixels (for collision detection)
+    const minDistance = 120; // Minimum distance between badges in pixels
+    
+    techElements.forEach((element, index) => {
+        let attempts = 0;
+        let positionFound = false;
+        
+        while (!positionFound && attempts < 50) {
+            attempts++;
+            
+            // Generate random positions while avoiding the center area
+            const minMargin = 5; // Minimum margin from edges (in %)
+            const maxMargin = 25; // Maximum margin from edges (in %)
+            
+            // Random top/bottom position (avoiding center 30-50% for main content)
+            let topPercent;
+            const randomSide = Math.random();
+            if (randomSide < 0.5) {
+                // Top area (0-30%)
+                topPercent = Math.random() * 25 + minMargin;
+            } else {
+                // Bottom area (50-100%)
+                topPercent = Math.random() * 40 + 55;
+            }
+            
+            // Random left/right position
+            let leftPercent, rightPercent;
+            const horizontalSide = Math.random();
+            let useLeft = horizontalSide < 0.5;
+            
+            if (useLeft) {
+                // Left side
+                leftPercent = Math.random() * maxMargin + minMargin;
+                rightPercent = null;
+            } else {
+                // Right side
+                rightPercent = Math.random() * maxMargin + minMargin;
+                leftPercent = null;
+            }
+            
+            // Check for collisions with already placed badges
+            let overlaps = false;
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            // Convert percentage to pixels
+            const xPos = leftPercent !== null 
+                ? (leftPercent / 100) * viewportWidth 
+                : viewportWidth - ((rightPercent / 100) * viewportWidth);
+            const yPos = (topPercent / 100) * viewportHeight;
+            
+            // Check distance from all placed badges
+            for (let i = 0; i < placedPositions.length; i++) {
+                const existingPos = placedPositions[i];
+                const distance = Math.sqrt(
+                    Math.pow(xPos - existingPos.x, 2) + 
+                    Math.pow(yPos - existingPos.y, 2)
+                );
+                
+                if (distance < minDistance) {
+                    overlaps = true;
+                    break;
+                }
+            }
+            
+            // If no overlap, place the badge
+            if (!overlaps) {
+                if (useLeft) {
+                    element.style.left = leftPercent + '%';
+                    element.style.right = 'auto';
+                } else {
+                    element.style.right = rightPercent + '%';
+                    element.style.left = 'auto';
+                }
+                
+                element.style.top = topPercent + '%';
+                element.style.bottom = 'auto';
+                
+                // Random animation delay
+                element.style.animationDelay = (Math.random() * 4) + 's';
+                
+                // Store position
+                placedPositions.push({ x: xPos, y: yPos });
+                positionFound = true;
+            }
+        }
+    });
 }
 
 function createCodeRain() {
@@ -273,7 +530,7 @@ function addTerminalActivity() {
     activityIndicator.className = 'terminal-line terminal-status';
     activityIndicator.textContent = '● Building...';
     activityIndicator.style.cssText = `
-        color: rgba(0, 255, 136, 0.6);
+        color: rgba(255, 106, 45, 0.6);
         font-size: 11px;
         margin-top: 5px;
         animation: pulse-dot 2s ease-in-out infinite;
@@ -350,14 +607,30 @@ function initHeaderEffects() {
     let lastScrollTop = 0;
     const header = document.querySelector('.header');
     
+    if (!header) return;
+    
+    // Ensure header starts in correct position and is immediately visible
+    header.style.transform = 'translateY(0) !important';
+    header.style.opacity = '1';
+    header.style.visibility = 'visible';
+    
+    // Wait a bit for page to settle before enabling scroll effects
+    let scrollEnabled = false;
+    setTimeout(() => {
+        scrollEnabled = true;
+        lastScrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    }, 500);
+    
     window.addEventListener('scroll', function() {
+        if (!scrollEnabled) return;
+        
         const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
         
         if (scrollTop > lastScrollTop && scrollTop > 100) {
-            // Scrolling down
+            // Scrolling down - hide header
             header.style.transform = 'translateY(-100%)';
         } else {
-            // Scrolling up
+            // Scrolling up - show header
             header.style.transform = 'translateY(0)';
         }
         
@@ -368,9 +641,7 @@ function initHeaderEffects() {
         if (heroVisual) {
             heroVisual.style.transform = `translateY(${scrollTop * 0.1}px)`;
         }
-    });
-    
-    header.style.transition = 'transform 0.3s ease-in-out';
+    }, { passive: true });
 }
 
 // Interactive hover effects
@@ -380,7 +651,7 @@ function initHoverEffects() {
     techElements.forEach(element => {
         element.addEventListener('mouseenter', function() {
             this.style.transform = 'translateY(-10px) scale(1.05)';
-            this.style.boxShadow = '0 20px 40px rgba(0, 255, 136, 0.2)';
+            this.style.boxShadow = '0 20px 40px rgba(255, 106, 45, 0.2)';
         });
         
         element.addEventListener('mouseleave', function() {
@@ -394,7 +665,7 @@ function initHoverEffects() {
     statNumbers.forEach(stat => {
         stat.addEventListener('mouseenter', function() {
             this.style.transform = 'scale(1.1)';
-            this.style.textShadow = '0 0 20px rgba(0, 255, 136, 0.5)';
+            this.style.textShadow = '0 0 20px rgba(255, 106, 45, 0.5)';
         });
         
         stat.addEventListener('mouseleave', function() {

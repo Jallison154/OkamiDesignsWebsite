@@ -12,7 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
 <body>
-    <header class="header">
+    <header class="header" style="transform: translateY(0); opacity: 1;">
         <div class="container">
             <div class="nav-wrapper">
                 <div class="logo">
@@ -20,10 +20,13 @@
                         <img src="images/Okami_Designs_HeadW.png" alt="Okami Designs" class="logo-img">
                     </a>
                 </div>
+                <div class="header-center-text">
+                    <img src="../GFX/Text/TextW.png" alt="Okami Designs" class="header-text-img">
+                </div>
                 <nav class="nav">
                     <a href="index.html" class="nav-link">HOME</a>
                     <a href="services.html" class="nav-link contact-btn active">SERVICES</a>
-                    <a href="#projects" class="nav-link">PROJECTS</a>
+                    <!-- <a href="#projects" class="nav-link">PROJECTS</a> -->
                     <a href="contact.html" class="nav-link">CONTACT</a>
                 </nav>
             </div>
@@ -32,6 +35,44 @@
     </header>
 
     <main class="main">
+        <!-- Floating Elements Background -->
+        <div class="hero-visual">
+            <div class="floating-elements">
+                <div class="tech-element element-1">
+                    <div class="element-icon">🔧</div>
+                    <div class="element-text">BUILD</div>
+                </div>
+                <div class="tech-element element-2">
+                    <div class="element-icon">💡</div>
+                    <div class="element-text">CREATE</div>
+                </div>
+                <div class="tech-element element-3">
+                    <div class="element-icon">🖨️</div>
+                    <div class="element-text">3D PRINT</div>
+                </div>
+                <div class="tech-element element-4">
+                    <div class="element-icon">⚙️</div>
+                    <div class="element-text">DESIGN</div>
+                </div>
+                <div class="tech-element element-5">
+                    <div class="element-icon">🔬</div>
+                    <div class="element-text">PROTOTYPE</div>
+                </div>
+                <div class="tech-element element-6">
+                    <div class="element-icon">⚡</div>
+                    <div class="element-text">ENGINEER</div>
+                </div>
+                <div class="tech-element element-7">
+                    <div class="element-icon">🎨</div>
+                    <div class="element-text">FABRICATE</div>
+                </div>
+                <div class="tech-element element-8">
+                    <div class="element-icon">📐</div>
+                    <div class="element-text">MODEL</div>
+                </div>
+            </div>
+        </div>
+        
         <div class="container">
             <div class="services-page">
                 <h1 class="services-title">Our Services</h1>
@@ -120,7 +161,7 @@
                 <div class="footer-links">
                     <a href="index.html" class="footer-link">Home</a>
                     <a href="services.html" class="footer-link active-footer">Services</a>
-                    <a href="#projects" class="footer-link">Projects</a>
+                    <!-- <a href="#projects" class="footer-link">Projects</a> -->
                     <a href="contact.html" class="footer-link">Contact</a>
                 </div>
                 <div class="footer-tech">
