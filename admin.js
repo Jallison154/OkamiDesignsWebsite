@@ -167,44 +167,50 @@
         const passwordInput = document.getElementById('admin-password');
         const errorMsg = document.getElementById('login-error');
         
-        // Trim whitespace from password
-        const password = passwordInput.value.trim();
+        try {
+            // Trim whitespace from password
+            const password = passwordInput.value.trim();
 
-        if (!password) {
-            errorMsg.textContent = 'Please enter a password.';
-            return;
-        }
+            if (!password) {
+                errorMsg.textContent = 'Please enter a password.';
+                return;
+            }
 
-        // Ensure password hash is set (in case DOMContentLoaded hasn't finished)
-        if (!ADMIN_PASSWORD_HASH) {
-            ADMIN_PASSWORD_HASH = await hashPassword('okami2025');
-        }
+            // Ensure password hash is set (in case DOMContentLoaded hasn't finished)
+            if (!ADMIN_PASSWORD_HASH) {
+                ADMIN_PASSWORD_HASH = await hashPassword('okami2025');
+            }
 
-        // Hash the entered password and compare with stored hash
-        const enteredPasswordHash = await hashPassword(password);
-        
-        // Debug logging (remove in production)
-        console.log('Password check:', {
-            enteredLength: password.length,
-            enteredHash: enteredPasswordHash.substring(0, 16) + '...',
-            expectedHash: ADMIN_PASSWORD_HASH ? ADMIN_PASSWORD_HASH.substring(0, 16) + '...' : 'null',
-            match: enteredPasswordHash === ADMIN_PASSWORD_HASH
-        });
-        
-        if (enteredPasswordHash === ADMIN_PASSWORD_HASH) {
-            // Store authentication state and timestamp
-            sessionStorage.setItem('adminAuthenticated', 'true');
-            sessionStorage.setItem('adminAuthTime', Date.now().toString());
-            showAdminPanel();
-            errorMsg.textContent = '';
-            // Start session timeout
-            startSessionTimeout();
-            // Load files after successful login
-            loadFiles();
-        } else {
-            errorMsg.textContent = 'Incorrect password. Please try again.';
+            // Hash the entered password and compare with stored hash
+            const enteredPasswordHash = await hashPassword(password);
+            
+            // Debug logging (remove in production)
+            console.log('Password check:', {
+                enteredLength: password.length,
+                enteredHash: enteredPasswordHash.substring(0, 16) + '...',
+                expectedHash: ADMIN_PASSWORD_HASH ? ADMIN_PASSWORD_HASH.substring(0, 16) + '...' : 'null',
+                match: enteredPasswordHash === ADMIN_PASSWORD_HASH
+            });
+            
+            if (enteredPasswordHash === ADMIN_PASSWORD_HASH) {
+                // Store authentication state and timestamp
+                sessionStorage.setItem('adminAuthenticated', 'true');
+                sessionStorage.setItem('adminAuthTime', Date.now().toString());
+                showAdminPanel();
+                errorMsg.textContent = '';
+                // Start session timeout
+                startSessionTimeout();
+                // Load files after successful login
+                await loadFiles();
+            } else {
+                errorMsg.textContent = 'Incorrect password. Please try again.';
+                passwordInput.value = '';
+                passwordInput.focus();
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            errorMsg.textContent = 'Login failed. Please try again.';
             passwordInput.value = '';
-            passwordInput.focus();
         }
     }
     
