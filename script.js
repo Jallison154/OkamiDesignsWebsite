@@ -1,37 +1,5 @@
 // Tech-inspired interactive elements and animations
 document.addEventListener('DOMContentLoaded', function() {
-    // Ensure header is visible immediately
-    const header = document.querySelector('.header');
-    if (header) {
-        header.style.transform = 'translateY(0)';
-        header.style.opacity = '1';
-    }
-    
-    // Ensure hero section is visible immediately
-    const heroSection = document.querySelector('.hero-section');
-    const heroContent = document.querySelector('.hero-content');
-    const heroVisual = document.querySelector('.hero-visual');
-    if (heroSection) {
-        heroSection.style.display = 'flex';
-        heroSection.style.visibility = 'visible';
-        heroSection.style.opacity = '1';
-    }
-    if (heroContent) {
-        heroContent.style.visibility = 'visible';
-        heroContent.style.opacity = '1';
-    }
-    if (heroVisual) {
-        heroVisual.style.visibility = 'visible';
-        heroVisual.style.opacity = '1';
-    }
-    
-    // Add page load animation class
-    document.body.classList.add('page-loading');
-    
-    // Remove loading class after animation completes
-    setTimeout(() => {
-        document.body.classList.remove('page-loading');
-    }, 650);
     
     // Initialize page transition
     initPageTransitions();
@@ -889,35 +857,3 @@ function initPerformanceMonitoring() {
 
 // Initialize performance monitoring
 initPerformanceMonitoring();
-
-// Add loading completion effect
-window.addEventListener('load', function() {
-    document.body.classList.add('loaded');
-    
-    // Add a subtle entrance animation to elements (but not hero section - it should be visible immediately)
-    const elements = document.querySelectorAll('.nav, .footer');
-    elements.forEach((element, index) => {
-        element.style.opacity = '0';
-        element.style.transform = 'translateY(30px)';
-        
-        setTimeout(() => {
-            element.style.transition = 'all 0.6s ease-out';
-            element.style.opacity = '1';
-            element.style.transform = 'translateY(0)';
-        }, index * 100);
-    });
-    
-    // Ensure hero section stays visible (it has its own animations)
-    const heroContent = document.querySelector('.hero-content');
-    const heroVisual = document.querySelector('.hero-visual');
-    if (heroContent) {
-        heroContent.style.opacity = '1';
-        heroContent.style.transform = 'translateY(0)';
-        heroContent.style.visibility = 'visible';
-    }
-    if (heroVisual) {
-        heroVisual.style.opacity = '1';
-        heroVisual.style.transform = 'translateY(0)';
-        heroVisual.style.visibility = 'visible';
-    }
-});
