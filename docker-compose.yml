@@ -1,6 +1,22 @@
 version: '3.8'
 
 services:
+  okami-designs-api:
+    build: .
+    container_name: okami-designs-api
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./:/app
+      - ./files:/app/files
+    working_dir: /app
+    command: npm start
+    restart: unless-stopped
+    networks:
+      - okami-designs-network
+    environment:
+      - NODE_ENV=production
+
   okami-designs-web:
     image: nginx:alpine
     container_name: okami-designs-website
@@ -13,6 +29,8 @@ services:
     restart: unless-stopped
     networks:
       - okami-designs-network
+    depends_on:
+      - okami-designs-api
 
   # Optional: Add a reverse proxy for SSL termination
   # traefik:

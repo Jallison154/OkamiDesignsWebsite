@@ -1,0 +1,92 @@
+// Admin API client - Replaces IndexedDB with backend API
+const API_BASE = '/api';
+
+// Upload files to backend
+async function uploadFile(file, logo, fileName) {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (logo) {
+        formData.append('logo', logo);
+    }
+    if (fileName) {
+        formData.append('name', fileName);
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}/upload`, {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error(`Upload failed: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        return result;
+    } catch (error) {
+        console.error('Upload error:', error);
+        throw error;
+    }
+}
+
+// Get all files from backend
+async function getFiles() {
+    try {
+        const response = await fetch(`${API_BASE}/files`);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch files: ${response.statusText}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching files:', error);
+        return [];
+    }
+}
+
+// Delete file from backend
+async function deleteFileById(fileId) {
+    try {
+        const response = await fetch(`${API_BASE}/files/${fileId}`, {
+            method: 'DELETE'
+        });
+        if (!response.ok) {
+            throw new Error(`Delete failed: ${response.statusText}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Delete error:', error);
+        throw error;
+    }
+}
+
+// Update file metadata
+async function updateFileMetadata(fileId, updates) {
+    try {
+        const response = await fetch(`${API_BASE}/files/${fileId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(updates)
+        });
+        if (!response.ok) {
+            throw new Error(`Update failed: ${response.statusText}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Update error:', error);
+        throw error;
+    }
+}
+
+// Check if API is available
+async function checkAPIHealth() {
+    try {
+        const response = await fetch(`${API_BASE}/health`);
+        return response.ok;
+    } catch {
+        return false;
+    }
+}
+

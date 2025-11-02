@@ -170,10 +170,30 @@
         e.preventDefault();
         const passwordInput = document.getElementById('admin-password');
         const errorMsg = document.getElementById('login-error');
-        const password = passwordInput.value;
+        
+        // Trim whitespace from password
+        const password = passwordInput.value.trim();
+
+        if (!password) {
+            errorMsg.textContent = 'Please enter a password.';
+            return;
+        }
+
+        // Ensure password hash is set (in case DOMContentLoaded hasn't finished)
+        if (!ADMIN_PASSWORD_HASH) {
+            ADMIN_PASSWORD_HASH = await hashPassword('okami2025');
+        }
 
         // Hash the entered password and compare with stored hash
         const enteredPasswordHash = await hashPassword(password);
+        
+        // Debug logging (remove in production)
+        console.log('Password check:', {
+            enteredLength: password.length,
+            enteredHash: enteredPasswordHash.substring(0, 16) + '...',
+            expectedHash: ADMIN_PASSWORD_HASH ? ADMIN_PASSWORD_HASH.substring(0, 16) + '...' : 'null',
+            match: enteredPasswordHash === ADMIN_PASSWORD_HASH
+        });
         
         if (enteredPasswordHash === ADMIN_PASSWORD_HASH) {
             // Store authentication state and timestamp
@@ -188,6 +208,7 @@
         } else {
             errorMsg.textContent = 'Incorrect password. Please try again.';
             passwordInput.value = '';
+            passwordInput.focus();
         }
     }
     
@@ -288,9 +309,8 @@
         }
     }
 
-    function handleCombinedUpload() {
+    async function handleCombinedUpload() {
         const uploadBtn = document.getElementById('upload-combined');
-        const files = JSON.parse(localStorage.getItem('uploadedFiles') || '[]');
         
         if (!selectedFile) {
             alert('Please select a file to upload.');
@@ -300,175 +320,91 @@
         uploadBtn.disabled = true;
         uploadBtn.textContent = 'Uploading...';
 
-        // Convert files to base64 for persistence
-        const convertToBase64 = (file) => {
-            return new Promise((resolve, reject) => {
-                if (!file) {
-                    resolve(null);
-                    return;
-                }
-                
-                const reader = new FileReader();
-                
-                reader.onload = function(e) {
-                    try {
-                        const result = e.target.result;
-                        // Check if result is valid
-                        if (result && result.length > 0) {
-                            resolve(result);
-                        } else {
-                            reject(new Error('Empty file data'));
-                        }
-                    } catch (error) {
-                        reject(error);
-                    }
-                };
-                
-                reader.onerror = function(error) {
-                    console.error('FileReader error:', error);
-                    reject(new Error('Failed to read file: ' + error));
-                };
-                
-                reader.onabort = function() {
-                    reject(new Error('File reading was aborted'));
-                };
-                
-                try {
-                    reader.readAsDataURL(file);
-                } catch (error) {
-                    reject(new Error('Failed to start file reading: ' + error.message));
-                }
-            });
-        };
+        try {
+            // Check if API is available
+            const apiAvailable = await checkAPIHealth();
+            if (!apiAvailable) {
+                throw new Error('Backend API is not available. Please ensure the server is running.');
+            }
 
-        // Convert file first
-        convertToBase64(selectedFile)
-            .then((fileDataUrl) => {
-                // Then convert logo if it exists
-                if (selectedLogo) {
-                    return convertToBase64(selectedLogo)
-                        .then((logoDataUrl) => [fileDataUrl, logoDataUrl]);
-                } else {
-                    return [fileDataUrl, null];
-                }
-            })
-            .then(([fileDataUrl, logoDataUrl]) => {
-                try {
-                    const fileData = {
-                        name: selectedFile.name,
-                        size: selectedFile.size,
-                        type: selectedFile.type,
-                        uploaded: new Date().toISOString(),
-                        url: fileDataUrl,
-                        logo: logoDataUrl
-                    };
+            // Upload to backend
+            const result = await uploadFile(selectedFile, selectedLogo, selectedFile.name);
+            
+            console.log('File uploaded successfully:', result);
 
-                    // Save to IndexedDB instead of localStorage
-                    if (!db) {
-                        throw new Error('Database not initialized');
-                    }
-                    
-                    const transaction = db.transaction([STORE_NAME], 'readwrite');
-                    const store = transaction.objectStore(STORE_NAME);
-                    const request = store.add(fileData);
-                    
-                    request.onsuccess = () => {
-                        console.log('Saved file data to IndexedDB:', fileData);
+            // Reset form
+            document.getElementById('logo-upload').value = '';
+            document.getElementById('file-upload').value = '';
+            document.getElementById('logo-preview').innerHTML = '';
+            document.getElementById('file-preview').innerHTML = '';
+            selectedLogo = null;
+            selectedFile = null;
 
-                        // Reset form
-                        document.getElementById('logo-upload').value = '';
-                        document.getElementById('file-upload').value = '';
-                        document.getElementById('logo-preview').innerHTML = '';
-                        document.getElementById('file-preview').innerHTML = '';
-                        selectedLogo = null;
-                        selectedFile = null;
-
-                        uploadBtn.textContent = 'Upload Documentation';
-                        checkUploadButton();
-                        
-                        // Reload files
-                        loadFiles();
-                    };
-                    
-                    request.onerror = () => {
-                        console.error('Error saving to IndexedDB:', request.error);
-                        alert('Error saving file: ' + request.error.message);
-                        uploadBtn.disabled = false;
-                        uploadBtn.textContent = 'Upload Documentation';
-                    };
-                } catch (error) {
-                    console.error('Error saving file:', error);
-                    alert('Error saving file: ' + error.message);
-                    uploadBtn.disabled = false;
-                    uploadBtn.textContent = 'Upload Documentation';
-                }
-            })
-            .catch((error) => {
-                console.error('Upload error:', error);
-                let errorMessage = 'Error uploading file. ';
-                if (error.message) {
-                    errorMessage += error.message;
-                } else {
-                    errorMessage += 'Please try again.';
-                }
-                alert(errorMessage);
-                uploadBtn.disabled = false;
-                uploadBtn.textContent = 'Upload Documentation';
-            });
+            uploadBtn.textContent = 'Upload Documentation';
+            checkUploadButton();
+            
+            // Reload files
+            await loadFiles();
+            
+            alert('File uploaded successfully!');
+        } catch (error) {
+            console.error('Upload error:', error);
+            let errorMessage = 'Error uploading file. ';
+            if (error.message) {
+                errorMessage += error.message;
+            } else {
+                errorMessage += 'Please try again.';
+            }
+            alert(errorMessage);
+            uploadBtn.disabled = false;
+            uploadBtn.textContent = 'Upload Documentation';
+        }
     }
 
-    // Load files from both static directory and IndexedDB
+    // Load files from backend API
     async function loadFiles() {
         const filesGrid = document.getElementById('files-grid');
         if (!filesGrid) return;
 
         filesGrid.innerHTML = '<p style="color: var(--secondary-text);">Loading files...</p>';
 
-        let allFiles = [];
+        try {
+            // Try to load from backend API first
+            const apiAvailable = await checkAPIHealth();
+            if (apiAvailable) {
+                const files = await getFiles();
+                // Mark all files from API as static (they're on the server)
+                files.forEach(file => {
+                    file.isStatic = true;
+                });
+                displayFiles(files);
+                return;
+            }
+        } catch (error) {
+            console.error('Error loading from API:', error);
+        }
 
-        // First, try to load from static files directory (for production)
+        // Fallback: try to load from manifest.json (for static deployment)
         try {
             const manifestResponse = await fetch('files/manifest.json');
             if (manifestResponse.ok) {
                 const manifest = await manifestResponse.json();
                 manifest.files.forEach(file => {
-                    // Convert static file paths to full URLs
                     file.url = `files/${file.filename}`;
                     if (file.logoFilename) {
                         file.logo = `files/${file.logoFilename}`;
                     }
-                    file.isStatic = true; // Mark as static file
-                    allFiles.push(file);
+                    file.isStatic = true;
                 });
+                displayFiles(manifest.files);
+                return;
             }
         } catch (error) {
-            // manifest.json doesn't exist or can't be loaded - that's okay
-            console.log('No static files manifest found (this is normal for local development)');
+            console.log('No static files manifest found');
         }
 
-        // Then load from IndexedDB (for local uploads)
-        if (db) {
-            const transaction = db.transaction([STORE_NAME], 'readonly');
-            const store = transaction.objectStore(STORE_NAME);
-            const request = store.getAll();
-
-            request.onsuccess = () => {
-                const indexedFiles = request.result;
-                // Add IndexedDB files (not marked as static)
-                indexedFiles.forEach(file => {
-                    file.isStatic = false;
-                    allFiles.push(file);
-                });
-
-                displayFiles(allFiles);
-            };
-
-            request.onerror = () => {
-                displayFiles(allFiles); // Still show static files even if IndexedDB fails
-            };
-        } else {
-            displayFiles(allFiles);
-        }
+        // No files available
+        displayFiles([]);
     }
 
     function displayFiles(files) {
@@ -507,12 +443,10 @@
                     <span style="color: var(--secondary-text); font-size: 11px; font-style: italic; margin-left: 10px;">(Deployed)</span>
                 </div>`;
             } else {
-                // IndexedDB files (local uploads that need to be exported)
-                const fileIndex = files.findIndex(f => f.id === file.id && !f.isStatic);
+                // Files from API (all files now use API)
                 actionsHtml = `<div class="file-card-actions">
                     <button class="download-file" onclick="downloadFileAdmin(${file.id})">Download</button>
-                    <button class="update-file" onclick="updateFile(${fileIndex})">Update</button>
-                    <button class="delete-file" onclick="deleteFile(${fileIndex})">Delete</button>
+                    <button class="delete-file" onclick="deleteFile(${file.id})">Delete</button>
                 </div>`;
             }
             
@@ -592,97 +526,40 @@
     }
 
     async function downloadFileAdmin(fileId, isStatic = false) {
-        if (isStatic) {
-            // For static files, just download directly from URL
-            const transaction = db.transaction([STORE_NAME], 'readonly');
-            const store = transaction.objectStore(STORE_NAME);
-            const getAllRequest = store.getAll();
-            
-            getAllRequest.onsuccess = () => {
-                const files = getAllRequest.result;
+        try {
+            // Try to get file info from API first
+            const apiAvailable = await checkAPIHealth();
+            if (apiAvailable) {
+                const files = await getFiles();
                 const file = files.find(f => f.id === fileId);
                 if (file && file.url) {
                     const link = document.createElement('a');
                     link.href = file.url;
                     link.download = file.name;
                     link.click();
-                } else {
-                    // Try loading from manifest
-                    fetch('files/manifest.json')
-                        .then(res => res.json())
-                        .then(manifest => {
-                            const staticFile = manifest.files.find(f => f.id === fileId);
-                            if (staticFile) {
-                                const link = document.createElement('a');
-                                link.href = `files/${staticFile.filename}`;
-                                link.download = staticFile.name;
-                                link.click();
-                            }
-                        });
+                    return;
                 }
-            };
-            return;
-        }
-        
-        if (!db) {
-            alert('Database not initialized');
-            return;
-        }
-        
-        const transaction = db.transaction([STORE_NAME], 'readonly');
-        const store = transaction.objectStore(STORE_NAME);
-        const request = store.get(fileId);
-        
-        request.onsuccess = () => {
-            const file = request.result;
-            
-            if (!file) {
-                alert('File not found');
-                return;
             }
             
-            // Convert base64 data URL to blob and download
-            try {
-                // If it's already a data URL (base64), convert it to blob
-                if (file.url.startsWith('data:')) {
-                    fetch(file.url)
-                        .then(res => res.blob())
-                        .then(blob => {
-                            const url = window.URL.createObjectURL(blob);
-                            const link = document.createElement('a');
-                            link.href = url;
-                            link.download = file.name;
-                            link.style.display = 'none';
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                            window.URL.revokeObjectURL(url);
-                        })
-                        .catch(err => {
-                            console.error('Download failed:', err);
-                            alert('Download failed. Please try again.');
-                        });
-                } else {
-                    // Fallback for blob URLs (shouldn't happen with new system)
-                    const url = window.URL.createObjectURL(new Blob([file.url]));
+            // Fallback: try loading from manifest
+            const manifestResponse = await fetch('files/manifest.json');
+            if (manifestResponse.ok) {
+                const manifest = await manifestResponse.json();
+                const staticFile = manifest.files.find(f => f.id === fileId);
+                if (staticFile) {
                     const link = document.createElement('a');
-                    link.href = url;
-                    link.download = file.name;
-                    link.style.display = 'none';
-                    document.body.appendChild(link);
+                    link.href = `files/${staticFile.filename}`;
+                    link.download = staticFile.name;
                     link.click();
-                    document.body.removeChild(link);
-                    window.URL.revokeObjectURL(url);
+                    return;
                 }
-            } catch (error) {
-                console.error('Download error:', error);
-                alert('Download failed. Please try again.');
             }
-        };
-        
-        request.onerror = () => {
-            alert('Error loading file: ' + request.error.message);
-        };
+            
+            alert('File not found');
+        } catch (error) {
+            console.error('Download error:', error);
+            alert('Download failed. Please try again.');
+        }
     }
     
     // Export files for deployment - creates downloadable files that can be added to git
@@ -831,29 +708,23 @@
         };
     }
 
-    function deleteFile(index) {
-        if (confirm('Are you sure you want to delete this file?')) {
-            if (!db) {
-                alert('Database not initialized');
-                return;
+    async function deleteFile(fileId) {
+        if (!confirm('Are you sure you want to delete this file?')) {
+            return;
+        }
+        
+        try {
+            const apiAvailable = await checkAPIHealth();
+            if (!apiAvailable) {
+                throw new Error('Backend API is not available.');
             }
             
-            const transaction = db.transaction([STORE_NAME], 'readwrite');
-            const store = transaction.objectStore(STORE_NAME);
-            const getAllRequest = store.getAll();
-            
-            getAllRequest.onsuccess = () => {
-                const files = getAllRequest.result;
-                if (index < files.length) {
-                    const deleteRequest = store.delete(files[index].id);
-                    deleteRequest.onsuccess = () => {
-                        loadFiles();
-                    };
-                    deleteRequest.onerror = () => {
-                        alert('Error deleting file: ' + deleteRequest.error.message);
-                    };
-                }
-            };
+            await deleteFileById(fileId);
+            await loadFiles();
+            alert('File deleted successfully');
+        } catch (error) {
+            console.error('Delete error:', error);
+            alert('Error deleting file: ' + (error.message || 'Please try again.'));
         }
     }
 
