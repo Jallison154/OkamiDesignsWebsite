@@ -126,26 +126,8 @@ function initPageTransitions() {
         });
     });
     
-    // Fade in header content on page load
+    // Fade in center text if it exists (for splash page)
     setTimeout(() => {
-        const navLinks = document.querySelectorAll('.nav-link');
-        const logoImg = document.querySelector('.logo-img');
-        
-        navLinks.forEach((navLink, index) => {
-            setTimeout(() => {
-                navLink.style.opacity = '1';
-                navLink.style.transform = 'translateY(0)';
-            }, 100 + (index * 50));
-        });
-        
-        if (logoImg) {
-            setTimeout(() => {
-                logoImg.style.opacity = '1';
-                logoImg.style.transform = 'translateY(0)';
-            }, 50);
-        }
-        
-        // Fade in center text if it exists
         const centerText = document.querySelector('.header-center-text');
         if (centerText) {
             // Reset initial state

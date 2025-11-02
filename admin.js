@@ -63,97 +63,93 @@
         // Initialize IndexedDB first
         initDB().then(() => {
             console.log('IndexedDB initialized');
-            
-            // Check if already authenticated and session hasn't expired
-            const authTime = sessionStorage.getItem('adminAuthTime');
-            const isAuthenticated = sessionStorage.getItem('adminAuthenticated') === 'true';
-            
-            if (isAuthenticated && authTime) {
-                const timeElapsed = Date.now() - parseInt(authTime, 10);
-                if (timeElapsed < SESSION_TIMEOUT) {
-                    // Session still valid
-                    showAdminPanel();
-                    startSessionTimeout(); // Restart timeout timer
-                } else {
-                    // Session expired
-                    sessionStorage.removeItem('adminAuthenticated');
-                    sessionStorage.removeItem('adminAuthTime');
-                    showLoginScreen();
-                }
-            } else {
-                // Not authenticated
-                showLoginScreen();
-            }
-
-            // Setup login form
-            const loginForm = document.getElementById('login-form');
-            if (loginForm) {
-                loginForm.addEventListener('submit', handleLogin);
-            }
-
-            // Setup logout buttons with multiple approaches to ensure they work
-            function setupLogoutButtons() {
-                const logoutBtn = document.getElementById('logout-btn');
-                const logoutBtnMobile = document.getElementById('logout-btn-mobile');
-                
-                // Remove any existing listeners by cloning and replacing
-                if (logoutBtn) {
-                    const newLogoutBtn = logoutBtn.cloneNode(true);
-                    logoutBtn.parentNode.replaceChild(newLogoutBtn, logoutBtn);
-                    newLogoutBtn.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        console.log('Logout button clicked');
-                        handleLogout(e);
-                    });
-                }
-                
-                if (logoutBtnMobile) {
-                    const newLogoutBtnMobile = logoutBtnMobile.cloneNode(true);
-                    logoutBtnMobile.parentNode.replaceChild(newLogoutBtnMobile, logoutBtnMobile);
-                    newLogoutBtnMobile.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        console.log('Logout button (mobile) clicked');
-                        handleLogout(e);
-                    });
-                }
-                
-                // Also use event delegation as backup
-                document.addEventListener('click', function(e) {
-                    const target = e.target;
-                    if (target && (target.id === 'logout-btn' || target.id === 'logout-btn-mobile')) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        console.log('Logout via delegation');
-                        handleLogout(e);
-                    }
-                }, true); // Use capture phase
-            }
-            
-            // Setup immediately
-            setupLogoutButtons();
-            
-            // Also setup after a short delay to override any script.js handlers
-            setTimeout(setupLogoutButtons, 100);
-
-            // Setup file uploads
-            setupFileUploads();
-            
-            // Setup export files button
-            const exportBtn = document.getElementById('export-files-btn');
-            if (exportBtn) {
-                exportBtn.addEventListener('click', exportFilesForDeployment);
-            }
-            
-            // Load existing files (only if authenticated)
-            if (sessionStorage.getItem('adminAuthenticated') === 'true') {
-                loadFiles();
-            }
         }).catch((error) => {
             console.error('Failed to initialize IndexedDB:', error);
-            alert('Failed to initialize database. Please refresh the page.');
+            // Continue anyway - database is optional
         });
+        
+        // Setup login form immediately (don't wait for DB)
+        const loginForm = document.getElementById('login-form');
+        if (loginForm) {
+            loginForm.addEventListener('submit', handleLogin);
+        }
+        
+        // Check if already authenticated and session hasn't expired
+        const authTime = sessionStorage.getItem('adminAuthTime');
+        const isAuthenticated = sessionStorage.getItem('adminAuthenticated') === 'true';
+        
+        if (isAuthenticated && authTime) {
+            const timeElapsed = Date.now() - parseInt(authTime, 10);
+            if (timeElapsed < SESSION_TIMEOUT) {
+                // Session still valid
+                showAdminPanel();
+                startSessionTimeout(); // Restart timeout timer
+                loadFiles();
+            } else {
+                // Session expired
+                sessionStorage.removeItem('adminAuthenticated');
+                sessionStorage.removeItem('adminAuthTime');
+                showLoginScreen();
+            }
+        } else {
+            // Not authenticated
+            showLoginScreen();
+        }
+
+        // Setup logout buttons with multiple approaches to ensure they work
+        function setupLogoutButtons() {
+            const logoutBtn = document.getElementById('logout-btn');
+            const logoutBtnMobile = document.getElementById('logout-btn-mobile');
+            
+            // Remove any existing listeners by cloning and replacing
+            if (logoutBtn) {
+                const newLogoutBtn = logoutBtn.cloneNode(true);
+                logoutBtn.parentNode.replaceChild(newLogoutBtn, logoutBtn);
+                newLogoutBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Logout button clicked');
+                    handleLogout(e);
+                });
+            }
+            
+            if (logoutBtnMobile) {
+                const newLogoutBtnMobile = logoutBtnMobile.cloneNode(true);
+                logoutBtnMobile.parentNode.replaceChild(newLogoutBtnMobile, logoutBtnMobile);
+                newLogoutBtnMobile.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Logout button (mobile) clicked');
+                    handleLogout(e);
+                });
+            }
+            
+            // Also use event delegation as backup
+            document.addEventListener('click', function(e) {
+                const target = e.target;
+                if (target && (target.id === 'logout-btn' || target.id === 'logout-btn-mobile')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Logout via delegation');
+                    handleLogout(e);
+                }
+            }, true); // Use capture phase
+        }
+        
+        // Setup immediately
+        setupLogoutButtons();
+        
+        // Also setup after a short delay to override any script.js handlers
+        setTimeout(setupLogoutButtons, 100);
+
+        // Setup file uploads
+        setupFileUploads();
+        
+        // Setup export files button
+        const exportBtn = document.getElementById('export-files-btn');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', exportFilesForDeployment);
+        }
     });
 
     function showLoginScreen() {
@@ -260,6 +256,10 @@
         const uploadBtn = document.getElementById('upload-combined');
         const logoPreview = document.getElementById('logo-preview');
         const filePreview = document.getElementById('file-preview');
+
+        if (!logoInput || !fileInput || !uploadBtn || !logoPreview || !filePreview) {
+            return;
+        }
 
         // Logo upload
         logoInput.addEventListener('change', function(e) {
@@ -481,13 +481,7 @@
                 </div>
             `;
             filesGrid.appendChild(fileCard);
-            });
-        };
-
-        request.onerror = () => {
-            console.error('Error loading files:', request.error);
-            filesGrid.innerHTML = '<p style="color: var(--danger-color);">Error loading files. Please refresh the page.</p>';
-        };
+        });
     }
 
     function updateFile(index) {

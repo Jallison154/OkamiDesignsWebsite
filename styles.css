@@ -1398,6 +1398,25 @@ html {
     scroll-behavior: smooth;
 }
 
+/* Page content animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.services-page,
+.contact-page,
+.support-page,
+.admin-dashboard {
+    animation: fadeIn 0.8s ease-out;
+}
+
 /* Particles container */
 #particles-js {
     position: fixed;
