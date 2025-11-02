@@ -327,8 +327,9 @@ function randomizeTechElementPositions() {
                 element.style.top = topPercent + '%';
                 element.style.bottom = 'auto';
                 
-                // Random animation delay
-                element.style.animationDelay = (Math.random() * 4) + 's';
+                // Random animation delay for float only
+                const floatDelay = (Math.random() * 4);
+                element.style.animationDelay = `0s, ${floatDelay}s`;
                 
                 // Store position
                 placedPositions.push({ x: xPos, y: yPos });
