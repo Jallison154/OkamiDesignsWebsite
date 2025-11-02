@@ -321,14 +321,21 @@
         uploadBtn.textContent = 'Uploading...';
 
         try {
-            // Check if API is available
-            const apiAvailable = await checkAPIHealth();
+            // Check if API is available (with timeout)
+            const apiAvailable = await Promise.race([
+                checkAPIHealth(),
+                new Promise(resolve => setTimeout(() => resolve(false), 3000))
+            ]);
+            
             if (!apiAvailable) {
-                throw new Error('Backend API is not available. Please ensure the server is running.');
+                throw new Error('Backend API is not available. The server may be starting up. Please wait a moment and try again, or check server logs.');
             }
 
-            // Upload to backend
-            const result = await uploadFile(selectedFile, selectedLogo, selectedFile.name);
+            // Upload to backend (with timeout)
+            const result = await Promise.race([
+                uploadFile(selectedFile, selectedLogo, selectedFile.name),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Upload timeout')), 60000))
+            ]);
             
             console.log('File uploaded successfully:', result);
 
@@ -353,7 +360,7 @@
             if (error.message) {
                 errorMessage += error.message;
             } else {
-                errorMessage += 'Please try again.';
+                errorMessage += 'Please ensure the backend API is running and try again.';
             }
             alert(errorMessage);
             uploadBtn.disabled = false;
@@ -361,27 +368,39 @@
         }
     }
 
-    // Load files from backend API
+    // Load files from backend API or fallback to manifest
     async function loadFiles() {
         const filesGrid = document.getElementById('files-grid');
         if (!filesGrid) return;
 
         filesGrid.innerHTML = '<p style="color: var(--secondary-text);">Loading files...</p>';
 
+        // Try backend API first (with timeout)
         try {
-            // Try to load from backend API first
-            const apiAvailable = await checkAPIHealth();
+            const apiAvailable = await Promise.race([
+                checkAPIHealth(),
+                new Promise(resolve => setTimeout(() => resolve(false), 2000))
+            ]);
+            
             if (apiAvailable) {
-                const files = await getFiles();
-                // Mark all files from API as static (they're on the server)
-                files.forEach(file => {
-                    file.isStatic = true;
-                });
-                displayFiles(files);
-                return;
+                try {
+                    const files = await Promise.race([
+                        getFiles(),
+                        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
+                    ]);
+                    
+                    // Mark all files from API as static (they're on the server)
+                    files.forEach(file => {
+                        file.isStatic = true;
+                    });
+                    displayFiles(files);
+                    return;
+                } catch (apiError) {
+                    console.warn('API request failed, falling back to manifest:', apiError.message);
+                }
             }
         } catch (error) {
-            console.error('Error loading from API:', error);
+            console.warn('API health check failed, falling back to manifest:', error.message);
         }
 
         // Fallback: try to load from manifest.json (for static deployment)

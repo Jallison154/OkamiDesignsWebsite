@@ -83,9 +83,13 @@ async function updateFileMetadata(fileId, updates) {
 // Check if API is available
 async function checkAPIHealth() {
     try {
-        const response = await fetch(`${API_BASE}/health`);
+        const response = await fetch(`${API_BASE}/health`, {
+            method: 'GET',
+            signal: AbortSignal.timeout(3000) // 3 second timeout
+        });
         return response.ok;
-    } catch {
+    } catch (error) {
+        console.log('API health check failed:', error.message);
         return false;
     }
 }
