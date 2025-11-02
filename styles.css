@@ -48,6 +48,15 @@ body.page-loading > .header {
     opacity: 1 !important;
 }
 
+/* Ensure hero section is visible during page load */
+body.page-loading .hero-section,
+body.page-loading .hero-content,
+body.page-loading .hero-visual {
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: flex !important;
+}
+
 @keyframes pageFadeIn {
     from {
         opacity: 0;
@@ -1297,6 +1306,11 @@ body::before {
         flex-direction: column;
         gap: 15px;
         text-align: center;
+    }
+    
+    /* Hide footer on mobile */
+    .footer {
+        display: none !important;
     }
     
     .contact-page {

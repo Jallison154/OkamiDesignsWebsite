@@ -7,6 +7,24 @@ document.addEventListener('DOMContentLoaded', function() {
         header.style.opacity = '1';
     }
     
+    // Ensure hero section is visible immediately
+    const heroSection = document.querySelector('.hero-section');
+    const heroContent = document.querySelector('.hero-content');
+    const heroVisual = document.querySelector('.hero-visual');
+    if (heroSection) {
+        heroSection.style.display = 'flex';
+        heroSection.style.visibility = 'visible';
+        heroSection.style.opacity = '1';
+    }
+    if (heroContent) {
+        heroContent.style.visibility = 'visible';
+        heroContent.style.opacity = '1';
+    }
+    if (heroVisual) {
+        heroVisual.style.visibility = 'visible';
+        heroVisual.style.opacity = '1';
+    }
+    
     // Add page load animation class
     document.body.classList.add('page-loading');
     
@@ -876,8 +894,8 @@ initPerformanceMonitoring();
 window.addEventListener('load', function() {
     document.body.classList.add('loaded');
     
-    // Add a subtle entrance animation to all elements
-    const elements = document.querySelectorAll('.hero-content, .hero-visual, .nav, .footer');
+    // Add a subtle entrance animation to elements (but not hero section - it should be visible immediately)
+    const elements = document.querySelectorAll('.nav, .footer');
     elements.forEach((element, index) => {
         element.style.opacity = '0';
         element.style.transform = 'translateY(30px)';
@@ -888,4 +906,18 @@ window.addEventListener('load', function() {
             element.style.transform = 'translateY(0)';
         }, index * 100);
     });
+    
+    // Ensure hero section stays visible (it has its own animations)
+    const heroContent = document.querySelector('.hero-content');
+    const heroVisual = document.querySelector('.hero-visual');
+    if (heroContent) {
+        heroContent.style.opacity = '1';
+        heroContent.style.transform = 'translateY(0)';
+        heroContent.style.visibility = 'visible';
+    }
+    if (heroVisual) {
+        heroVisual.style.opacity = '1';
+        heroVisual.style.transform = 'translateY(0)';
+        heroVisual.style.visibility = 'visible';
+    }
 });
