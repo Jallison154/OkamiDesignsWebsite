@@ -220,8 +220,8 @@ body::before {
     display: flex;
     flex-direction: column;
     gap: 2px;
-    opacity: 0;
-    transform: translateX(-10px);
+    opacity: 1;
+    transform: translateX(0);
     transition: opacity 0.4s ease, transform 0.4s ease;
 }
 
@@ -1237,10 +1237,6 @@ body::before {
         display: none;
     }
     
-    .logo-text-wrapper {
-        display: none;
-    }
-    
     .mobile-menu-toggle {
         display: flex;
     }
@@ -1251,15 +1247,6 @@ body::before {
     
     .header .container {
         position: relative;
-    }
-    
-    /* Home page full logo for mobile */
-    body.home-page .logo-img-full-mobile {
-        display: block !important;
-    }
-    
-    body.home-page .logo-img {
-        display: none !important;
     }
     
     /* Keep logo on left for home page mobile */
@@ -1353,10 +1340,6 @@ body::before {
     }
     
     .header-center-text {
-        display: none;
-    }
-    
-    .logo-text-wrapper {
         display: none;
     }
     
