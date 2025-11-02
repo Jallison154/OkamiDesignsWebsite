@@ -10,6 +10,10 @@
     // hashPassword('yourpassword').then(h => console.log(h))
     // Note: This hash will be generated on first login attempt - see initialization code below
     let ADMIN_PASSWORD_HASH = null;
+    
+    // Session timeout configuration (30 minutes in milliseconds)
+    const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+    let sessionTimeoutInterval = null;
 
     // Track selected files
     let selectedLogo = null;
@@ -60,10 +64,24 @@
         initDB().then(() => {
             console.log('IndexedDB initialized');
             
-            // Check if already authenticated
-            if (sessionStorage.getItem('adminAuthenticated') === 'true') {
-                showAdminPanel();
+            // Check if already authenticated and session hasn't expired
+            const authTime = sessionStorage.getItem('adminAuthTime');
+            const isAuthenticated = sessionStorage.getItem('adminAuthenticated') === 'true';
+            
+            if (isAuthenticated && authTime) {
+                const timeElapsed = Date.now() - parseInt(authTime, 10);
+                if (timeElapsed < SESSION_TIMEOUT) {
+                    // Session still valid
+                    showAdminPanel();
+                    startSessionTimeout(); // Restart timeout timer
+                } else {
+                    // Session expired
+                    sessionStorage.removeItem('adminAuthenticated');
+                    sessionStorage.removeItem('adminAuthTime');
+                    showLoginScreen();
+                }
             } else {
+                // Not authenticated
                 showLoginScreen();
             }
 
@@ -73,17 +91,51 @@
                 loginForm.addEventListener('submit', handleLogin);
             }
 
-            // Setup logout
-            const logoutBtn = document.getElementById('logout-btn');
-            if (logoutBtn) {
-                logoutBtn.addEventListener('click', handleLogout);
+            // Setup logout buttons with multiple approaches to ensure they work
+            function setupLogoutButtons() {
+                const logoutBtn = document.getElementById('logout-btn');
+                const logoutBtnMobile = document.getElementById('logout-btn-mobile');
+                
+                // Remove any existing listeners by cloning and replacing
+                if (logoutBtn) {
+                    const newLogoutBtn = logoutBtn.cloneNode(true);
+                    logoutBtn.parentNode.replaceChild(newLogoutBtn, logoutBtn);
+                    newLogoutBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('Logout button clicked');
+                        handleLogout(e);
+                    });
+                }
+                
+                if (logoutBtnMobile) {
+                    const newLogoutBtnMobile = logoutBtnMobile.cloneNode(true);
+                    logoutBtnMobile.parentNode.replaceChild(newLogoutBtnMobile, logoutBtnMobile);
+                    newLogoutBtnMobile.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('Logout button (mobile) clicked');
+                        handleLogout(e);
+                    });
+                }
+                
+                // Also use event delegation as backup
+                document.addEventListener('click', function(e) {
+                    const target = e.target;
+                    if (target && (target.id === 'logout-btn' || target.id === 'logout-btn-mobile')) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('Logout via delegation');
+                        handleLogout(e);
+                    }
+                }, true); // Use capture phase
             }
             
-            // Setup mobile logout button
-            const logoutBtnMobile = document.getElementById('logout-btn-mobile');
-            if (logoutBtnMobile) {
-                logoutBtnMobile.addEventListener('click', handleLogout);
-            }
+            // Setup immediately
+            setupLogoutButtons();
+            
+            // Also setup after a short delay to override any script.js handlers
+            setTimeout(setupLogoutButtons, 100);
 
             // Setup file uploads
             setupFileUploads();
@@ -124,9 +176,13 @@
         const enteredPasswordHash = await hashPassword(password);
         
         if (enteredPasswordHash === ADMIN_PASSWORD_HASH) {
+            // Store authentication state and timestamp
             sessionStorage.setItem('adminAuthenticated', 'true');
+            sessionStorage.setItem('adminAuthTime', Date.now().toString());
             showAdminPanel();
             errorMsg.textContent = '';
+            // Start session timeout
+            startSessionTimeout();
             // Load files after successful login
             loadFiles();
         } else {
@@ -134,11 +190,48 @@
             passwordInput.value = '';
         }
     }
-
-    function handleLogout() {
-        sessionStorage.removeItem('adminAuthenticated');
-        window.location.reload();
+    
+    function startSessionTimeout() {
+        // Clear any existing timeout interval
+        if (sessionTimeoutInterval) {
+            clearInterval(sessionTimeoutInterval);
+        }
+        
+        // Check every minute if session has expired
+        sessionTimeoutInterval = setInterval(() => {
+            const authTime = sessionStorage.getItem('adminAuthTime');
+            if (authTime) {
+                const timeElapsed = Date.now() - parseInt(authTime, 10);
+                if (timeElapsed >= SESSION_TIMEOUT) {
+                    // Session expired - logout
+                    handleLogout();
+                }
+            }
+        }, 60000); // Check every minute
     }
+
+    function handleLogout(e) {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        // Clear session data
+        sessionStorage.removeItem('adminAuthenticated');
+        sessionStorage.removeItem('adminAuthTime');
+        
+        // Clear timeout interval
+        if (sessionTimeoutInterval) {
+            clearInterval(sessionTimeoutInterval);
+            sessionTimeoutInterval = null;
+        }
+        
+        // Force reload to show login screen
+        window.location.href = 'admin.html';
+    }
+    
+    // Make handleLogout available globally for debugging
+    window.handleAdminLogout = handleLogout;
 
     function setupFileUploads() {
         const logoInput = document.getElementById('logo-upload');
