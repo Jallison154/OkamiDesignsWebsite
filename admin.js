@@ -389,10 +389,6 @@
                         new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
                     ]);
                     
-                    // Mark all files from API as static (they're on the server)
-                    files.forEach(file => {
-                        file.isStatic = true;
-                    });
                     displayFiles(files);
                     return;
                 } catch (apiError) {
