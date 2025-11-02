@@ -12,17 +12,32 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
-<body>
+<body class="home-page">
     <header class="header" style="transform: translateY(0); opacity: 1;">
         <div class="container">
             <div class="nav-wrapper">
                 <div class="logo">
-                    <img src="images/Okami_Designs_HeadW.png" alt="Okami Designs" class="logo-img">
+                    <a href="index.html">
+                        <img src="images/Okami_Designs_HeadW.png" alt="Okami Designs" class="logo-img">
+                        <img src="../GFX/Full/Okami_Designs_FullW.png" alt="Okami Designs" class="logo-img-full-mobile">
+                    </a>
                 </div>
+                <button class="mobile-menu-toggle" aria-label="Toggle menu">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
                 <nav class="nav">
                     <!-- <a href="#projects" class="nav-link">PROJECTS</a> -->
                     <a href="services.html" class="nav-link">SERVICES</a>
+                    <a href="support.html" class="nav-link">SUPPORT</a>
                     <!-- <a href="#work" class="nav-link">OUR WORK</a> -->
+                    <a href="contact.html" class="nav-link contact-btn">CONTACT</a>
+                </nav>
+                <nav class="nav-mobile">
+                    <a href="index.html" class="nav-link">HOME</a>
+                    <a href="services.html" class="nav-link">SERVICES</a>
+                    <a href="support.html" class="nav-link">SUPPORT</a>
                     <a href="contact.html" class="nav-link contact-btn">CONTACT</a>
                 </nav>
             </div>
@@ -121,6 +136,7 @@
                             <div class="footer-content">
                 <div class="footer-links">
                     <a href="services.html" class="footer-link">Services</a>
+                    <a href="support.html" class="footer-link">Support</a>
                     <!-- <a href="#projects" class="footer-link">Projects</a> -->
                     <a href="contact.html" class="footer-link">Contact</a>
                 </div>

@@ -41,6 +41,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Keyboard shortcuts
     initKeyboardShortcuts();
+
+    // Mobile menu toggle
+    initMobileMenu();
 });
 
 // Page transition system
@@ -773,6 +776,68 @@ function showQuickActions() {
 function closeModals() {
     const modals = document.querySelectorAll('.quick-actions-modal');
     modals.forEach(modal => modal.remove());
+}
+
+// Mobile menu toggle
+function initMobileMenu() {
+    const mobileToggle = document.querySelector('.mobile-menu-toggle');
+    const mobileNav = document.querySelector('.nav-mobile');
+    
+    if (!mobileToggle || !mobileNav) return;
+    
+    // Toggle menu on button click
+    mobileToggle.addEventListener('click', function() {
+        mobileToggle.classList.toggle('active');
+        mobileNav.classList.toggle('active');
+        
+        // Prevent body scroll when menu is open
+        if (mobileNav.classList.contains('active')) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+    });
+    
+    // Close menu when clicking on a link
+    const mobileLinks = mobileNav.querySelectorAll('.nav-link');
+    mobileLinks.forEach(link => {
+        link.addEventListener('click', function() {
+            mobileToggle.classList.remove('active');
+            mobileNav.classList.remove('active');
+            document.body.style.overflow = '';
+        });
+    });
+    
+    // Close menu when clicking outside
+    document.addEventListener('click', function(e) {
+        if (mobileNav.classList.contains('active')) {
+            if (!mobileNav.contains(e.target) && !mobileToggle.contains(e.target)) {
+                mobileToggle.classList.remove('active');
+                mobileNav.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        }
+    });
+    
+    // Handle logout button in mobile menu (admin page)
+    const logoutBtnMobile = document.getElementById('logout-btn-mobile');
+    if (logoutBtnMobile) {
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+            logoutBtnMobile.addEventListener('click', function() {
+                logoutBtn.click();
+            });
+        }
+    }
+    
+    // Close menu on window resize if it goes back to desktop
+    window.addEventListener('resize', function() {
+        if (window.innerWidth > 768) {
+            mobileToggle.classList.remove('active');
+            mobileNav.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+    });
 }
 
 // Performance monitoring

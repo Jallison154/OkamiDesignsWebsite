@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Okami Designs</title>
+    <meta name="description" content="Okami Designs Admin Panel">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="images/Okami_Designs_HeadW.png" type="image/png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="login-screen" class="login-screen" style="display: none;">
+        <div class="login-box">
+            <div class="login-icon">🔒</div>
+            <h2 class="login-title">Admin Access</h2>
+            <p class="login-subtitle">Enter password to access admin panel</p>
+            <form id="login-form">
+                <input type="password" id="admin-password" class="login-input" placeholder="Password" required>
+                <button type="submit" class="login-button">LOGIN</button>
+                <p id="login-error" class="login-error"></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Panel -->
+    <div id="admin-panel" class="admin-panel">
+        <header class="header" style="transform: translateY(0); opacity: 1;">
+            <div class="container">
+                <div class="nav-wrapper">
+                    <div class="logo">
+                        <a href="index.html">
+                            <img src="images/Okami_Designs_HeadW.png" alt="Okami Designs" class="logo-img">
+                        </a>
+                    </div>
+                    <button class="mobile-menu-toggle" aria-label="Toggle menu">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
+                    <nav class="nav">
+                        <a href="index.html" class="nav-link">HOME</a>
+                        <a href="support.html" class="nav-link">SUPPORT</a>
+                        <button id="logout-btn" class="nav-link contact-btn">LOGOUT</button>
+                    </nav>
+                    <nav class="nav-mobile">
+                        <a href="index.html" class="nav-link">HOME</a>
+                        <a href="support.html" class="nav-link">SUPPORT</a>
+                        <button id="logout-btn-mobile" class="nav-link contact-btn">LOGOUT</button>
+                    </nav>
+                </div>
+            </div>
+        </header>
+
+        <main class="main">
+            <div class="container">
+                <div class="admin-dashboard">
+                    <h1 class="admin-title">Admin Dashboard</h1>
+                    <p class="admin-subtitle">Manage project documentation and files</p>
+                    
+                    <div class="upload-section">
+                        <h2 class="section-title">Upload New Documentation</h2>
+                        <div class="upload-form">
+                            <div class="upload-box">
+                                <div class="upload-icon">🖼️</div>
+                                <h3 class="upload-title">Project Logo (Optional)</h3>
+                                <p class="upload-subtitle">Choose an image for this project</p>
+                                <input type="file" id="logo-upload" class="file-input" accept=".jpg,.jpeg,.png,.gif,.webp">
+                                <label for="logo-upload" class="upload-button">Choose Logo</label>
+                                <div id="logo-preview" class="logo-preview"></div>
+                            </div>
+                            
+                            <div class="upload-box">
+                                <div class="upload-icon">📄</div>
+                                <h3 class="upload-title">Documentation File</h3>
+                                <p class="upload-subtitle">PDF, DOC, or other file</p>
+                                <input type="file" id="file-upload" class="file-input" accept=".pdf,.doc,.docx,.txt">
+                                <label for="file-upload" class="upload-button">Choose File</label>
+                                <div id="file-preview" class="file-preview"></div>
+                            </div>
+                            
+                            <button id="upload-combined" class="upload-submit-button" disabled>Upload Documentation</button>
+                        </div>
+                    </div>
+
+                    <div class="files-section">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+                            <h2 class="section-title" style="margin-bottom: 0;">Current Files</h2>
+                            <button id="export-files-btn" class="cta-button" style="margin: 0;">Export Files for Deployment</button>
+                        </div>
+                        <div class="files-grid" id="files-grid">
+                            <!-- Files will be dynamically loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+    <script src="admin.js"></script>
+</body>
+</html>
+

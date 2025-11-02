@@ -1,0 +1,7 @@
+# This directory will contain exported files from the admin panel
+# After exporting files using the "Export Files for Deployment" button:
+# 1. Copy all downloaded files here
+# 2. Copy manifest.json here
+# 3. Commit and push to your repository
+# Files will then be available on the deployed website
+
