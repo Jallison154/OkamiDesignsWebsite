@@ -271,8 +271,14 @@ body::before {
     width: 100%;
 }
 
+.nav-link.active,
+.nav-mobile .nav-link.active {
+    pointer-events: none;
+    cursor: default;
+}
+
 .contact-btn {
-    border: 1px solid var(--accent-color);
+    border: 1px solid var(--glass-border);
     padding: 10px 20px;
     border-radius: 5px;
     background: transparent;
@@ -293,12 +299,23 @@ body::before {
     z-index: -1;
 }
 
-.contact-btn:hover {
+.contact-btn:hover,
+.contact-btn:focus {
     color: var(--primary-bg);
     border-color: var(--accent-color);
 }
 
-.contact-btn:hover::before {
+.contact-btn:hover::before,
+.contact-btn:focus::before {
+    left: 0;
+}
+
+.contact-btn.active {
+    color: var(--primary-bg);
+    border-color: var(--accent-color);
+}
+
+.contact-btn.active::before {
     left: 0;
 }
 
@@ -1207,13 +1224,21 @@ body::before {
 }
 
 .nav-mobile .contact-btn {
-    background: var(--glass-bg);
+    background: transparent;
+    border-color: var(--glass-border);
+}
+
+.nav-mobile .contact-btn:hover,
+.nav-mobile .contact-btn:focus {
+    background: var(--gradient-primary);
+    color: var(--primary-bg);
     border-color: var(--accent-color);
 }
 
-.nav-mobile .contact-btn:hover {
+.nav-mobile .contact-btn.active {
     background: var(--gradient-primary);
     color: var(--primary-bg);
+    border-color: var(--accent-color);
 }
 
 /* Responsive Design */
