@@ -452,14 +452,19 @@
             // Create actions based on file type
             let actionsHtml = '';
             const deployedTag = file.isStatic ? `<div style="color: var(--secondary-text); font-size: 11px; font-style: italic; margin-top: 6px;">(Deployed)</div>` : '';
-            const downloadHandler = file.isStatic ? `window.open('${file.url}', '_blank')` : `downloadFileAdmin(${file.id})`;
 
-            actionsHtml = `<div class="file-card-actions">
-                    <button class="download-file" onclick="${downloadHandler}">Download</button>
-                    <button class="update-file" data-replace-id="${file.id}" onclick="replaceFile(${file.id})">Replace</button>
-                    <button class="delete-file" onclick="deleteFile(${file.id})">Delete</button>
-                </div>
-                ${deployedTag}`;
+            if (file.isStatic) {
+                actionsHtml = `<div class="file-card-actions">
+                        <button class="download-file" onclick="window.open('${file.url}', '_blank')">Download</button>
+                    </div>
+                    ${deployedTag}`;
+            } else {
+                actionsHtml = `<div class="file-card-actions">
+                        <button class="download-file" onclick="downloadFileAdmin(${file.id})">Download</button>
+                        <button class="update-file" data-replace-id="${file.id}" onclick="replaceFile(${file.id})">Replace</button>
+                        <button class="delete-file" onclick="deleteFile(${file.id})">Delete</button>
+                    </div>`;
+            }
             
             fileCard.innerHTML = `
                 ${logoHtml}
@@ -572,6 +577,13 @@
             return;
         }
 
+        const replaceButton = document.querySelector(`[data-replace-id="${fileId}"]`);
+
+        if (!replaceButton) {
+            alert('Replace is only available for files uploaded through the admin panel.');
+            return;
+        }
+
         const fileInput = document.createElement('input');
         fileInput.type = 'file';
         fileInput.accept = '.pdf,.doc,.docx,.txt';
@@ -596,7 +608,6 @@
                     return;
                 }
 
-                const replaceButton = document.querySelector(`[data-replace-id="${fileId}"]`);
                 if (replaceButton) {
                     replaceButton.disabled = true;
                     replaceButton.textContent = 'Replacing...';
@@ -614,7 +625,6 @@
                 console.error('Replace error:', error);
                 alert('Error replacing file: ' + (error.message || 'Please try again.'));
             } finally {
-                const replaceButton = document.querySelector(`[data-replace-id="${fileId}"]`);
                 if (replaceButton) {
                     replaceButton.disabled = false;
                     replaceButton.textContent = 'Replace';
