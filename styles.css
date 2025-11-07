@@ -1066,7 +1066,7 @@ body::before {
 }
 
 /* Hide footer on mobile by default */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
     .footer {
         display: none !important;
     }
@@ -1425,7 +1425,7 @@ body::before {
     }
     
     .services-title {
-        font-size: clamp(2rem, 8vw, 3rem);
+        font-size: clamp(1.8rem, 6vw, 2.6rem);
     }
     
     .service-card {
