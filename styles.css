@@ -2053,8 +2053,9 @@ html {
 
 .file-card-header {
     display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
 }
 
 .file-card-name {
@@ -2143,7 +2144,8 @@ html {
 
 .file-card-info {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
+    gap: 12px;
     margin-bottom: 15px;
 }
 
