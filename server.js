@@ -210,11 +210,29 @@ app.post('/api/files/:id/replace', upload.fields([
                 }
             }
 
-            existingFile.filename = newFile.filename;
+            // Preserve original filename/url when possible
+            const currentFilename = existingFile.filename;
+            const uploadedFilename = newFile.filename;
+            let finalFilename = uploadedFilename;
+
+            if (currentFilename) {
+                const targetPath = path.join(FILES_DIR, currentFilename);
+                const sourcePath = path.join(FILES_DIR, uploadedFilename);
+
+                try {
+                    await fs.rename(sourcePath, targetPath);
+                    finalFilename = currentFilename;
+                } catch (error) {
+                    console.error('Error renaming replacement file, keeping generated name:', error.message || error);
+                    finalFilename = uploadedFilename;
+                }
+            }
+
+            existingFile.filename = finalFilename;
             existingFile.size = newFile.size;
             existingFile.type = newFile.mimetype;
             existingFile.uploaded = new Date().toISOString();
-            existingFile.url = `/files/${newFile.filename}`;
+            existingFile.url = `/files/${finalFilename}`;
             existingFile.name = req.body?.name || newFile.originalname || existingFile.name;
         } else if (req.body?.name) {
             existingFile.name = req.body.name;

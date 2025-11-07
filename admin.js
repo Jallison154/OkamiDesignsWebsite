@@ -449,32 +449,28 @@
                     </div>
                 </div>`);
             
-            // Create actions based on file type
-            let actionsHtml = '';
-            const deployedTag = file.isStatic ? `<div style="color: var(--secondary-text); font-size: 11px; font-style: italic; margin-top: 6px;">(Deployed)</div>` : '';
-
-            if (file.isStatic) {
-                actionsHtml = `<div class="file-card-actions">
-                        <button class="download-file" onclick="window.open('${file.url}', '_blank')">Download</button>
-                    </div>
-                    ${deployedTag}`;
-            } else {
-                actionsHtml = `<div class="file-card-actions">
-                        <button class="download-file" onclick="downloadFileAdmin(${file.id})">Download</button>
-                        <button class="update-file" data-replace-id="${file.id}" onclick="replaceFile(${file.id})">Replace</button>
-                        <button class="delete-file" onclick="deleteFile(${file.id})">Delete</button>
-                    </div>`;
+            const actionButtons = [];
+            actionButtons.push(`<button class="download-file" onclick="${file.isStatic ? `window.open('${file.url}', '_blank')` : `downloadFileAdmin(${file.id})`}">Download</button>`);
+            if (!file.isStatic) {
+                actionButtons.push(`<button class="update-file" data-replace-id="${file.id}" onclick="replaceFile(${file.id})">Replace</button>`);
+                actionButtons.push(`<button class="delete-file" onclick="deleteFile(${file.id})">Delete</button>`);
             }
+
+            const actionsHtml = actionButtons.join('');
+            const statusHtml = file.isStatic ? `<div class="file-card-status">(Deployed)</div>` : '';
             
             fileCard.innerHTML = `
                 ${logoHtml}
                 <div class="file-card-header">
                     <div class="file-card-name">${file.name}</div>
-                    ${actionsHtml}
                 </div>
                 <div class="file-card-info">
                     <span class="file-card-size">${formatFileSize(file.size)}</span>
                     <span class="file-card-date">${formatDate(file.uploaded)}</span>
+                </div>
+                <div class="file-card-footer">
+                    <div class="file-card-actions">${actionsHtml}</div>
+                    ${statusHtml}
                 </div>
             `;
             filesGrid.appendChild(fileCard);

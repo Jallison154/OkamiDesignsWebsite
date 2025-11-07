@@ -2026,6 +2026,9 @@ html {
     padding: 25px;
     backdrop-filter: blur(10px);
     position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
 }
 
 .file-preview {
@@ -2051,8 +2054,7 @@ html {
 .file-card-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
+    align-items: flex-start;
 }
 
 .file-card-name {
@@ -2062,9 +2064,27 @@ html {
     color: var(--primary-text);
 }
 
+.file-card-footer {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
 .file-card-actions {
     display: flex;
     gap: 10px;
+    flex-wrap: wrap;
+}
+
+.file-card-status {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 11px;
+    color: var(--secondary-text);
+    font-style: italic;
+    white-space: nowrap;
 }
 
 .download-file {
