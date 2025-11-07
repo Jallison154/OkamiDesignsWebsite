@@ -542,25 +542,13 @@ body::before {
 }
 
 .contact-item::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 4px;
-    height: 0;
-    background: var(--gradient-primary);
-    border-radius: 0 0 4px 4px;
-    transition: height 0.3s ease;
+    display: none;
 }
 
 .contact-item:hover {
-    transform: translateX(5px);
-    border-left-color: var(--accent-color);
-}
-
-.contact-item:hover::before {
-    height: 100%;
-    border-radius: 0;
+    transform: translateY(-4px);
+    border-color: var(--accent-color);
+    box-shadow: 0 15px 30px rgba(255, 106, 45, 0.2);
 }
 
 .contact-heading {
