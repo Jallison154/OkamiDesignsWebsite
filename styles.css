@@ -840,7 +840,7 @@ body::before {
     backdrop-filter: blur(10px);
     opacity: 0;
     animation: fadeInElement 0.8s ease-out forwards, float 6s ease-in-out infinite;
-    animation-delay: 0s, 0.8s;
+    animation-delay: 1.2s, 2s;
 }
 
 @keyframes fadeInElement {
