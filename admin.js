@@ -461,12 +461,14 @@
             
             fileCard.innerHTML = `
                 ${logoHtml}
-                <div class="file-card-header">
-                    <div class="file-card-name">${file.name}</div>
-                </div>
-                <div class="file-card-info">
-                    <span class="file-card-size">${formatFileSize(file.size)}</span>
-                    <span class="file-card-date">${formatDate(file.uploaded)}</span>
+                <div class="file-card-body">
+                    <div class="file-card-header">
+                        <div class="file-card-name">${file.name}</div>
+                    </div>
+                    <div class="file-card-info">
+                        <span class="file-card-size">${formatFileSize(file.size)}</span>
+                        <span class="file-card-date">${formatDate(file.uploaded)}</span>
+                    </div>
                 </div>
                 <div class="file-card-footer">
                     <div class="file-card-actions">${actionsHtml}</div>
