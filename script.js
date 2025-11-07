@@ -181,24 +181,35 @@ async function updatePageContent(html, url, anchor = '') {
         document.title = newTitle.textContent;
     }
 
+    const sanitizeNode = (node) => {
+        if (!node) {
+            return null;
+        }
+        const clone = node.cloneNode(true);
+        clone.querySelectorAll('script').forEach(script => script.remove());
+        return clone;
+    };
+
     if (doc.body) {
         document.body.className = doc.body.className;
     }
 
     const currentMain = document.querySelector('main');
     const newMain = doc.querySelector('main');
-    if (currentMain && newMain) {
-        currentMain.className = newMain.className;
-        currentMain.innerHTML = newMain.innerHTML;
+    const sanitizedMain = sanitizeNode(newMain);
+    if (currentMain && sanitizedMain) {
+        currentMain.className = sanitizedMain.className;
+        currentMain.innerHTML = sanitizedMain.innerHTML;
     }
 
     const currentFooter = document.querySelector('footer');
     const newFooter = doc.querySelector('footer');
-    if (newFooter) {
+    const sanitizedFooter = sanitizeNode(newFooter);
+    if (sanitizedFooter) {
         if (currentFooter) {
-            currentFooter.replaceWith(newFooter);
+            currentFooter.replaceWith(sanitizedFooter);
         } else {
-            document.body.appendChild(newFooter);
+            document.body.appendChild(sanitizedFooter);
         }
     }
 
@@ -210,6 +221,19 @@ async function updatePageContent(html, url, anchor = '') {
             document.body.appendChild(newParticlesContainer);
             particlesContainer = newParticlesContainer;
         }
+    }
+
+    const newFavicon = doc.querySelector('link[rel~="icon"]');
+    if (newFavicon) {
+        let favicon = document.querySelector('link[rel~="icon"]');
+        if (!favicon) {
+            favicon = document.createElement('link');
+            favicon.setAttribute('rel', newFavicon.getAttribute('rel') || 'icon');
+            document.head.appendChild(favicon);
+        }
+        Array.from(newFavicon.attributes).forEach(attr => {
+            favicon.setAttribute(attr.name, attr.value);
+        });
     }
 
     setActiveNavigation(url);
