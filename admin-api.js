@@ -2,14 +2,17 @@
 const API_BASE = '/api';
 
 // Upload files to backend
-async function uploadFile(file, logo, fileName) {
+async function uploadFile({ file, logo, displayName, slug }) {
     const formData = new FormData();
     formData.append('file', file);
     if (logo) {
         formData.append('logo', logo);
     }
-    if (fileName) {
-        formData.append('name', fileName);
+    if (displayName) {
+        formData.append('manualName', displayName);
+    }
+    if (slug) {
+        formData.append('manualSlug', slug);
     }
 
     try {
@@ -61,7 +64,7 @@ async function deleteFileById(fileId) {
 }
 
 // Replace file contents via backend
-async function replaceFileById(fileId, file, logo, fileName) {
+async function replaceFileById(fileId, { file, logo, displayName, slug }) {
     const formData = new FormData();
 
     if (file) {
@@ -72,8 +75,12 @@ async function replaceFileById(fileId, file, logo, fileName) {
         formData.append('logo', logo);
     }
 
-    if (fileName) {
-        formData.append('name', fileName);
+    if (displayName) {
+        formData.append('manualName', displayName);
+    }
+
+    if (slug) {
+        formData.append('manualSlug', slug);
     }
 
     try {

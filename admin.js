@@ -18,6 +18,12 @@
     // Track selected files
     let selectedLogo = null;
     let selectedFile = null;
+    let manualNameInput = null;
+    let manualLinkInput = null;
+    let manualLinkDirty = false;
+    let currentFiles = [];
+    let modalElements = {};
+    let modalResolve = null;
     
     // IndexedDB database setup
     let db = null;
@@ -25,6 +31,240 @@
     const DB_VERSION = 1;
     const STORE_NAME = 'uploadedFiles';
     
+    function slugify(value) {
+        if (!value) return '';
+        return value
+            .toString()
+            .trim()
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '')
+            .substring(0, 120);
+    }
+
+    function escapeHtml(value) {
+        if (value === null || value === undefined) {
+            return '';
+        }
+        return value
+            .toString()
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    const TOAST_DURATION = 5000;
+
+    function showToast(message, type = 'info') {
+        const toastContainer = document.getElementById('toast-container');
+        if (!toastContainer) return;
+
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.textContent = message;
+
+        toastContainer.appendChild(toast);
+
+        requestAnimationFrame(() => {
+            toast.classList.add('is-visible');
+        });
+
+        setTimeout(() => {
+            toast.classList.remove('is-visible');
+            toast.addEventListener('transitionend', () => {
+                toast.remove();
+            }, { once: true });
+        }, TOAST_DURATION);
+    }
+
+    function initModalElements() {
+        modalElements = {
+            container: document.getElementById('modal-container'),
+            backdrop: document.querySelector('#modal-container .modal-backdrop'),
+            card: document.querySelector('#modal-container .modal-card'),
+            title: document.getElementById('modal-title'),
+            body: document.getElementById('modal-body'),
+            actions: document.getElementById('modal-actions'),
+            close: document.getElementById('modal-close')
+        };
+
+        if (!modalElements.container) {
+            return;
+        }
+
+        const closeHandler = () => closeModal(null);
+
+        modalElements.backdrop?.addEventListener('click', closeHandler);
+        modalElements.close?.addEventListener('click', closeHandler);
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && modalElements.container?.classList.contains('is-active')) {
+                closeModal(null);
+            }
+        });
+    }
+
+    function openModal({ title = 'Notice', content = '', actions = [] }) {
+        if (!modalElements.container) {
+            return Promise.resolve(null);
+        }
+
+        modalElements.title.textContent = title;
+        modalElements.body.innerHTML = '';
+
+        if (typeof content === 'string') {
+            modalElements.body.innerHTML = content;
+        } else if (content instanceof HTMLElement) {
+            modalElements.body.appendChild(content);
+        }
+
+        modalElements.actions.innerHTML = '';
+
+        const resolvedActions = actions.length ? actions : [{ label: 'OK', value: true, variant: 'primary' }];
+
+        return new Promise((resolve) => {
+            modalResolve = resolve;
+
+            resolvedActions.forEach((action) => {
+                const button = document.createElement('button');
+                button.type = action.type || 'button';
+                button.className = `modal-button ${action.variant ? `modal-button-${action.variant}` : 'modal-button-primary'}`;
+                button.textContent = action.label || 'OK';
+
+                if (typeof action.handler === 'function') {
+                    button.addEventListener('click', (event) => {
+                        action.handler(event, closeModal);
+                    });
+                } else {
+                    button.addEventListener('click', () => closeModal(action.value));
+                }
+
+                modalElements.actions.appendChild(button);
+            });
+
+            modalElements.container.classList.add('is-active');
+            modalElements.container.setAttribute('aria-hidden', 'false');
+            modalElements.card?.focus?.();
+        });
+    }
+
+    function closeModal(result) {
+        if (!modalElements.container) {
+            return;
+        }
+
+        modalElements.container.classList.remove('is-active');
+        modalElements.container.setAttribute('aria-hidden', 'true');
+
+        if (modalResolve) {
+            const resolver = modalResolve;
+            modalResolve = null;
+            resolver(result);
+        }
+    }
+
+    function showAlert(message, title = 'Notice') {
+        return openModal({
+            title,
+            content: `<p class="modal-message">${escapeHtml(message)}</p>`
+        });
+    }
+
+    function showConfirmModal(message, options = {}) {
+        const { title = 'Confirm', confirmText = 'Confirm', cancelText = 'Cancel', confirmVariant = 'primary' } = options;
+
+        return openModal({
+            title,
+            content: `<p class="modal-message">${escapeHtml(message)}</p>`,
+            actions: [
+                { label: cancelText, value: false, variant: 'secondary' },
+                { label: confirmText, value: true, variant: confirmVariant }
+            ]
+        });
+    }
+
+    async function openMetadataModal({ title = 'Manual Details', displayName = '', slug = '' }) {
+        return new Promise((resolve) => {
+            const form = document.createElement('form');
+            form.className = 'modal-form';
+            form.innerHTML = `
+                <div class="modal-field">
+                    <label for="modal-manual-name">Manual Display Name</label>
+                    <input id="modal-manual-name" type="text" maxlength="120" value="${escapeHtml(displayName)}" required>
+                </div>
+                <div class="modal-field">
+                    <label for="modal-manual-slug">Manual Link Name</label>
+                    <input id="modal-manual-slug" type="text" maxlength="120" value="${escapeHtml(slug)}" required>
+                    <p class="modal-hint">Used in the download URL. Only letters, numbers, and dashes.</p>
+                </div>
+            `;
+
+            const nameInput = form.querySelector('#modal-manual-name');
+            const slugInput = form.querySelector('#modal-manual-slug');
+
+            let slugDirty = false;
+
+            const syncSlug = () => {
+                if (!slugDirty) {
+                    slugInput.value = slugify(nameInput.value);
+                }
+            };
+
+            nameInput.addEventListener('input', syncSlug);
+            slugInput.addEventListener('input', () => {
+                slugDirty = true;
+                slugInput.value = slugify(slugInput.value);
+            });
+
+            const handleSubmit = () => {
+                const manualName = nameInput.value.trim();
+                const manualSlug = slugify(slugInput.value.trim() || manualName);
+
+                if (!manualName) {
+                    nameInput.focus();
+                    return;
+                }
+
+                if (!manualSlug) {
+                    slugInput.focus();
+                    return;
+                }
+
+                closeModal({ displayName: manualName, slug: manualSlug });
+            };
+
+            form.addEventListener('submit', (event) => {
+                event.preventDefault();
+                handleSubmit();
+            });
+
+            openModal({
+                title,
+                content: form,
+                actions: [
+                    { label: 'Cancel', value: null, variant: 'secondary' },
+                    {
+                        label: 'Save',
+                        variant: 'primary',
+                        handler: (event) => {
+                            event.preventDefault();
+                            handleSubmit();
+                        }
+                    }
+                ]
+            }).then((result) => {
+                resolve(result || null);
+            });
+
+            setTimeout(() => {
+                nameInput.focus();
+                nameInput.select();
+            }, 50);
+        });
+    }
+
     // Hash a string using SHA-256
     async function hashPassword(password) {
         const encoder = new TextEncoder();
@@ -60,6 +300,10 @@
         // Generate password hash on initialization (so it's not stored in plain text)
         ADMIN_PASSWORD_HASH = await hashPassword('okami2025');
         
+        initModalElements();
+        manualNameInput = document.getElementById('manual-name');
+        manualLinkInput = document.getElementById('manual-link');
+
         // Initialize IndexedDB first
         initDB().then(() => {
             console.log('IndexedDB initialized');
@@ -261,6 +505,24 @@
             return;
         }
 
+        manualLinkDirty = false;
+
+        if (manualNameInput) {
+            manualNameInput.addEventListener('input', () => {
+                if (!manualLinkDirty && manualLinkInput) {
+                    manualLinkInput.value = slugify(manualNameInput.value);
+                }
+                checkUploadButton();
+            });
+        }
+
+        if (manualLinkInput) {
+            manualLinkInput.addEventListener('input', () => {
+                manualLinkDirty = true;
+                manualLinkInput.value = slugify(manualLinkInput.value);
+            });
+        }
+
         // Logo upload
         logoInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
@@ -283,6 +545,17 @@
                 selectedFile = file;
                 const icon = getFileIcon(file.type);
                 filePreview.innerHTML = `<div style="font-size: 48px; margin-bottom: 10px;">${icon}</div><div style="font-size: 14px; color: var(--primary-text);">${file.name}</div><div style="font-size: 12px; color: var(--secondary-text);">${formatFileSize(file.size)}</div>`;
+
+                if (manualNameInput) {
+                    const baseName = file.name.replace(/\.[^/.]+$/, '').replace(/[\-_]+/g, ' ').trim();
+                    manualNameInput.value = baseName || file.name;
+                }
+
+                if (manualLinkInput) {
+                    manualLinkDirty = false;
+                    const source = manualNameInput ? manualNameInput.value : file.name;
+                    manualLinkInput.value = slugify(source);
+                }
                 checkUploadButton();
             }
         });
@@ -293,6 +566,8 @@
                 handleCombinedUpload();
             }
         });
+
+        checkUploadButton();
     }
 
     function getFileIcon(type) {
@@ -305,7 +580,8 @@
     function checkUploadButton() {
         const uploadBtn = document.getElementById('upload-combined');
         if (uploadBtn) {
-            uploadBtn.disabled = !selectedFile;
+            const hasManualName = manualNameInput ? manualNameInput.value.trim().length > 0 : true;
+            uploadBtn.disabled = !(selectedFile && hasManualName);
         }
     }
 
@@ -313,10 +589,28 @@
         const uploadBtn = document.getElementById('upload-combined');
         
         if (!selectedFile) {
-            alert('Please select a file to upload.');
+            await showAlert('Please select a file to upload.');
             return;
         }
         
+        const manualName = manualNameInput ? manualNameInput.value.trim() : '';
+        if (!manualName) {
+            await showAlert('Please enter a manual display name.');
+            return;
+        }
+
+        let manualSlug = manualLinkInput ? manualLinkInput.value.trim() : '';
+        manualSlug = slugify(manualSlug || manualName);
+
+        if (!manualSlug) {
+            await showAlert('Please provide a valid manual link name.');
+            return;
+        }
+
+        if (manualLinkInput) {
+            manualLinkInput.value = manualSlug;
+        }
+
         uploadBtn.disabled = true;
         uploadBtn.textContent = 'Uploading...';
 
@@ -333,7 +627,12 @@
 
             // Upload to backend (with timeout)
             const result = await Promise.race([
-                uploadFile(selectedFile, selectedLogo, selectedFile.name),
+                uploadFile({
+                    file: selectedFile,
+                    logo: selectedLogo,
+                    displayName: manualName,
+                    slug: manualSlug
+                }),
                 new Promise((_, reject) => setTimeout(() => reject(new Error('Upload timeout')), 60000))
             ]);
             
@@ -346,6 +645,9 @@
             document.getElementById('file-preview').innerHTML = '';
             selectedLogo = null;
             selectedFile = null;
+            manualLinkDirty = false;
+            if (manualNameInput) manualNameInput.value = '';
+            if (manualLinkInput) manualLinkInput.value = '';
 
             uploadBtn.textContent = 'Upload Documentation';
             checkUploadButton();
@@ -353,7 +655,7 @@
             // Reload files
             await loadFiles();
             
-            alert('File uploaded successfully!');
+            showToast('Manual uploaded successfully!', 'success');
         } catch (error) {
             console.error('Upload error:', error);
             let errorMessage = 'Error uploading file. ';
@@ -362,7 +664,7 @@
             } else {
                 errorMessage += 'Please ensure the backend API is running and try again.';
             }
-            alert(errorMessage);
+            await showAlert(errorMessage, 'Upload Failed');
             uploadBtn.disabled = false;
             uploadBtn.textContent = 'Upload Documentation';
         }
@@ -433,7 +735,21 @@
             return;
         }
 
-        files.forEach((file, index) => {
+        const normalizedFiles = files.map((file) => {
+            const clone = { ...file };
+            if (!clone.slug) {
+                if (clone.filename) {
+                    clone.slug = slugify(clone.filename.replace(/\.[^/.]+$/, ''));
+                } else if (clone.name) {
+                    clone.slug = slugify(clone.name);
+                }
+            }
+            return clone;
+        });
+
+        currentFiles = normalizedFiles;
+
+        normalizedFiles.forEach((file) => {
             const fileCard = document.createElement('div');
             fileCard.className = 'file-card';
             const isImage = file.type && file.type.startsWith('image/');
@@ -479,18 +795,18 @@
         });
     }
 
-    function updateFile(index) {
+    async function updateFile(index) {
         // Create hidden file inputs
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = '.pdf,.doc,.docx,.txt';
         input.style.display = 'none';
         
-        input.addEventListener('change', function(e) {
+        input.addEventListener('change', async function(e) {
             const newFile = e.target.files[0];
             if (newFile) {
                 if (!db) {
-                    alert('Database not initialized');
+                    await showAlert('Database not initialized');
                     return;
                 }
                 
@@ -517,8 +833,8 @@
                             putRequest.onsuccess = () => {
                                 loadFiles(); // Reload to show update
                             };
-                            putRequest.onerror = () => {
-                                alert('Error updating file: ' + putRequest.error.message);
+                            putRequest.onerror = async () => {
+                                await showAlert('Error updating file: ' + putRequest.error.message);
                             };
                         }
                     };
@@ -563,10 +879,10 @@
                 }
             }
             
-            alert('File not found');
+            await showAlert('File not found');
         } catch (error) {
             console.error('Download error:', error);
-            alert('Download failed. Please try again.');
+            await showAlert('Download failed. Please try again.', 'Download Failed');
         }
     }
     
@@ -575,10 +891,16 @@
             return;
         }
 
+        const file = currentFiles.find((item) => item.id === fileId);
+        if (!file) {
+            await showAlert('Unable to locate file details for this document. Please refresh and try again.');
+            return;
+        }
+
         const replaceButton = document.querySelector(`[data-replace-id="${fileId}"]`);
 
         if (!replaceButton) {
-            alert('Replace is only available for files uploaded through the admin panel.');
+            await showAlert('Replace is only available for files uploaded through the admin panel.');
             return;
         }
 
@@ -601,8 +923,13 @@
                     return;
                 }
 
-                const confirmReplace = confirm(`Replace the existing file with "${newFile.name}"?`);
-                if (!confirmReplace) {
+                const metadata = await openMetadataModal({
+                    title: 'Replace Manual',
+                    displayName: file.name,
+                    slug: file.slug || slugify(file.name)
+                });
+
+                if (!metadata) {
                     return;
                 }
 
@@ -616,12 +943,16 @@
                     throw new Error('Backend API is not available.');
                 }
 
-                await replaceFileById(fileId, newFile, null, newFile.name);
+                await replaceFileById(fileId, {
+                    file: newFile,
+                    displayName: metadata.displayName,
+                    slug: metadata.slug
+                });
                 await loadFiles();
-                alert('File replaced successfully');
+                showToast('Manual replaced successfully.', 'success');
             } catch (error) {
                 console.error('Replace error:', error);
-                alert('Error replacing file: ' + (error.message || 'Please try again.'));
+                await showAlert('Error replacing file: ' + (error.message || 'Please try again.'), 'Replace Failed');
             } finally {
                 if (replaceButton) {
                     replaceButton.disabled = false;
@@ -640,7 +971,14 @@
     }
 
     async function deleteFile(fileId) {
-        if (!confirm('Are you sure you want to delete this file?')) {
+        const confirmed = await showConfirmModal('Are you sure you want to delete this manual? This action cannot be undone.', {
+            title: 'Delete Manual',
+            confirmText: 'Delete',
+            cancelText: 'Cancel',
+            confirmVariant: 'danger'
+        });
+
+        if (!confirmed) {
             return;
         }
         
@@ -652,10 +990,10 @@
             
             await deleteFileById(fileId);
             await loadFiles();
-            alert('File deleted successfully');
+            showToast('Manual deleted successfully.', 'success');
         } catch (error) {
             console.error('Delete error:', error);
-            alert('Error deleting file: ' + (error.message || 'Please try again.'));
+            await showAlert('Error deleting file: ' + (error.message || 'Please try again.'), 'Delete Failed');
         }
     }
 

@@ -10,6 +10,34 @@ const PORT = 3000;
 const FILES_DIR = path.join(__dirname, 'files');
 const MANIFEST_PATH = path.join(FILES_DIR, 'manifest.json');
 
+function slugify(value) {
+    return value
+        .toString()
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .substring(0, 120) || `manual-${Date.now()}`;
+}
+
+async function buildUniqueFilename(manifest, slugCandidate, extension, excludeId = null) {
+    const ext = extension && extension.startsWith('.') ? extension : `.${extension || 'pdf'}`;
+    const baseSlug = slugify(slugCandidate || 'manual');
+    let attempt = 0;
+    let finalSlug = baseSlug;
+
+    const isTaken = (filename) => manifest.files.some((file) => file.filename === filename && file.id !== excludeId);
+
+    let filename = `${finalSlug}${ext}`;
+    while (isTaken(filename)) {
+        attempt += 1;
+        finalSlug = `${baseSlug}-${attempt}`;
+        filename = `${finalSlug}${ext}`;
+    }
+
+    return { filename, slug: finalSlug };
+}
+
 // Middleware
 app.use(express.json());
 app.use(express.static('.')); // Serve static files
@@ -117,14 +145,28 @@ app.post('/api/upload', upload.fields([
         const manifest = await readManifest();
         const fileId = Date.now();
 
+        const manualNameRaw = req.body.manualName || req.body.name || file.originalname || `Manual ${fileId}`;
+        const manualName = manualNameRaw.toString().trim() || `Manual ${fileId}`;
+        const slugCandidate = req.body.manualSlug || manualName || file.originalname;
+        const originalExt = path.extname(file.originalname) || path.extname(file.filename) || '.pdf';
+
+        const { filename: finalFilename, slug } = await buildUniqueFilename(manifest, slugCandidate, originalExt);
+        const uploadedPath = path.join(FILES_DIR, file.filename);
+        const finalPath = path.join(FILES_DIR, finalFilename);
+
+        if (file.filename !== finalFilename) {
+            await fs.rename(uploadedPath, finalPath);
+        }
+
         const fileData = {
             id: fileId,
-            name: req.body.name || file.originalname,
-            filename: file.filename,
+            name: manualName,
+            slug,
+            filename: finalFilename,
             size: file.size,
             type: file.mimetype,
             uploaded: new Date().toISOString(),
-            url: `/files/${file.filename}`
+            url: `/files/${finalFilename}`
         };
 
         if (logo) {
@@ -196,11 +238,29 @@ app.post('/api/files/:id/replace', upload.fields([
         const newFile = req.files?.file?.[0] || null;
         const newLogo = req.files?.logo?.[0] || null;
 
-        if (!newFile && !newLogo && !req.body?.name) {
+        const hasMetadataUpdate = typeof req.body?.manualName === 'string'
+            || typeof req.body?.manualSlug === 'string'
+            || typeof req.body?.name === 'string';
+
+        if (!newFile && !newLogo && !hasMetadataUpdate) {
             return res.status(400).json({ error: 'No replacement data provided' });
         }
 
-        // Replace primary file if provided
+        const manualNameRaw = req.body.manualName || req.body.name || existingFile.name || existingFile.filename;
+        const manualName = manualNameRaw ? manualNameRaw.toString().trim() : existingFile.name;
+        const slugCandidate = req.body.manualSlug || manualName || existingFile.slug || existingFile.filename;
+
+        const determineExtension = () => {
+            if (newFile) {
+                return path.extname(newFile.originalname) || path.extname(newFile.filename) || path.extname(existingFile.filename) || '.pdf';
+            }
+            return path.extname(existingFile.filename) || '.pdf';
+        };
+
+        const extension = determineExtension();
+        const { filename: finalFilename, slug } = await buildUniqueFilename(manifest, slugCandidate, extension, existingFile.id);
+        const finalPath = path.join(FILES_DIR, finalFilename);
+
         if (newFile) {
             if (existingFile.filename) {
                 try {
@@ -210,32 +270,31 @@ app.post('/api/files/:id/replace', upload.fields([
                 }
             }
 
-            // Preserve original filename/url when possible
-            const currentFilename = existingFile.filename;
-            const uploadedFilename = newFile.filename;
-            let finalFilename = uploadedFilename;
+            const tempPath = path.join(FILES_DIR, newFile.filename);
 
-            if (currentFilename) {
-                const targetPath = path.join(FILES_DIR, currentFilename);
-                const sourcePath = path.join(FILES_DIR, uploadedFilename);
-
-                try {
-                    await fs.rename(sourcePath, targetPath);
-                    finalFilename = currentFilename;
-                } catch (error) {
-                    console.error('Error renaming replacement file, keeping generated name:', error.message || error);
-                    finalFilename = uploadedFilename;
-                }
+            if (newFile.filename !== finalFilename) {
+                await fs.rename(tempPath, finalPath);
             }
 
-            existingFile.filename = finalFilename;
             existingFile.size = newFile.size;
             existingFile.type = newFile.mimetype;
             existingFile.uploaded = new Date().toISOString();
-            existingFile.url = `/files/${finalFilename}`;
-            existingFile.name = req.body?.name || newFile.originalname || existingFile.name;
-        } else if (req.body?.name) {
-            existingFile.name = req.body.name;
+        } else if (existingFile.filename && existingFile.filename !== finalFilename) {
+            try {
+                await fs.rename(
+                    path.join(FILES_DIR, existingFile.filename),
+                    finalPath
+                );
+            } catch (error) {
+                console.error('Error renaming existing file:', error.message || error);
+            }
+        }
+
+        existingFile.filename = finalFilename;
+        existingFile.slug = slug;
+        existingFile.url = `/files/${finalFilename}`;
+        if (manualName) {
+            existingFile.name = manualName;
         }
 
         // Replace logo if provided
@@ -272,12 +331,38 @@ app.put('/api/files/:id', async (req, res) => {
         }
 
         // Update file metadata
-        if (req.body.name) {
-            manifest.files[fileIndex].name = req.body.name;
+        const file = manifest.files[fileIndex];
+        const manualNameRaw = req.body.manualName || req.body.name;
+        if (manualNameRaw) {
+            const manualName = manualNameRaw.toString().trim();
+            if (manualName) {
+                file.name = manualName;
+            }
+        }
+
+        const slugInput = req.body.manualSlug || req.body.slug;
+        if (slugInput) {
+            const extension = path.extname(file.filename) || '.pdf';
+            const { filename: finalFilename, slug } = await buildUniqueFilename(manifest, slugInput, extension, file.id);
+
+            if (file.filename !== finalFilename) {
+                try {
+                    await fs.rename(
+                        path.join(FILES_DIR, file.filename),
+                        path.join(FILES_DIR, finalFilename)
+                    );
+                } catch (error) {
+                    console.error('Error renaming file during metadata update:', error.message || error);
+                }
+            }
+
+            file.filename = finalFilename;
+            file.slug = slug;
+            file.url = `/files/${finalFilename}`;
         }
 
         await writeManifest(manifest);
-        res.json({ success: true, file: manifest.files[fileIndex] });
+        res.json({ success: true, file });
     } catch (error) {
         console.error('Error updating file:', error);
         res.status(500).json({ error: 'Failed to update file' });
