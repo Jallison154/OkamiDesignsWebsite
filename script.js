@@ -4,6 +4,7 @@ let isNavigating = false;
 let systemStatusIntervalId = null;
 let headerScrollHandler = null;
 let terminalTimeoutId = null;
+let codeRainInitialized = false;
 
 document.addEventListener('DOMContentLoaded', function() {
     
@@ -384,12 +385,9 @@ document.head.appendChild(style);
 
 // Tech animations
 function initTechAnimations() {
-    // Randomize tech element positions on load
-    randomizeTechElementPositions();
-    
     // Glitch effect on logo
     const logo = document.querySelector('.logo-text');
-    if (logo) {
+    if (logo && logo.dataset.glitchBound !== 'true') {
         logo.addEventListener('mouseenter', () => {
             logo.style.animation = 'glitch 0.3s ease-in-out';
         });
@@ -397,6 +395,7 @@ function initTechAnimations() {
         logo.addEventListener('animationend', () => {
             logo.style.animation = 'glow 2s ease-in-out infinite alternate';
         });
+        logo.dataset.glitchBound = 'true';
     }
     
     // Add glitch animation
@@ -416,9 +415,11 @@ function initTechAnimations() {
         document.head.appendChild(glitchStyle);
     }
     
-    // Matrix-style code rain effect
-    document.querySelectorAll('.code-rain').forEach(el => el.remove());
-    createCodeRain();
+    // Matrix-style code rain effect (create once and reuse)
+    if (!codeRainInitialized) {
+        createCodeRain();
+        codeRainInitialized = true;
+    }
 }
 
 // Randomize tech element positions
@@ -515,6 +516,10 @@ function randomizeTechElementPositions() {
 }
 
 function createCodeRain() {
+    if (document.querySelector('.code-rain')) {
+        return;
+    }
+    
     const codeContainer = document.createElement('div');
     codeContainer.className = 'code-rain';
     codeContainer.style.cssText = `
@@ -793,6 +798,9 @@ function initHoverEffects() {
     // Tech elements hover effects
     const techElements = document.querySelectorAll('.tech-element');
     techElements.forEach(element => {
+        if (element.dataset.hoverBound === 'true') {
+            return;
+        }
         element.addEventListener('mouseenter', function() {
             this.style.transform = 'translateY(-10px) scale(1.05)';
             this.style.boxShadow = '0 20px 40px rgba(255, 106, 45, 0.2)';
@@ -802,11 +810,15 @@ function initHoverEffects() {
             this.style.transform = 'translateY(0) scale(1)';
             this.style.boxShadow = 'none';
         });
+        element.dataset.hoverBound = 'true';
     });
     
     // Stats hover effects
     const statNumbers = document.querySelectorAll('.stat-number');
     statNumbers.forEach(stat => {
+        if (stat.dataset.hoverBound === 'true') {
+            return;
+        }
         stat.addEventListener('mouseenter', function() {
             this.style.transform = 'scale(1.1)';
             this.style.textShadow = '0 0 20px rgba(255, 106, 45, 0.5)';
@@ -816,6 +828,7 @@ function initHoverEffects() {
             this.style.transform = 'scale(1)';
             this.style.textShadow = 'none';
         });
+        stat.dataset.hoverBound = 'true';
     });
 }
 
