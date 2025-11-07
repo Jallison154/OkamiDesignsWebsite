@@ -1429,7 +1429,10 @@ body::before {
     }
     
     .support-title {
-        font-size: clamp(1.8rem, 6vw, 2.6rem);
+        font-size: clamp(1.75rem, 6vw, 2.3rem);
+        padding: 18px;
+        line-height: 1.1;
+        letter-spacing: -0.5px;
     }
 
     .service-card {
