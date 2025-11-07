@@ -437,7 +437,7 @@
             const fileCard = document.createElement('div');
             fileCard.className = 'file-card';
             const isImage = file.type && file.type.startsWith('image/');
-            const hasLogo = file.logo !== null;
+            const hasLogo = !!file.logo;
             
             const logoHtml = hasLogo ? 
                 `<div class="file-preview"><img src="${file.logo}" alt="Project logo" onerror="this.parentElement.innerHTML='<div style=\\'padding: 40px; text-align: center; color: var(--secondary-text);\\'>No Logo</div>'" /></div>` :
@@ -451,19 +451,15 @@
             
             // Create actions based on file type
             let actionsHtml = '';
-            if (file.isStatic) {
-                // Static files from files/ directory - these are deployed
-                actionsHtml = `<div class="file-card-actions">
-                    <button class="download-file" onclick="window.open('${file.url}', '_blank')">Download</button>
-                    <span style="color: var(--secondary-text); font-size: 11px; font-style: italic; margin-left: 10px;">(Deployed)</span>
-                </div>`;
-            } else {
-                // Files from API (all files now use API)
-                actionsHtml = `<div class="file-card-actions">
-                    <button class="download-file" onclick="downloadFileAdmin(${file.id})">Download</button>
+            const deployedTag = file.isStatic ? `<div style="color: var(--secondary-text); font-size: 11px; font-style: italic; margin-top: 6px;">(Deployed)</div>` : '';
+            const downloadHandler = file.isStatic ? `window.open('${file.url}', '_blank')` : `downloadFileAdmin(${file.id})`;
+
+            actionsHtml = `<div class="file-card-actions">
+                    <button class="download-file" onclick="${downloadHandler}">Download</button>
+                    <button class="update-file" data-replace-id="${file.id}" onclick="replaceFile(${file.id})">Replace</button>
                     <button class="delete-file" onclick="deleteFile(${file.id})">Delete</button>
-                </div>`;
-            }
+                </div>
+                ${deployedTag}`;
             
             fileCard.innerHTML = `
                 ${logoHtml}
@@ -571,6 +567,70 @@
         }
     }
     
+    async function replaceFile(fileId) {
+        if (!fileId) {
+            return;
+        }
+
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = '.pdf,.doc,.docx,.txt';
+        fileInput.style.display = 'none';
+
+        const cleanup = () => {
+            if (fileInput.parentNode) {
+                fileInput.parentNode.removeChild(fileInput);
+            }
+        };
+
+        fileInput.addEventListener('change', async (event) => {
+            try {
+                const newFile = event.target.files && event.target.files[0];
+
+                if (!newFile) {
+                    return;
+                }
+
+                const confirmReplace = confirm(`Replace the existing file with "${newFile.name}"?`);
+                if (!confirmReplace) {
+                    return;
+                }
+
+                const replaceButton = document.querySelector(`[data-replace-id="${fileId}"]`);
+                if (replaceButton) {
+                    replaceButton.disabled = true;
+                    replaceButton.textContent = 'Replacing...';
+                }
+
+                const apiAvailable = await checkAPIHealth();
+                if (!apiAvailable) {
+                    throw new Error('Backend API is not available.');
+                }
+
+                await replaceFileById(fileId, newFile, null, newFile.name);
+                await loadFiles();
+                alert('File replaced successfully');
+            } catch (error) {
+                console.error('Replace error:', error);
+                alert('Error replacing file: ' + (error.message || 'Please try again.'));
+            } finally {
+                const replaceButton = document.querySelector(`[data-replace-id="${fileId}"]`);
+                if (replaceButton) {
+                    replaceButton.disabled = false;
+                    replaceButton.textContent = 'Replace';
+                }
+                event.target.value = '';
+                cleanup();
+            }
+        }, { once: true });
+
+        document.body.appendChild(fileInput);
+        fileInput.click();
+
+        // If the user cancels the dialog, ensure the input is removed
+        fileInput.addEventListener('blur', () => setTimeout(cleanup, 0), { once: true });
+    }
+
     async function deleteFile(fileId) {
         if (!confirm('Are you sure you want to delete this file?')) {
             return;
@@ -608,4 +668,5 @@
     window.updateFile = updateFile;
     window.deleteFile = deleteFile;
     window.downloadFileAdmin = downloadFileAdmin;
+    window.replaceFile = replaceFile;
 })();

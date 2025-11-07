@@ -60,6 +60,39 @@ async function deleteFileById(fileId) {
     }
 }
 
+// Replace file contents via backend
+async function replaceFileById(fileId, file, logo, fileName) {
+    const formData = new FormData();
+
+    if (file) {
+        formData.append('file', file);
+    }
+
+    if (logo) {
+        formData.append('logo', logo);
+    }
+
+    if (fileName) {
+        formData.append('name', fileName);
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}/files/${fileId}/replace`, {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error(`Replace failed: ${response.statusText}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Replace error:', error);
+        throw error;
+    }
+}
+
 // Update file metadata
 async function updateFileMetadata(fileId, updates) {
     try {

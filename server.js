@@ -178,6 +178,70 @@ app.delete('/api/files/:id', async (req, res) => {
     }
 });
 
+// Replace file contents (and optional logo)
+app.post('/api/files/:id/replace', upload.fields([
+    { name: 'file', maxCount: 1 },
+    { name: 'logo', maxCount: 1 }
+]), async (req, res) => {
+    try {
+        const fileId = parseInt(req.params.id);
+        const manifest = await readManifest();
+        const fileIndex = manifest.files.findIndex(f => f.id === fileId);
+
+        if (fileIndex === -1) {
+            return res.status(404).json({ error: 'File not found' });
+        }
+
+        const existingFile = manifest.files[fileIndex];
+        const newFile = req.files?.file?.[0] || null;
+        const newLogo = req.files?.logo?.[0] || null;
+
+        if (!newFile && !newLogo && !req.body?.name) {
+            return res.status(400).json({ error: 'No replacement data provided' });
+        }
+
+        // Replace primary file if provided
+        if (newFile) {
+            if (existingFile.filename) {
+                try {
+                    await fs.unlink(path.join(FILES_DIR, existingFile.filename));
+                } catch (error) {
+                    console.error('Error removing old file:', error.message || error);
+                }
+            }
+
+            existingFile.filename = newFile.filename;
+            existingFile.size = newFile.size;
+            existingFile.type = newFile.mimetype;
+            existingFile.uploaded = new Date().toISOString();
+            existingFile.url = `/files/${newFile.filename}`;
+            existingFile.name = req.body?.name || newFile.originalname || existingFile.name;
+        } else if (req.body?.name) {
+            existingFile.name = req.body.name;
+        }
+
+        // Replace logo if provided
+        if (newLogo) {
+            if (existingFile.logoFilename) {
+                try {
+                    await fs.unlink(path.join(FILES_DIR, existingFile.logoFilename));
+                } catch (error) {
+                    console.error('Error removing old logo:', error.message || error);
+                }
+            }
+
+            existingFile.logoFilename = newLogo.filename;
+            existingFile.logo = `/files/${newLogo.filename}`;
+        }
+
+        await writeManifest(manifest);
+        res.json({ success: true, file: existingFile });
+    } catch (error) {
+        console.error('Error replacing file:', error);
+        res.status(500).json({ error: 'Failed to replace file' });
+    }
+});
+
 // Update file metadata
 app.put('/api/files/:id', async (req, res) => {
     try {
