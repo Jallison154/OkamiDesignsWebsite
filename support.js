@@ -67,16 +67,18 @@
                     manifest.files.forEach((file) => {
                         const docCard = document.createElement('div');
                         docCard.className = 'manual-card';
-                        const hasLogo = file.logoFilename !== null && file.logoFilename !== undefined && file.logoFilename !== '';
+                        const logoUrl = file.logo || (file.logoFilename ? `/files/${file.logoFilename}` : null);
+                        const hasLogo = !!logoUrl;
+                        const fileUrl = file.url || (file.filename ? `/files/${file.filename}` : '#');
                         const isImage = file.type && file.type.startsWith('image/');
                         
                         docCard.innerHTML = `
-                            ${hasLogo ? `<div class="manual-preview"><img src="files/${file.logoFilename}" alt="Project logo" onerror="this.parentElement.innerHTML='<div style=\\'padding: 40px; text-align: center; color: var(--secondary-text);\\'>No Logo</div>'" /></div>` : 
-                              isImage ? `<div class="manual-preview"><img src="files/${file.filename}" alt="${file.name}" /></div>` : 
+                            ${hasLogo ? `<div class="manual-preview"><img src="${logoUrl}" alt="Project logo" onerror="this.parentElement.innerHTML='<div style=\'padding: 40px; text-align: center; color: var(--secondary-text);\'>No Logo</div>'" /></div>` : 
+                              isImage ? `<div class="manual-preview"><img src="${fileUrl}" alt="${file.name}" /></div>` : 
                               `<div class="manual-icon">📄</div>`}
                             <div class="manual-name">${file.name}</div>
                             <div class="manual-description">${formatFileSize(file.size)} • Uploaded ${formatDate(file.uploaded)}</div>
-                            <a href="files/${file.filename}" class="manual-download-link" download="${file.name}">Download</a>
+                            <a href="${fileUrl}" class="manual-download-link" download="${file.name}">Download</a>
                         `;
                         docsGrid.appendChild(docCard);
                     });
@@ -127,12 +129,14 @@
             files.forEach((file, index) => {
                 const docCard = document.createElement('div');
                 docCard.className = 'manual-card';
-                const hasLogo = file.logo !== null && file.logo !== undefined && file.logo !== '';
+                const logoUrl = file.logo || (file.logoFilename ? `/files/${file.logoFilename}` : null);
+                const hasLogo = !!logoUrl;
+                const fileUrl = file.url || (file.filename ? `/files/${file.filename}` : '#');
                 const isImage = file.type && file.type.startsWith('image/');
                 
                 docCard.innerHTML = `
-                    ${hasLogo ? `<div class="manual-preview"><img src="${file.logo}" alt="Project logo" onerror="this.parentElement.innerHTML='<div style=\\'padding: 40px; text-align: center; color: var(--secondary-text);\\'>No Logo</div>'" /></div>` : 
-                      isImage ? `<div class="manual-preview"><img src="${file.url}" alt="${file.name}" /></div>` : 
+                    ${hasLogo ? `<div class="manual-preview"><img src="${logoUrl}" alt="Project logo" onerror="this.parentElement.innerHTML='<div style=\'padding: 40px; text-align: center; color: var(--secondary-text);\'>No Logo</div>'" /></div>` : 
+                      isImage ? `<div class="manual-preview"><img src="${fileUrl}" alt="${file.name}" /></div>` : 
                       `<div class="manual-icon">📄</div>`}
                     <div class="manual-name">${file.name}</div>
                     <div class="manual-description">${formatFileSize(file.size)} • Uploaded ${formatDate(file.uploaded)}</div>
