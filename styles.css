@@ -1444,7 +1444,7 @@ html {
 .contact-page,
 .support-page,
 .admin-dashboard {
-    animation: fadeIn 0.8s ease-out;
+    animation: none;
 }
 
 /* Particles container */
