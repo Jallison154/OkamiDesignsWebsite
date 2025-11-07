@@ -214,6 +214,15 @@ async function updatePageContent(html, url, anchor = '') {
         }
     }
 
+    if (currentMain) {
+        currentMain.classList.remove('page-fade-in');
+        void currentMain.offsetWidth;
+        currentMain.classList.add('page-fade-in');
+        setTimeout(() => {
+            currentMain.classList.remove('page-fade-in');
+        }, 700);
+    }
+
     // Ensure particles container exists once
     let particlesContainer = document.getElementById('particles-js');
     if (!particlesContainer) {
