@@ -40,8 +40,17 @@ async function buildUniqueFilename(manifest, slugCandidate, extension, excludeId
 
 // Middleware
 app.use(express.json());
-app.use(express.static('.')); // Serve static files
-app.use('/files', express.static(FILES_DIR)); // Serve uploaded files
+app.use(express.static('.'));
+app.use('/files', express.static(FILES_DIR, {
+    etag: false,
+    maxAge: 0,
+    lastModified: true,
+    setHeaders: (res) => {
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.set('Pragma', 'no-cache');
+        res.set('Expires', '0');
+    }
+}));
 
 // CORS middleware
 app.use((req, res, next) => {
@@ -170,8 +179,20 @@ app.post('/api/upload', upload.fields([
         };
 
         if (logo) {
-            fileData.logoFilename = logo.filename;
-            fileData.logo = `/files/${logo.filename}`;
+            const logoExt = path.extname(logo.originalname || logo.filename) || '.png';
+            const logoFilename = `${slug}-logo${logoExt}`;
+            const logoFinalPath = path.join(FILES_DIR, logoFilename);
+
+            try {
+                if (logo.filename !== logoFilename) {
+                    await fs.rename(path.join(FILES_DIR, logo.filename), logoFinalPath);
+                }
+            } catch (error) {
+                console.error('Error renaming logo file:', error.message || error);
+            }
+
+            fileData.logoFilename = logoFilename;
+            fileData.logo = `/files/${logoFilename}`;
         }
 
         manifest.files.push(fileData);
@@ -307,8 +328,20 @@ app.post('/api/files/:id/replace', upload.fields([
                 }
             }
 
-            existingFile.logoFilename = newLogo.filename;
-            existingFile.logo = `/files/${newLogo.filename}`;
+            const logoExt = path.extname(newLogo.originalname || newLogo.filename) || '.png';
+            const logoFilename = `${existingFile.slug || slug}-logo${logoExt}`;
+            const logoFinalPath = path.join(FILES_DIR, logoFilename);
+
+            try {
+                if (newLogo.filename !== logoFilename) {
+                    await fs.rename(path.join(FILES_DIR, newLogo.filename), logoFinalPath);
+                }
+            } catch (error) {
+                console.error('Error renaming replacement logo:', error.message || error);
+            }
+
+            existingFile.logoFilename = logoFilename;
+            existingFile.logo = `/files/${logoFilename}`;
         }
 
         await writeManifest(manifest);
