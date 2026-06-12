@@ -2829,6 +2829,7 @@ html {
 
 /* LED Video Wall Calculator */
 .led-calculator-page {
+    --calculator-header-offset: 92px;
     overflow-x: hidden;
 }
 
@@ -2852,9 +2853,9 @@ html {
     max-width: 2200px;
     margin-left: auto;
     margin-right: auto;
-    margin-top: 72px;
-    height: calc(100vh - 72px);
-    padding: 16px 24px;
+    margin-top: 0;
+    padding: calc(var(--calculator-header-offset) + 14px) clamp(16px, 3vw, 24px) 16px;
+    height: calc(100vh - var(--calculator-header-offset));
     box-sizing: border-box;
     overflow: hidden;
     display: flex;
@@ -2876,7 +2877,7 @@ html {
 }
 
 .led-calculator-page .led-app-header {
-    margin: 0;
+    margin: 0 0 12px;
     padding: 0;
     flex-shrink: 0;
 }
@@ -2885,7 +2886,8 @@ html {
     font-size: clamp(1.5rem, 3.5vw, 2.25rem);
     font-weight: 800;
     color: var(--primary-text);
-    margin-bottom: clamp(4px, 1vh, 8px);
+    line-height: 1.2;
+    margin: 0 0 clamp(8px, 1.5vh, 12px);
 }
 
 .tool-subtitle {
@@ -3227,11 +3229,34 @@ html {
 
 .led-stepper-value {
     flex: 1;
+    width: 100%;
+    min-width: 44px;
+    padding: 0 4px;
+    border: none;
+    background: transparent;
     text-align: center;
+    font-family: inherit;
     font-size: 1rem;
     font-weight: 700;
     color: var(--primary-text);
-    min-width: 44px;
+    appearance: textfield;
+    -moz-appearance: textfield;
+}
+
+.led-stepper-value::-webkit-outer-spin-button,
+.led-stepper-value::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.led-stepper-value:focus {
+    outline: none;
+    background: rgba(255, 106, 45, 0.08);
+}
+
+.led-stepper:focus-within {
+    border-color: rgba(255, 106, 45, 0.45);
+    box-shadow: 0 0 0 2px rgba(255, 106, 45, 0.12);
 }
 
 .led-resolution-note {
@@ -3481,19 +3506,50 @@ html {
 .led-field select,
 .led-select {
     width: 100%;
-    padding: 10px 12px;
-    border-radius: 6px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    background: rgba(0, 0, 0, 0.35);
+    padding: 10px 36px 10px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 106, 45, 0.28);
+    background-color: rgba(26, 26, 26, 0.95);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23FF6A2D' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 12px 8px;
     color: var(--primary-text);
     font-family: inherit;
     font-size: 0.95rem;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    font-weight: 600;
+    line-height: 1.4;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
     cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    color-scheme: dark;
+}
+
+.led-field select:hover,
+.led-select:hover {
+    border-color: rgba(255, 106, 45, 0.5);
+    background-color: rgba(34, 34, 34, 0.98);
+}
+
+.led-field select option,
+.led-select option {
+    background-color: var(--secondary-bg);
+    color: var(--primary-text);
+    font-weight: 500;
 }
 
 .led-overlay-controls {
     margin-top: 0;
+}
+
+.led-overlay-controls .led-field label {
+    color: var(--primary-text);
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    font-size: 0.72rem;
 }
 
 .led-custom-format {
@@ -4091,16 +4147,19 @@ html {
     }
 
     .led-calculator-page .calculator-page {
-        margin-top: 72px;
-        height: calc(100vh - 72px);
-        max-height: calc(100vh - 72px);
-        padding: 16px 24px;
+        margin-top: 0;
+        padding-top: calc(var(--calculator-header-offset) + 12px);
+        height: calc(100vh - var(--calculator-header-offset));
+        max-height: calc(100vh - var(--calculator-header-offset));
+        padding-right: 24px;
+        padding-bottom: 16px;
+        padding-left: 24px;
         overflow: hidden;
     }
 
     .led-calculator-page .tool-title {
         font-size: clamp(1.2rem, 2vw, 1.45rem);
-        margin: 0;
+        margin: 0 0 8px;
     }
 
     .led-calculator-page .tool-subtitle {
@@ -4265,17 +4324,30 @@ html {
 }
 
 @media (max-width: 899px) {
+    .led-calculator-page {
+        --calculator-header-offset: 100px;
+    }
+
     body.led-calculator-page {
         overflow-x: hidden;
         overflow-y: auto;
     }
 
     .led-calculator-page .calculator-page {
-        margin-top: 72px;
+        margin-top: 0;
         height: auto;
         max-height: none;
         overflow: visible;
-        padding: 16px;
+        padding: calc(var(--calculator-header-offset) + 18px) 16px 16px;
+    }
+
+    .led-calculator-page .led-app-header {
+        margin-bottom: 14px;
+    }
+
+    .led-calculator-page .tool-title {
+        font-size: clamp(1.35rem, 5vw, 1.75rem);
+        margin-bottom: 10px;
     }
 
     .led-calculator-page .led-app {

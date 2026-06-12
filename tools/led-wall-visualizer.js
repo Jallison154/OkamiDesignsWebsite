@@ -84,6 +84,9 @@
     };
 
     const ADV_FIELD_IDS = Object.keys(ADV_TO_HIDDEN_FIELDS);
+    const MIN_PANEL_COUNT = 1;
+    const MAX_PANEL_COUNT = 500;
+    const PANEL_COUNT_IDS = ['panels-wide', 'panels-tall'];
 
     const OVERLAY_DEBUG = new URLSearchParams(window.location.search).has('debug');
     const CABINET_NUMBERS_SESSION_KEY = 'led-show-cabinet-numbers';
@@ -280,6 +283,18 @@
         document.getElementById('panels-wide-inc')?.addEventListener('click', () => adjustPanelCount('panels-wide', 1));
         document.getElementById('panels-tall-dec')?.addEventListener('click', () => adjustPanelCount('panels-tall', -1));
         document.getElementById('panels-tall-inc')?.addEventListener('click', () => adjustPanelCount('panels-tall', 1));
+
+        PANEL_COUNT_IDS.forEach((id) => {
+            const input = document.getElementById(id);
+            input?.addEventListener('input', () => onPanelCountInput(id));
+            input?.addEventListener('blur', () => onPanelCountBlur(id));
+            input?.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    input.blur();
+                }
+            });
+        });
     }
 
     function syncAdvFromHidden() {
@@ -371,14 +386,69 @@
         updateAll();
     }
 
-    function adjustPanelCount(hiddenId, delta) {
-        const isWide = hiddenId === 'panels-wide';
-        const displayId = isWide ? 'panels-wide-display' : 'panels-tall-display';
-        const current = readInt(hiddenId, 1);
-        const next = Math.max(1, current + delta);
-        setInputValue(hiddenId, next);
-        setText(displayId, next.toLocaleString());
+    function getPanelCountDefault(id) {
+        return id === 'panels-wide' ? DEFAULTS.panelsWide : DEFAULTS.panelsTall;
+    }
+
+    function clampPanelCount(value) {
+        if (!Number.isFinite(value)) {
+            return MIN_PANEL_COUNT;
+        }
+        return Math.min(MAX_PANEL_COUNT, Math.max(MIN_PANEL_COUNT, Math.round(value)));
+    }
+
+    function setPanelCount(id, value) {
+        const next = clampPanelCount(value);
+        setInputValue(id, next);
         updateAll();
+    }
+
+    function adjustPanelCount(id, delta) {
+        const current = readInt(id, getPanelCountDefault(id));
+        setPanelCount(id, current + delta);
+    }
+
+    function onPanelCountInput(id) {
+        const input = document.getElementById(id);
+        if (!input || input.value.trim() === '') {
+            return;
+        }
+
+        const parsed = parseInt(input.value, 10);
+        if (!Number.isFinite(parsed)) {
+            return;
+        }
+
+        setPanelCount(id, parsed);
+    }
+
+    function onPanelCountBlur(id) {
+        const input = document.getElementById(id);
+        if (!input) {
+            return;
+        }
+
+        const parsed = parseInt(input.value, 10);
+        if (input.value.trim() === '' || !Number.isFinite(parsed)) {
+            setPanelCount(id, getPanelCountDefault(id));
+            return;
+        }
+
+        setPanelCount(id, parsed);
+    }
+
+    function syncPanelCountInputs(state) {
+        PANEL_COUNT_IDS.forEach((id) => {
+            const input = document.getElementById(id);
+            if (!input || document.activeElement === input) {
+                return;
+            }
+
+            const value = id === 'panels-wide' ? state.panelsWide : state.panelsTall;
+            if (parseInt(input.value, 10) !== value) {
+                input.value = value;
+            }
+        });
     }
 
     function findMatchingPitch(pixelPitchMM) {
@@ -869,8 +939,7 @@
             customPitchField.hidden = pitchPreset !== 'custom' || state.displayType === 'transparent';
         }
 
-        setText('panels-wide-display', state.panelsWide.toLocaleString());
-        setText('panels-tall-display', state.panelsTall.toLocaleString());
+        syncPanelCountInputs(state);
         syncAdvFromHidden();
         updateAdvancedSettings(state);
 

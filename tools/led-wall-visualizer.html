@@ -10,15 +10,10 @@
     <meta property="og:description" content="Visual calculator for LED wall layouts, resolution, aspect ratios, and processor requirements.">
     <meta name="author" content="Jonathan Allison, Founder">
     <link rel="icon" href="../images/Okami_Designs_HeadWhite.png" type="image/png">
+    <link rel="stylesheet" href="../styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="../critical.css">
-    <link rel="preload" href="../styles.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript>
-        <link rel="stylesheet" href="../styles.css">
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap">
-    </noscript>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
 <body class="led-calculator-page">
     <header class="header">
@@ -146,18 +141,18 @@
                                     <h4 class="led-workflow-step-title">Step 3: Wall Size</h4>
                                     <div class="led-stepper-group">
                                         <div class="led-stepper-row">
-                                            <span class="led-stepper-label">Panels Wide</span>
+                                            <label class="led-stepper-label" for="panels-wide">Panels Wide</label>
                                             <div class="led-stepper">
                                                 <button type="button" class="led-stepper-btn" id="panels-wide-dec" aria-label="Decrease panels wide">−</button>
-                                                <span class="led-stepper-value" id="panels-wide-display" aria-live="polite">10</span>
+                                                <input type="number" class="led-stepper-value" id="panels-wide" min="1" max="500" step="1" value="10" inputmode="numeric" aria-label="Panels wide">
                                                 <button type="button" class="led-stepper-btn" id="panels-wide-inc" aria-label="Increase panels wide">+</button>
                                             </div>
                                         </div>
                                         <div class="led-stepper-row">
-                                            <span class="led-stepper-label">Panels High</span>
+                                            <label class="led-stepper-label" for="panels-tall">Panels High</label>
                                             <div class="led-stepper">
                                                 <button type="button" class="led-stepper-btn" id="panels-tall-dec" aria-label="Decrease panels high">−</button>
-                                                <span class="led-stepper-value" id="panels-tall-display" aria-live="polite">6</span>
+                                                <input type="number" class="led-stepper-value" id="panels-tall" min="1" max="500" step="1" value="6" inputmode="numeric" aria-label="Panels high">
                                                 <button type="button" class="led-stepper-btn" id="panels-tall-inc" aria-label="Increase panels high">+</button>
                                             </div>
                                         </div>
@@ -306,9 +301,6 @@
                         <input type="hidden" id="cabinet-width-mm" value="500">
                         <input type="hidden" id="cabinet-height-mm" value="500">
                         <input type="hidden" id="pixel-pitch-mm" value="2.6">
-                        <input type="hidden" id="panels-wide" value="10">
-                        <input type="hidden" id="panels-tall" value="6">
-
                         <div class="led-config-footer">
                             <div class="led-overlay-controls">
                                 <div class="led-field">
