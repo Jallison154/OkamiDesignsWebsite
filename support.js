@@ -4,6 +4,8 @@
 
     const API_BASE = '/api';
 
+    window.loadSupportDocumentation = loadDocumentation;
+
     document.addEventListener('DOMContentLoaded', () => {
         loadDocumentation();
     });

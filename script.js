@@ -246,6 +246,8 @@ async function updatePageContent(html, url, anchor = '') {
         });
     }
 
+    await loadPageScripts(doc);
+
     setActiveNavigation(url);
     reinitializeDynamicContent();
 
@@ -256,6 +258,30 @@ async function updatePageContent(html, url, anchor = '') {
     }
 }
 
+async function loadPageScripts(doc) {
+    const scripts = Array.from(doc.querySelectorAll('script[src]'));
+
+    for (const script of scripts) {
+        const src = script.getAttribute('src');
+        if (!src || src.includes('script.js')) {
+            continue;
+        }
+
+        const baseSrc = src.split('?')[0];
+        if (document.querySelector(`script[src^="${baseSrc}"]`)) {
+            continue;
+        }
+
+        await new Promise((resolve, reject) => {
+            const el = document.createElement('script');
+            el.src = src;
+            el.onload = resolve;
+            el.onerror = reject;
+            document.body.appendChild(el);
+        });
+    }
+}
+
 function reinitializeDynamicContent() {
     initTechAnimations();
     initTerminalAnimation();
@@ -263,6 +289,10 @@ function reinitializeDynamicContent() {
     initSystemStatus();
     initSmoothScrolling();
     initHeaderEffects();
+
+    if (typeof window.loadSupportDocumentation === 'function' && document.getElementById('docs-grid')) {
+        window.loadSupportDocumentation();
+    }
 }
 
 function setActiveNavigation(url) {
@@ -279,7 +309,7 @@ function setActiveNavigation(url) {
 
     document.querySelectorAll('.nav-link').forEach(link => {
         const linkHref = link.getAttribute('href');
-        if (!linkHref) {
+        if (!linkHref || linkHref.startsWith('#')) {
             return;
         }
 
@@ -290,16 +320,12 @@ function setActiveNavigation(url) {
             return;
         }
 
-        if (normalizedLink === normalizedTarget) {
-            link.classList.add('active');
-        } else {
-            link.classList.remove('active');
-        }
+        link.classList.toggle('active', normalizedLink === normalizedTarget);
     });
 
     document.querySelectorAll('.footer-link').forEach(link => {
         const linkHref = link.getAttribute('href');
-        if (!linkHref) {
+        if (!linkHref || linkHref.startsWith('#')) {
             return;
         }
 
@@ -310,11 +336,7 @@ function setActiveNavigation(url) {
             return;
         }
 
-        if (normalizedLink === normalizedTarget) {
-            link.classList.add('active-footer');
-        } else {
-            link.classList.remove('active-footer');
-        }
+        link.classList.toggle('active-footer', normalizedLink === normalizedTarget);
     });
 }
 
@@ -341,16 +363,22 @@ function smoothScrollToHash(hash) {
 
 // Particles.js initialization
 function initParticles() {
-    // Create particle system
     const particlesContainer = document.getElementById('particles-js');
-    
-    // Simple particle system without external library
+    if (!particlesContainer || particlesContainer.dataset.initialized === 'true') {
+        return;
+    }
+
     for (let i = 0; i < 50; i++) {
         createParticle(particlesContainer);
     }
+    particlesContainer.dataset.initialized = 'true';
 }
 
 function createParticle(container) {
+    if (!container) {
+        return;
+    }
+
     const particle = document.createElement('div');
     particle.className = 'particle';
     particle.style.cssText = `
@@ -429,15 +457,27 @@ function initTechAnimations() {
         createCodeRain();
         codeRainInitialized = true;
     }
+
+    if (document.querySelectorAll('.tech-element').length) {
+        randomizeTechElementPositions();
+    }
 }
 
 // Randomize tech element positions
 function randomizeTechElementPositions() {
     const techElements = document.querySelectorAll('.tech-element');
-    const placedPositions = []; // Track positions to avoid overlaps
-    const minDistance = 120; // Minimum distance between badges in pixels
-    
-    techElements.forEach((element, index) => {
+    const placedPositions = [];
+    const minDistance = 120;
+
+    techElements.forEach((element) => {
+        element.style.removeProperty('inset');
+        element.style.removeProperty('top');
+        element.style.removeProperty('left');
+        element.style.removeProperty('right');
+        element.style.removeProperty('bottom');
+    });
+
+    techElements.forEach((element) => {
         let attempts = 0;
         let positionFound = false;
         
@@ -603,13 +643,13 @@ function createAnimatedLine(container) {
                 0% { transform: translateX(0); opacity: 0; }
                 10% { opacity: 1; }
                 90% { opacity: 1; }
-                100% { transform: translateX(${window.innerWidth + lineLength}px); opacity: 0; }
+                100% { transform: translateX(110vw); opacity: 0; }
             }
             @keyframes moveDown {
                 0% { transform: translateY(0); opacity: 0; }
                 10% { opacity: 1; }
                 90% { opacity: 1; }
-                100% { transform: translateY(${window.innerHeight + lineLength}px); opacity: 0; }
+                100% { transform: translateY(110vh); opacity: 0; }
             }
         `;
         document.head.appendChild(style);
@@ -736,13 +776,16 @@ function initSmoothScrolling() {
         link.dataset.smoothBound = 'true';
     });
     
-    // CTA button functionality
     const ctaButton = document.querySelector('.cta-button');
     if (ctaButton && ctaButton.dataset.projectsBound !== 'true') {
-        ctaButton.addEventListener('click', function() {
-            createPlaceholderSection('projects');
-        });
-        ctaButton.dataset.projectsBound = 'true';
+        const href = ctaButton.getAttribute('href');
+        if (!href || href === '#projects') {
+            ctaButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                createPlaceholderSection('projects');
+            });
+            ctaButton.dataset.projectsBound = 'true';
+        }
     }
 }
 
