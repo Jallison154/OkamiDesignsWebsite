@@ -53,7 +53,15 @@ async function buildUniqueFilename(manifest, slugCandidate, extension, excludeId
 
 // Middleware
 app.use(express.json());
-app.use(express.static('.'));
+
+const STATIC_CACHE_PATTERN = /\.(?:css|js|png|jpe?g|gif|webp|svg|ico|woff2?)$/i;
+app.use(express.static('.', {
+    setHeaders: (res, filePath) => {
+        if (STATIC_CACHE_PATTERN.test(filePath)) {
+            res.set('Cache-Control', 'public, max-age=31536000, immutable');
+        }
+    }
+}));
 app.use('/files', express.static(FILES_DIR, {
     etag: false,
     maxAge: 0,
