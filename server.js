@@ -9,6 +9,19 @@ const app = express();
 const PORT = 3000;
 const FILES_DIR = path.join(__dirname, 'files');
 const MANIFEST_PATH = path.join(FILES_DIR, 'manifest.json');
+const SITE_SETTINGS_PATH = path.join(FILES_DIR, 'site-settings.json');
+
+const DEFAULT_SITE_SETTINGS = {
+    constructionMode: false,
+    pages: {
+        home: true,
+        services: true,
+        tools: true,
+        support: true,
+        contact: true,
+        ledVideoWallCalculator: true
+    }
+};
 
 function slugify(value) {
     return value
@@ -115,6 +128,36 @@ async function readManifest() {
 async function writeManifest(manifest) {
     manifest.generated = new Date().toISOString();
     await fs.writeFile(MANIFEST_PATH, JSON.stringify(manifest, null, 2));
+}
+
+function normalizeSiteSettings(raw) {
+    const pages = { ...DEFAULT_SITE_SETTINGS.pages, ...(raw?.pages || {}) };
+
+    Object.keys(DEFAULT_SITE_SETTINGS.pages).forEach((key) => {
+        pages[key] = pages[key] !== false;
+    });
+
+    return {
+        constructionMode: Boolean(raw?.constructionMode),
+        pages,
+        updatedAt: raw?.updatedAt || new Date().toISOString()
+    };
+}
+
+async function readSiteSettings() {
+    try {
+        const data = await fs.readFile(SITE_SETTINGS_PATH, 'utf8');
+        return normalizeSiteSettings(JSON.parse(data));
+    } catch {
+        return normalizeSiteSettings(DEFAULT_SITE_SETTINGS);
+    }
+}
+
+async function writeSiteSettings(settings) {
+    const normalized = normalizeSiteSettings(settings);
+    normalized.updatedAt = new Date().toISOString();
+    await fs.writeFile(SITE_SETTINGS_PATH, JSON.stringify(normalized, null, 2));
+    return normalized;
 }
 
 // API Routes
@@ -402,6 +445,27 @@ app.put('/api/files/:id', async (req, res) => {
     } catch (error) {
         console.error('Error updating file:', error);
         res.status(500).json({ error: 'Failed to update file' });
+    }
+});
+
+// Site visibility settings
+app.get('/api/site-settings', async (req, res) => {
+    try {
+        const settings = await readSiteSettings();
+        res.json(settings);
+    } catch (error) {
+        console.error('Error reading site settings:', error);
+        res.status(500).json({ error: 'Failed to read site settings' });
+    }
+});
+
+app.put('/api/site-settings', async (req, res) => {
+    try {
+        const settings = await writeSiteSettings(req.body || {});
+        res.json({ success: true, settings });
+    } catch (error) {
+        console.error('Error saving site settings:', error);
+        res.status(500).json({ error: 'Failed to save site settings' });
     }
 });
 

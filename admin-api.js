@@ -120,6 +120,41 @@ async function updateFileMetadata(fileId, updates) {
     }
 }
 
+// Site visibility settings
+async function getSiteSettings() {
+    try {
+        const response = await fetch(`${API_BASE}/site-settings`, { cache: 'no-store' });
+        if (!response.ok) {
+            throw new Error(`Failed to fetch site settings: ${response.statusText}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching site settings:', error);
+        throw error;
+    }
+}
+
+async function saveSiteSettings(settings) {
+    try {
+        const response = await fetch(`${API_BASE}/site-settings`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(settings)
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to save site settings: ${response.statusText}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error saving site settings:', error);
+        throw error;
+    }
+}
+
 // Check if API is available
 async function checkAPIHealth() {
     try {

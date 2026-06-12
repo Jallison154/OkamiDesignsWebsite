@@ -1,0 +1,7 @@
+cd /opt/okami-designs
+cp files/manifest.json /tmp/manifest.json.backup
+rm files/manifest.json
+git pull origin main
+cp /tmp/manifest.json.backup files/manifest.json   # only if backup had real manuals
+chmod +x deploy.sh
+./deploy.sh

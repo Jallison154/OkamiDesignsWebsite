@@ -56,6 +56,19 @@
     }
 
     const TOAST_DURATION = 5000;
+    const SITE_SETTINGS_STORAGE_KEY = 'okami-site-settings';
+
+    const DEFAULT_SITE_SETTINGS = {
+        constructionMode: false,
+        pages: {
+            home: true,
+            services: true,
+            tools: true,
+            support: true,
+            contact: true,
+            ledVideoWallCalculator: true
+        }
+    };
 
     function showToast(message, type = 'info') {
         const toastContainer = document.getElementById('toast-container');
@@ -388,6 +401,7 @@
 
         // Setup file uploads
         setupFileUploads();
+        initSiteVisibilityAdmin();
     });
 
     function showLoginScreen() {
@@ -398,6 +412,164 @@
     function showAdminPanel() {
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('admin-panel').style.display = 'block';
+        loadSiteVisibilitySettings();
+    }
+
+    function normalizeSiteSettings(raw) {
+        const pages = { ...DEFAULT_SITE_SETTINGS.pages, ...(raw?.pages || {}) };
+        Object.keys(DEFAULT_SITE_SETTINGS.pages).forEach((key) => {
+            pages[key] = pages[key] !== false;
+        });
+
+        return {
+            constructionMode: Boolean(raw?.constructionMode),
+            pages
+        };
+    }
+
+    function readSiteVisibilityForm() {
+        const constructionToggle = document.getElementById('construction-mode-toggle');
+        const settings = normalizeSiteSettings(DEFAULT_SITE_SETTINGS);
+        settings.constructionMode = Boolean(constructionToggle?.checked);
+
+        document.querySelectorAll('.visibility-page-toggle').forEach((toggle) => {
+            const pageKey = toggle.dataset.pageKey;
+            if (pageKey && Object.prototype.hasOwnProperty.call(settings.pages, pageKey)) {
+                settings.pages[pageKey] = toggle.checked;
+            }
+        });
+
+        return settings;
+    }
+
+    function applySiteVisibilityForm(settings) {
+        const normalized = normalizeSiteSettings(settings);
+        const constructionToggle = document.getElementById('construction-mode-toggle');
+
+        if (constructionToggle) {
+            constructionToggle.checked = normalized.constructionMode;
+            updateConstructionToggleState(constructionToggle);
+        }
+
+        document.querySelectorAll('.visibility-page-toggle').forEach((toggle) => {
+            const pageKey = toggle.dataset.pageKey;
+            if (pageKey && Object.prototype.hasOwnProperty.call(normalized.pages, pageKey)) {
+                toggle.checked = normalized.pages[pageKey];
+            }
+        });
+    }
+
+    function updateConstructionToggleState(toggle) {
+        const state = toggle?.closest('.visibility-toggle')?.querySelector('.visibility-toggle-state');
+        if (!state) {
+            return;
+        }
+        state.textContent = toggle.checked ? (state.dataset.on || 'On') : (state.dataset.off || 'Off');
+    }
+
+    async function loadSiteVisibilitySettings() {
+        const section = document.getElementById('site-visibility-section');
+        if (!section) {
+            return;
+        }
+
+        let settings = null;
+
+        try {
+            const apiAvailable = await checkAPIHealth();
+            if (apiAvailable) {
+                settings = normalizeSiteSettings(await getSiteSettings());
+            }
+        } catch (error) {
+            console.warn('Failed to load site settings from API:', error.message || error);
+        }
+
+        if (!settings) {
+            try {
+                const response = await fetch(`files/site-settings.json?t=${Date.now()}`, { cache: 'no-store' });
+                if (response.ok) {
+                    settings = normalizeSiteSettings(await response.json());
+                }
+            } catch (error) {
+                console.warn('Failed to load static site settings:', error.message || error);
+            }
+        }
+
+        if (!settings) {
+            const stored = localStorage.getItem(SITE_SETTINGS_STORAGE_KEY);
+            if (stored) {
+                try {
+                    settings = normalizeSiteSettings(JSON.parse(stored));
+                } catch (error) {
+                    console.warn('Failed to parse stored site settings:', error.message || error);
+                }
+            }
+        }
+
+        applySiteVisibilityForm(settings || DEFAULT_SITE_SETTINGS);
+    }
+
+    function setVisibilitySaveStatus(message, isError = false) {
+        const status = document.getElementById('visibility-save-status');
+        if (!status) {
+            return;
+        }
+
+        status.textContent = message;
+        status.hidden = !message;
+        status.classList.toggle('is-error', Boolean(isError));
+    }
+
+    async function saveSiteVisibilitySettings() {
+        const saveButton = document.getElementById('save-site-visibility');
+        const settings = readSiteVisibilityForm();
+
+        if (saveButton) {
+            saveButton.disabled = true;
+            saveButton.textContent = 'Saving...';
+        }
+
+        setVisibilitySaveStatus('');
+
+        try {
+            const apiAvailable = await checkAPIHealth();
+            if (apiAvailable) {
+                await saveSiteSettings(settings);
+                localStorage.setItem(SITE_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+                setVisibilitySaveStatus('Settings saved successfully.');
+                showToast('Site visibility settings saved.', 'success');
+                return;
+            }
+
+            localStorage.setItem(SITE_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+            setVisibilitySaveStatus('API unavailable. Settings saved locally only and will not affect public visitors until the API is running.', true);
+            showToast('Saved locally only. Start the API to apply site-wide.', 'info');
+        } catch (error) {
+            console.error('Site settings save failed:', error);
+            localStorage.setItem(SITE_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+            setVisibilitySaveStatus('API unavailable. Settings saved locally only and will not affect public visitors until the API is running.', true);
+            showToast('Saved locally only. Start the API to apply site-wide.', 'info');
+        } finally {
+            if (saveButton) {
+                saveButton.disabled = false;
+                saveButton.textContent = 'Save Settings';
+            }
+        }
+    }
+
+    function initSiteVisibilityAdmin() {
+        const saveButton = document.getElementById('save-site-visibility');
+        const constructionToggle = document.getElementById('construction-mode-toggle');
+
+        if (saveButton && saveButton.dataset.bound !== 'true') {
+            saveButton.addEventListener('click', saveSiteVisibilitySettings);
+            saveButton.dataset.bound = 'true';
+        }
+
+        if (constructionToggle && constructionToggle.dataset.bound !== 'true') {
+            constructionToggle.addEventListener('change', () => updateConstructionToggleState(constructionToggle));
+            constructionToggle.dataset.bound = 'true';
+        }
     }
 
     async function handleLogin(e) {

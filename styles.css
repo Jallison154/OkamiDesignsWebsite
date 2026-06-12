@@ -2104,6 +2104,213 @@ html {
     padding-bottom: 15px;
 }
 
+.visibility-section {
+    margin-bottom: 60px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 15px;
+    padding: 28px;
+    backdrop-filter: blur(10px);
+}
+
+.visibility-section-desc {
+    color: var(--secondary-text);
+    font-size: 14px;
+    line-height: 1.6;
+    margin: -12px 0 24px;
+}
+
+.visibility-toggle {
+    display: block;
+    cursor: pointer;
+    margin-bottom: 28px;
+}
+
+.visibility-toggle input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.visibility-toggle-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 18px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.28);
+    transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.visibility-toggle:hover .visibility-toggle-card {
+    border-color: rgba(255, 106, 45, 0.45);
+}
+
+.visibility-toggle input:checked + .visibility-toggle-card {
+    background: rgba(255, 106, 45, 0.18);
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 1px rgba(255, 106, 45, 0.22);
+}
+
+.visibility-toggle-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.visibility-toggle-label {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--primary-text);
+}
+
+.visibility-toggle-hint {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--secondary-text);
+}
+
+.visibility-toggle-state {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--secondary-text);
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.visibility-toggle input:checked + .visibility-toggle-card .visibility-toggle-state {
+    color: var(--accent-color);
+    background: rgba(255, 106, 45, 0.18);
+}
+
+.visibility-page-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 24px;
+}
+
+.visibility-page-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.22);
+}
+
+.visibility-page-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.visibility-page-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--primary-text);
+}
+
+.visibility-page-path {
+    font-size: 12px;
+    color: var(--secondary-text);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.visibility-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.visibility-switch input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.visibility-switch-slider {
+    position: relative;
+    width: 42px;
+    height: 24px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+    transition: background 0.2s ease;
+}
+
+.visibility-switch-slider::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 0.2s ease;
+}
+
+.visibility-switch input:checked + .visibility-switch-slider {
+    background: rgba(255, 106, 45, 0.85);
+}
+
+.visibility-switch input:checked + .visibility-switch-slider::after {
+    transform: translateX(18px);
+}
+
+.visibility-switch-text {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    color: var(--secondary-text);
+    min-width: 48px;
+}
+
+.visibility-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.visibility-save-status {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #7dffb0;
+}
+
+.visibility-save-status.is-error {
+    color: #ff8f8f;
+}
+
+@media (max-width: 640px) {
+    .visibility-page-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .visibility-toggle-card {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .visibility-toggle-state {
+        align-self: flex-start;
+    }
+}
+
 .upload-section {
     margin-bottom: 60px;
 }
@@ -2512,6 +2719,16 @@ html {
 /* Tools nav dropdown */
 .nav-dropdown {
     position: relative;
+}
+
+/* Keeps hover active while moving from TOOLS button down to the menu */
+.nav-dropdown::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    height: 12px;
 }
 
 .nav-dropdown-toggle {

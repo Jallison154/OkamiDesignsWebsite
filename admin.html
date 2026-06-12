@@ -60,6 +60,96 @@
                 <div class="admin-dashboard">
                     <h1 class="admin-title">Admin Dashboard</h1>
                     <p class="admin-subtitle">Manage project documentation and files</p>
+
+                    <section class="visibility-section" id="site-visibility-section">
+                        <h2 class="section-title">Site Visibility</h2>
+                        <p class="visibility-section-desc">Control which pages are public and whether visitors see the construction splash page first.</p>
+
+                        <label class="visibility-toggle" for="construction-mode-toggle">
+                            <input type="checkbox" id="construction-mode-toggle">
+                            <span class="visibility-toggle-card">
+                                <span class="visibility-toggle-copy">
+                                    <span class="visibility-toggle-label">Enable Construction Splash Page</span>
+                                    <span class="visibility-toggle-hint">When enabled, public visitors see the splash page instead of the main site. Admin access is not affected.</span>
+                                </span>
+                                <span class="visibility-toggle-state" data-off="Off" data-on="On">Off</span>
+                            </span>
+                        </label>
+
+                        <div class="visibility-page-list" id="visibility-page-list">
+                            <div class="visibility-page-row" data-page-key="home">
+                                <div class="visibility-page-info">
+                                    <span class="visibility-page-name">Home</span>
+                                    <span class="visibility-page-path">/home.html</span>
+                                </div>
+                                <label class="visibility-switch">
+                                    <input type="checkbox" class="visibility-page-toggle" data-page-key="home" checked>
+                                    <span class="visibility-switch-slider" aria-hidden="true"></span>
+                                    <span class="visibility-switch-text">Visible</span>
+                                </label>
+                            </div>
+                            <div class="visibility-page-row" data-page-key="services">
+                                <div class="visibility-page-info">
+                                    <span class="visibility-page-name">Services</span>
+                                    <span class="visibility-page-path">/services.html</span>
+                                </div>
+                                <label class="visibility-switch">
+                                    <input type="checkbox" class="visibility-page-toggle" data-page-key="services" checked>
+                                    <span class="visibility-switch-slider" aria-hidden="true"></span>
+                                    <span class="visibility-switch-text">Visible</span>
+                                </label>
+                            </div>
+                            <div class="visibility-page-row" data-page-key="tools">
+                                <div class="visibility-page-info">
+                                    <span class="visibility-page-name">Tools</span>
+                                    <span class="visibility-page-path">/tools/</span>
+                                </div>
+                                <label class="visibility-switch">
+                                    <input type="checkbox" class="visibility-page-toggle" data-page-key="tools" checked>
+                                    <span class="visibility-switch-slider" aria-hidden="true"></span>
+                                    <span class="visibility-switch-text">Visible</span>
+                                </label>
+                            </div>
+                            <div class="visibility-page-row" data-page-key="support">
+                                <div class="visibility-page-info">
+                                    <span class="visibility-page-name">Support</span>
+                                    <span class="visibility-page-path">/support.html</span>
+                                </div>
+                                <label class="visibility-switch">
+                                    <input type="checkbox" class="visibility-page-toggle" data-page-key="support" checked>
+                                    <span class="visibility-switch-slider" aria-hidden="true"></span>
+                                    <span class="visibility-switch-text">Visible</span>
+                                </label>
+                            </div>
+                            <div class="visibility-page-row" data-page-key="contact">
+                                <div class="visibility-page-info">
+                                    <span class="visibility-page-name">Contact</span>
+                                    <span class="visibility-page-path">/contact.html</span>
+                                </div>
+                                <label class="visibility-switch">
+                                    <input type="checkbox" class="visibility-page-toggle" data-page-key="contact" checked>
+                                    <span class="visibility-switch-slider" aria-hidden="true"></span>
+                                    <span class="visibility-switch-text">Visible</span>
+                                </label>
+                            </div>
+                            <div class="visibility-page-row" data-page-key="ledVideoWallCalculator">
+                                <div class="visibility-page-info">
+                                    <span class="visibility-page-name">LED Video Wall Calculator</span>
+                                    <span class="visibility-page-path">/tools/led-wall-visualizer.html</span>
+                                </div>
+                                <label class="visibility-switch">
+                                    <input type="checkbox" class="visibility-page-toggle" data-page-key="ledVideoWallCalculator" checked>
+                                    <span class="visibility-switch-slider" aria-hidden="true"></span>
+                                    <span class="visibility-switch-text">Visible</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="visibility-actions">
+                            <button type="button" id="save-site-visibility" class="upload-submit-button">Save Settings</button>
+                            <p id="visibility-save-status" class="visibility-save-status" hidden></p>
+                        </div>
+                    </section>
                     
                     <div class="upload-section">
                         <h2 class="section-title">Upload New Documentation</h2>

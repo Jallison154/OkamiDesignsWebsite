@@ -1,0 +1,12 @@
+{
+  "constructionMode": false,
+  "pages": {
+    "home": true,
+    "services": true,
+    "tools": true,
+    "support": true,
+    "contact": true,
+    "ledVideoWallCalculator": true
+  },
+  "updatedAt": "2026-06-12T07:57:02.633Z"
+}
