@@ -1,6 +1,7 @@
 // Tech-inspired interactive elements and animations
 let transitionOverlay = null;
 let isNavigating = false;
+const PAGE_TRANSITION_MS = 300;
 let systemStatusIntervalId = null;
 let headerScrollHandler = null;
 let terminalTimeoutId = null;
@@ -37,6 +38,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Mobile menu toggle
     initMobileMenu();
+
+    // Tools dropdown navigation
+    initNavDropdown();
 
     // Set initial navigation state and history entry
     setActiveNavigation(window.location.href);
@@ -123,6 +127,43 @@ function handlePopState(event) {
     navigateTo(parsedUrl.toString(), { addToHistory: false, anchor: parsedUrl.hash });
 }
 
+function wait(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function showTransitionOverlay() {
+    if (!transitionOverlay) {
+        transitionOverlay = document.createElement('div');
+        transitionOverlay.className = 'page-transition-overlay';
+        document.body.appendChild(transitionOverlay);
+    }
+
+    transitionOverlay.classList.remove('active');
+    transitionOverlay.style.pointerEvents = 'none';
+    transitionOverlay.style.opacity = '0';
+    void transitionOverlay.offsetWidth;
+
+    await new Promise((resolve) => {
+        requestAnimationFrame(() => {
+            transitionOverlay.style.pointerEvents = 'auto';
+            transitionOverlay.classList.add('active');
+            resolve();
+        });
+    });
+
+    await wait(PAGE_TRANSITION_MS);
+}
+
+async function hideTransitionOverlay() {
+    if (!transitionOverlay) {
+        return;
+    }
+
+    transitionOverlay.classList.remove('active');
+    transitionOverlay.style.pointerEvents = 'none';
+    await wait(PAGE_TRANSITION_MS);
+}
+
 async function navigateTo(url, { addToHistory = true, anchor = '' } = {}) {
     if (isNavigating) {
         return;
@@ -130,18 +171,9 @@ async function navigateTo(url, { addToHistory = true, anchor = '' } = {}) {
 
     isNavigating = true;
 
-    if (!transitionOverlay) {
-        transitionOverlay = document.createElement('div');
-        transitionOverlay.className = 'page-transition-overlay';
-        document.body.appendChild(transitionOverlay);
-    }
-
-    requestAnimationFrame(() => {
-        transitionOverlay.style.pointerEvents = 'auto';
-        transitionOverlay.classList.add('active');
-    });
-
     try {
+        await showTransitionOverlay();
+
         const response = await fetch(url, {
             headers: {
                 'X-Requested-With': 'fetch'
@@ -160,15 +192,12 @@ async function navigateTo(url, { addToHistory = true, anchor = '' } = {}) {
         if (addToHistory) {
             window.history.pushState({ url }, '', url);
         }
+
+        await hideTransitionOverlay();
     } catch (error) {
         window.location.href = url;
         return;
     } finally {
-        setTimeout(() => {
-            transitionOverlay.classList.remove('active');
-            transitionOverlay.style.pointerEvents = 'none';
-        }, 320);
-
         isNavigating = false;
     }
 }
@@ -214,15 +243,6 @@ async function updatePageContent(html, url, anchor = '') {
         }
     }
 
-    if (currentMain) {
-        currentMain.classList.remove('page-fade-in');
-        void currentMain.offsetWidth;
-        currentMain.classList.add('page-fade-in');
-        setTimeout(() => {
-            currentMain.classList.remove('page-fade-in');
-        }, 700);
-    }
-
     // Ensure particles container exists once
     let particlesContainer = document.getElementById('particles-js');
     if (!particlesContainer) {
@@ -246,7 +266,7 @@ async function updatePageContent(html, url, anchor = '') {
         });
     }
 
-    await loadPageScripts(doc);
+    await loadPageScripts(doc, url);
 
     setActiveNavigation(url);
     reinitializeDynamicContent();
@@ -258,8 +278,9 @@ async function updatePageContent(html, url, anchor = '') {
     }
 }
 
-async function loadPageScripts(doc) {
+async function loadPageScripts(doc, pageUrl) {
     const scripts = Array.from(doc.querySelectorAll('script[src]'));
+    const baseUrl = new URL(pageUrl, window.location.origin);
 
     for (const script of scripts) {
         const src = script.getAttribute('src');
@@ -267,14 +288,23 @@ async function loadPageScripts(doc) {
             continue;
         }
 
-        const baseSrc = src.split('?')[0];
-        if (document.querySelector(`script[src^="${baseSrc}"]`)) {
+        const resolvedSrc = new URL(src, baseUrl).href;
+        const baseSrc = resolvedSrc.split('?')[0];
+        const alreadyLoaded = Array.from(document.querySelectorAll('script[src]')).some((el) => {
+            try {
+                return new URL(el.src, window.location.origin).href.split('?')[0] === baseSrc;
+            } catch {
+                return false;
+            }
+        });
+
+        if (alreadyLoaded) {
             continue;
         }
 
         await new Promise((resolve, reject) => {
             const el = document.createElement('script');
-            el.src = src;
+            el.src = resolvedSrc;
             el.onload = resolve;
             el.onerror = reject;
             document.body.appendChild(el);
@@ -293,6 +323,12 @@ function reinitializeDynamicContent() {
     if (typeof window.loadSupportDocumentation === 'function' && document.getElementById('docs-grid')) {
         window.loadSupportDocumentation();
     }
+
+    if (typeof window.initLedWallVisualizer === 'function' && document.getElementById('led-wall-app')) {
+        window.initLedWallVisualizer();
+    }
+
+    initNavDropdown();
 }
 
 function setActiveNavigation(url) {
@@ -306,8 +342,26 @@ function setActiveNavigation(url) {
 
     const targetUrl = new URL(url, window.location.origin);
     const normalizedTarget = normalizePath(targetUrl.pathname);
+    const isToolsPage = normalizedTarget.startsWith('tools/');
 
-    document.querySelectorAll('.nav-link').forEach(link => {
+    document.querySelectorAll('.nav-dropdown-toggle').forEach((toggle) => {
+        toggle.classList.toggle('active', isToolsPage);
+        if (!isToolsPage) {
+            toggle.setAttribute('aria-expanded', 'false');
+        }
+    });
+
+    document.querySelectorAll('.nav-dropdown').forEach((dropdown) => {
+        if (!isToolsPage) {
+            dropdown.classList.remove('open');
+        }
+    });
+
+    document.querySelectorAll('.nav-mobile-group').forEach((group) => {
+        group.classList.toggle('open', isToolsPage);
+    });
+
+    document.querySelectorAll('.nav-dropdown-item, .nav-sublink').forEach((link) => {
         const linkHref = link.getAttribute('href');
         if (!linkHref || linkHref.startsWith('#')) {
             return;
@@ -315,7 +369,27 @@ function setActiveNavigation(url) {
 
         let normalizedLink;
         try {
-            normalizedLink = normalizePath(new URL(linkHref, window.location.origin).pathname);
+            normalizedLink = normalizePath(new URL(linkHref, targetUrl).pathname);
+        } catch (error) {
+            return;
+        }
+
+        link.classList.toggle('active', normalizedLink === normalizedTarget);
+    });
+
+    document.querySelectorAll('.nav-link').forEach((link) => {
+        if (link.classList.contains('nav-dropdown-toggle') || link.classList.contains('nav-sublink')) {
+            return;
+        }
+
+        const linkHref = link.getAttribute('href');
+        if (!linkHref || linkHref.startsWith('#')) {
+            return;
+        }
+
+        let normalizedLink;
+        try {
+            normalizedLink = normalizePath(new URL(linkHref, targetUrl).pathname);
         } catch (error) {
             return;
         }
@@ -458,14 +532,15 @@ function initTechAnimations() {
         codeRainInitialized = true;
     }
 
-    if (document.querySelectorAll('.tech-element').length) {
-        randomizeTechElementPositions();
+    const unpositionedElements = document.querySelectorAll('.tech-element:not([data-positioned="true"])');
+    if (unpositionedElements.length) {
+        randomizeTechElementPositions(unpositionedElements);
     }
 }
 
 // Randomize tech element positions
-function randomizeTechElementPositions() {
-    const techElements = document.querySelectorAll('.tech-element');
+function randomizeTechElementPositions(elements = document.querySelectorAll('.tech-element')) {
+    const techElements = Array.from(elements);
     const placedPositions = [];
     const minDistance = 120;
 
@@ -558,6 +633,7 @@ function randomizeTechElementPositions() {
                 
                 // Store position
                 placedPositions.push({ x: xPos, y: yPos });
+                element.dataset.positioned = 'true';
                 positionFound = true;
             }
         }
@@ -989,6 +1065,68 @@ function showQuickActions() {
 function closeModals() {
     const modals = document.querySelectorAll('.quick-actions-modal');
     modals.forEach(modal => modal.remove());
+}
+
+function initNavDropdown() {
+    document.querySelectorAll('.nav-dropdown').forEach((dropdown) => {
+        if (dropdown.dataset.dropdownBound === 'true') {
+            return;
+        }
+
+        const toggle = dropdown.querySelector('.nav-dropdown-toggle');
+        const menu = dropdown.querySelector('.nav-dropdown-menu');
+        if (!toggle || !menu) {
+            return;
+        }
+
+        toggle.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const isOpen = dropdown.classList.toggle('open');
+            toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        });
+
+        dropdown.addEventListener('mouseenter', () => {
+            dropdown.classList.add('open');
+            toggle.setAttribute('aria-expanded', 'true');
+        });
+
+        dropdown.addEventListener('mouseleave', () => {
+            dropdown.classList.remove('open');
+            toggle.setAttribute('aria-expanded', 'false');
+        });
+
+        dropdown.dataset.dropdownBound = 'true';
+    });
+
+    document.querySelectorAll('.nav-mobile-group').forEach((group) => {
+        if (group.dataset.dropdownBound === 'true') {
+            return;
+        }
+
+        const toggle = group.querySelector('.nav-dropdown-toggle');
+        if (!toggle) {
+            return;
+        }
+
+        toggle.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const isOpen = group.classList.toggle('open');
+            toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        });
+
+        group.dataset.dropdownBound = 'true';
+    });
+
+    if (!document.body.dataset.navDropdownCloseBound) {
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.nav-dropdown.open').forEach((dropdown) => {
+                dropdown.classList.remove('open');
+                const toggle = dropdown.querySelector('.nav-dropdown-toggle');
+                toggle?.setAttribute('aria-expanded', 'false');
+            });
+        });
+        document.body.dataset.navDropdownCloseBound = 'true';
+    }
 }
 
 // Mobile menu toggle

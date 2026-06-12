@@ -235,7 +235,7 @@ body::before {
 .nav {
     display: flex;
     align-items: center;
-    gap: 40px;
+    gap: 28px;
 }
 
 .nav-link {
@@ -2507,4 +2507,1628 @@ html {
 
 .toast-info {
     border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Tools nav dropdown */
+.nav-dropdown {
+    position: relative;
+}
+
+.nav-dropdown-toggle {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    padding: 0;
+}
+
+.nav-dropdown-caret {
+    font-size: 10px;
+    margin-left: 4px;
+    opacity: 0.7;
+    display: inline-block;
+    transition: transform 0.2s ease;
+}
+
+.nav-dropdown.open .nav-dropdown-caret,
+.nav-mobile-group.open .nav-dropdown-caret {
+    transform: rotate(180deg);
+}
+
+.nav-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 12px);
+    left: 50%;
+    transform: translateX(-50%) translateY(6px);
+    min-width: 220px;
+    background: rgba(26, 26, 26, 0.98);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    padding: 8px;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+    z-index: 10002;
+}
+
+.nav-dropdown.open .nav-dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateX(-50%) translateY(0);
+}
+
+.nav-dropdown-item {
+    display: block;
+    padding: 10px 14px;
+    color: var(--secondary-text);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    border-radius: 5px;
+    transition: background 0.2s ease, color 0.2s ease;
+    text-transform: none;
+}
+
+.nav-dropdown-item:hover,
+.nav-dropdown-item.active {
+    background: var(--glass-bg);
+    color: var(--primary-text);
+}
+
+.nav-dropdown-item.active {
+    color: var(--accent-color);
+}
+
+.nav-dropdown-toggle.active {
+    color: var(--accent-color);
+}
+
+.nav-mobile-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.nav-mobile-submenu {
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    padding-left: 12px;
+}
+
+.nav-mobile-group.open .nav-mobile-submenu {
+    display: flex;
+}
+
+.nav-sublink {
+    font-size: 13px !important;
+    text-transform: none !important;
+    letter-spacing: 0.5px !important;
+}
+
+/* LED Video Wall Calculator */
+.led-calculator-page {
+    overflow-x: hidden;
+}
+
+.led-calculator-page .main {
+    margin-top: 0;
+    min-height: 0;
+    padding: 0;
+}
+
+.led-calculator-page .header .container {
+    width: 95vw;
+    max-width: 2200px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: clamp(8px, 1vw, 16px);
+    padding-right: clamp(8px, 1vw, 16px);
+}
+
+.led-calculator-page .calculator-page {
+    width: 95vw;
+    max-width: 2200px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 72px;
+    height: calc(100vh - 72px);
+    padding: 16px 24px;
+    box-sizing: border-box;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.led-calculator-page .led-app {
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.tool-header {
+    margin-bottom: 32px;
+}
+
+.led-calculator-page .led-app-header {
+    margin: 0;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.tool-title {
+    font-size: clamp(1.5rem, 3.5vw, 2.25rem);
+    font-weight: 800;
+    color: var(--primary-text);
+    margin-bottom: clamp(4px, 1vh, 8px);
+}
+
+.tool-subtitle {
+    color: var(--secondary-text);
+    font-size: clamp(0.88rem, 1.8vw, 1.02rem);
+    max-width: 56rem;
+    margin: 0;
+    line-height: 1.45;
+}
+
+.led-calculator-page .tool-subtitle {
+    max-width: none;
+}
+
+.calculator-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-height: 0;
+}
+
+.sidebar,
+.preview-column {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 0;
+}
+
+.led-panel {
+    background: rgba(22, 22, 22, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: clamp(10px, 1.5vw, 12px);
+    padding: clamp(14px, 2.5vw, 20px);
+}
+
+.led-grid-controls {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.led-grid-summary.led-panel {
+    padding: clamp(12px, 2vw, 18px);
+}
+
+.led-grid-summary .led-panel-title {
+    margin-bottom: clamp(10px, 1.5vh, 14px);
+}
+
+.led-grid-summary.led-workflow-step {
+    margin-bottom: 0;
+}
+
+.led-config-swap {
+    position: relative;
+    flex: 0 0 auto;
+    min-height: 0;
+}
+
+.led-config-swap > .led-quick-start,
+.led-config-swap > .led-advanced-panel {
+    position: absolute;
+    inset: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 106, 45, 0.3) transparent;
+}
+
+.led-quick-start {
+    margin-bottom: 0;
+    padding: clamp(12px, 2vw, 16px) 0 0;
+    background: transparent;
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 0;
+}
+
+.led-config-swap.is-advanced > .led-quick-start {
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.led-advanced-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 4px 0 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.led-advanced-panel[hidden] {
+    display: none;
+}
+
+.led-config-footer {
+    flex-shrink: 0;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.led-config-footer-actions {
+    margin-top: clamp(10px, 1.5vh, 14px);
+}
+
+.led-config-footer-actions .led-btn {
+    width: 100%;
+}
+
+.led-config-footer .led-overlay-controls {
+    margin-top: 0;
+}
+
+.led-config-footer .led-actions {
+    margin-top: clamp(10px, 1.5vh, 14px);
+}
+
+.led-custom-pitch-field {
+    margin-top: 12px;
+}
+
+.led-custom-aspect-fields {
+    margin-top: 12px;
+}
+
+.led-quick-start-title {
+    font-size: clamp(0.72rem, 1.6vw, 0.82rem);
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--secondary-text);
+    margin-bottom: clamp(14px, 2vh, 18px);
+}
+
+.led-workflow-step {
+    margin-bottom: clamp(20px, 3vh, 28px);
+    padding-bottom: clamp(4px, 1vh, 8px);
+}
+
+.led-workflow-step:last-child {
+    margin-bottom: 0;
+}
+
+.led-workflow-step-title {
+    font-size: clamp(0.92rem, 2vw, 1.02rem);
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    color: var(--primary-text);
+    margin: 0 0 clamp(12px, 2vh, 16px);
+}
+
+.led-chip-row--grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(8px, 1.5vw, 10px);
+}
+
+.led-pitch-group-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: var(--secondary-text);
+    margin: 0 0 10px;
+}
+
+.led-chip-row--cabinet {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.led-chip-row--common-pitches {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-bottom: 10px;
+}
+
+.led-more-pitches {
+    margin-top: 4px;
+}
+
+.led-more-pitches-summary {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--secondary-text);
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+    padding: 6px 0;
+    transition: color 0.2s ease;
+}
+
+.led-more-pitches-summary::-webkit-details-marker {
+    display: none;
+}
+
+.led-more-pitches-summary::before {
+    content: '▸ ';
+    font-size: 0.7rem;
+}
+
+.led-more-pitches[open] .led-more-pitches-summary::before {
+    content: '▾ ';
+}
+
+.led-more-pitches-summary:hover {
+    color: var(--primary-text);
+}
+
+.led-more-pitches .led-chip-row {
+    margin-top: 8px;
+}
+
+.led-chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.led-chip-row:last-child {
+    margin-bottom: 0;
+}
+
+.led-chip {
+    padding: clamp(10px, 2vh, 12px) clamp(12px, 2vw, 16px);
+    min-height: 44px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.22);
+    color: rgba(255, 255, 255, 0.45);
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.led-chip:hover {
+    border-color: rgba(255, 106, 45, 0.35);
+    color: rgba(255, 255, 255, 0.75);
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.led-chip:active {
+    transform: scale(0.98);
+}
+
+.led-chip.active {
+    background: rgba(255, 106, 45, 0.16);
+    border-color: rgba(255, 106, 45, 0.55);
+    color: var(--primary-text);
+    font-weight: 700;
+    box-shadow: none;
+}
+
+.led-summary-card {
+    display: grid;
+    gap: clamp(8px, 1.5vh, 10px);
+    padding: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+.led-summary-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+}
+
+.led-summary-label {
+    font-size: clamp(0.72rem, 1.6vw, 0.78rem);
+    font-weight: 600;
+    color: var(--secondary-text);
+    letter-spacing: 0.2px;
+    flex-shrink: 0;
+}
+
+.led-summary-value {
+    font-size: clamp(0.86rem, 1.8vw, 0.92rem);
+    font-weight: 700;
+    color: var(--primary-text);
+    text-align: right;
+}
+
+.led-stepper-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.led-stepper-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.led-stepper-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--secondary-text);
+    letter-spacing: 0.5px;
+}
+
+.led-stepper {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.35);
+}
+
+.led-stepper-btn {
+    flex: 0 0 40px;
+    height: 40px;
+    border: none;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--primary-text);
+    font-family: inherit;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.led-stepper-btn:hover {
+    background: rgba(255, 106, 45, 0.18);
+}
+
+.led-stepper-btn:active {
+    background: rgba(255, 106, 45, 0.28);
+}
+
+.led-stepper-value {
+    flex: 1;
+    text-align: center;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--primary-text);
+    min-width: 44px;
+}
+
+.led-resolution-note {
+    font-size: 0.78rem;
+    font-style: italic;
+    color: var(--secondary-text);
+    margin: 14px 0 0;
+}
+
+.led-advanced-content {
+    padding: 0 2px 8px;
+}
+
+.led-advanced-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.led-advanced-section[hidden] {
+    display: none;
+}
+
+.led-advanced-section-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: var(--secondary-text);
+    margin: 0;
+}
+
+.led-advanced-divider {
+    height: 1px;
+    margin: 10px 0;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.led-advanced-debug {
+    margin-top: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.15);
+}
+
+.led-advanced-debug-summary {
+    padding: 8px 10px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--secondary-text);
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+}
+
+.led-advanced-debug-summary::-webkit-details-marker {
+    display: none;
+}
+
+.led-advanced-debug-summary::before {
+    content: '▸ ';
+    font-size: 0.65rem;
+}
+
+.led-advanced-debug[open] .led-advanced-debug-summary::before {
+    content: '▾ ';
+}
+
+.led-advanced-debug-content {
+    padding: 0 10px 10px;
+}
+
+.led-manual-resolution-fields[hidden],
+.led-advanced-divider[hidden] {
+    display: none;
+}
+
+.led-advanced-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.led-advanced-grid-resolution {
+    margin-top: 4px;
+}
+
+.led-advanced-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+.led-advanced-input {
+    display: flex;
+    align-items: center;
+    min-height: 40px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.35);
+}
+
+.led-advanced-input input {
+    flex: 1;
+    width: 100%;
+    min-width: 0;
+    padding: 10px 12px;
+    border: none;
+    background: transparent;
+    color: var(--primary-text);
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.led-advanced-input input:focus {
+    outline: none;
+    box-shadow: inset 0 0 0 2px rgba(255, 106, 45, 0.35);
+}
+
+.led-advanced-input input[readonly] {
+    opacity: 0.8;
+    cursor: not-allowed;
+}
+
+.led-advanced-unit {
+    flex-shrink: 0;
+    padding: 0 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    color: var(--secondary-text);
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.03);
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+}
+
+.led-advanced-toggle {
+    display: block;
+    cursor: pointer;
+}
+
+.led-advanced-toggle input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.led-advanced-toggle-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.35);
+    transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.led-advanced-toggle:hover .led-advanced-toggle-card {
+    border-color: rgba(255, 106, 45, 0.45);
+}
+
+.led-advanced-toggle input:checked + .led-advanced-toggle-card {
+    background: rgba(255, 106, 45, 0.22);
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 1px rgba(255, 106, 45, 0.25);
+}
+
+.led-advanced-toggle-label {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--primary-text);
+    letter-spacing: 0.3px;
+}
+
+.led-advanced-toggle-state {
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--secondary-text);
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.led-advanced-toggle input:checked + .led-advanced-toggle-card .led-advanced-toggle-state {
+    color: #111;
+    background: rgba(255, 106, 45, 0.9);
+}
+
+.led-panel-title {
+    font-size: clamp(0.78rem, 1.8vw, 0.85rem);
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--accent-color);
+    margin-bottom: 18px;
+}
+
+.led-input-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+.led-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.led-field label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--secondary-text);
+    letter-spacing: 0.5px;
+}
+
+.led-field input {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(0, 0, 0, 0.35);
+    color: var(--primary-text);
+    font-family: inherit;
+    font-size: 0.95rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.led-field input:focus,
+.led-field select:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(255, 106, 45, 0.15);
+}
+
+.led-field select,
+.led-select {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(0, 0, 0, 0.35);
+    color: var(--primary-text);
+    font-family: inherit;
+    font-size: 0.95rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+}
+
+.led-overlay-controls {
+    margin-top: 0;
+}
+
+.led-custom-format {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.led-custom-format[hidden] {
+    display: none;
+}
+
+.led-result-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: clamp(12px, 2vw, 16px);
+}
+
+.led-result-card {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    padding: clamp(8px, 1.2vw, 10px) clamp(10px, 1.4vw, 12px);
+}
+
+.led-result-card-title {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--accent-color);
+    margin: 0 0 4px;
+    line-height: 1.2;
+}
+
+.led-result-primary {
+    font-size: 16px;
+    font-weight: 700;
+    color: #ffffff;
+    line-height: 1.25;
+    margin: 0;
+}
+
+.led-result-secondary {
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.78);
+    line-height: 1.35;
+    margin: 4px 0 0;
+}
+
+.led-result-summary {
+    font-size: clamp(0.78rem, 1.5vw, 0.86rem);
+    font-weight: 600;
+    color: var(--primary-text);
+    line-height: 1.35;
+    margin: 0;
+}
+
+.led-result-details {
+    margin-top: 6px;
+    font-size: 0.72rem;
+    color: var(--secondary-text);
+}
+
+.led-result-details summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--secondary-text);
+    list-style: none;
+}
+
+.led-result-details summary::-webkit-details-marker {
+    display: none;
+}
+
+.led-result-details p {
+    margin: 4px 0 0;
+}
+
+.led-advanced-readout {
+    font-size: 0.78rem;
+    color: var(--secondary-text);
+    margin: 0 0 6px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.led-advanced-readout:last-child {
+    margin-bottom: 0;
+}
+
+.led-display-mode {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.led-display-mode-option {
+    display: block;
+    cursor: pointer;
+}
+
+.led-display-mode-option input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.led-display-mode-card {
+    display: block;
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.2);
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: var(--secondary-text);
+    transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.led-display-mode-option:hover .led-display-mode-card {
+    border-color: rgba(255, 255, 255, 0.14);
+    color: var(--primary-text);
+}
+
+.led-display-mode-option input:checked + .led-display-mode-card {
+    background: rgba(255, 106, 45, 0.12);
+    border-color: rgba(255, 106, 45, 0.45);
+    color: var(--primary-text);
+}
+
+
+.led-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: clamp(8px, 1.5vw, 10px);
+    margin-top: clamp(12px, 2vh, 16px);
+}
+
+.led-actions--grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.led-btn {
+    padding: clamp(10px, 2vh, 12px) clamp(14px, 2vw, 16px);
+    min-height: 44px;
+    border-radius: 6px;
+    border: 1px solid var(--glass-border);
+    background: rgba(255, 106, 45, 0.12);
+    color: var(--primary-text);
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+
+.led-btn:hover {
+    background: rgba(255, 106, 45, 0.22);
+    border-color: var(--accent-color);
+}
+
+.led-btn:active {
+    transform: scale(0.98);
+}
+
+.led-btn-secondary {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.led-btn-text {
+    align-self: flex-start;
+    padding: 4px 0;
+    min-height: unset;
+    border: none;
+    background: transparent;
+    color: var(--accent-color);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+}
+
+.led-btn-text:hover {
+    color: var(--primary-text);
+    background: transparent;
+    border-color: transparent;
+}
+
+.led-btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.led-btn-small {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+}
+
+.led-preview-panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    flex: 1;
+}
+
+.led-preview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-shrink: 0;
+    margin-bottom: clamp(8px, 1.5vh, 12px);
+}
+
+.led-preview-header-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--secondary-text);
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.led-preview-header-toggle input {
+    width: 15px;
+    height: 15px;
+    margin: 0;
+    accent-color: var(--accent-color);
+    cursor: pointer;
+}
+
+.led-grid-preview .led-panel-title {
+    flex-shrink: 0;
+    margin-bottom: 0;
+}
+
+.led-preview-number-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--secondary-text);
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.led-preview-number-toggle input {
+    width: 15px;
+    height: 15px;
+    margin: 0;
+    accent-color: var(--accent-color);
+    cursor: pointer;
+}
+
+.led-preview-stage {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: clamp(200px, 32vh, 280px);
+    padding: clamp(10px, 2vw, 16px);
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    overflow: hidden;
+}
+
+.led-preview-wall-container {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.led-preview-wall-container.has-axis-labels {
+    margin-top: 22px;
+    margin-left: 28px;
+}
+
+.led-preview-col-axis,
+.led-preview-row-axis {
+    position: absolute;
+    pointer-events: none;
+}
+
+.led-preview-col-axis {
+    left: 0;
+    right: 0;
+    top: -22px;
+    height: 18px;
+}
+
+.led-preview-row-axis {
+    top: 0;
+    bottom: 0;
+    left: -28px;
+    width: 24px;
+}
+
+.led-preview-col-axis[hidden],
+.led-preview-row-axis[hidden] {
+    display: none;
+}
+
+.led-preview-axis-label {
+    position: absolute;
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 1;
+    color: rgba(255, 255, 255, 0.72);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75);
+}
+
+.led-preview-axis-label--col {
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.led-preview-axis-label--row {
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.led-cabinet-tooltip {
+    position: absolute;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    background: rgba(12, 12, 12, 0.94);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+    font-size: 0.72rem;
+    line-height: 1.35;
+    color: var(--secondary-text);
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+.led-cabinet-tooltip[hidden] {
+    display: none;
+}
+
+.led-cabinet-tooltip strong {
+    color: var(--primary-text);
+    font-size: 0.78rem;
+}
+
+.led-grid-results {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(6px, 1vh, 10px);
+    min-height: 0;
+}
+
+.led-grid-results .led-result-cards {
+    flex: 0 0 auto;
+    align-content: start;
+    min-height: 0;
+}
+
+.led-grid-results .led-result-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+    min-height: 0;
+}
+
+.led-grid-results .led-panel-title {
+    margin-bottom: clamp(8px, 1.5vh, 12px);
+}
+
+.led-content-fit {
+    margin-top: clamp(10px, 1.5vh, 14px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+}
+
+.led-content-fit[hidden] {
+    display: none;
+}
+
+.led-content-fit-summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px 12px;
+    padding: 10px 14px;
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+}
+
+.led-content-fit-summary::-webkit-details-marker {
+    display: none;
+}
+
+.led-content-fit-summary::before {
+    content: '▸';
+    color: var(--secondary-text);
+    font-size: 0.75rem;
+    margin-right: 2px;
+    transition: transform 0.2s ease;
+}
+
+.led-content-fit[open] .led-content-fit-summary::before {
+    transform: rotate(90deg);
+}
+
+.led-content-fit-label {
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--accent-color);
+}
+
+.led-content-fit-oneline {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--primary-text);
+    flex: 1;
+    min-width: 0;
+}
+
+.led-content-fit-details {
+    padding: 0 14px 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.led-content-fit-details p {
+    font-size: 0.8rem;
+    color: var(--secondary-text);
+    margin: 8px 0 0;
+}
+
+.led-preview-wall {
+    position: relative;
+    display: grid;
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.led-cabinet {
+    position: relative;
+    background: linear-gradient(145deg, #3a3a3a 0%, #2a2a2a 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(8px, 1.6vw, 12px);
+    color: rgba(255, 255, 255, 0.88);
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
+    line-height: 1;
+    overflow: hidden;
+}
+
+.led-cabinet.has-cabinet-art--square,
+.led-cabinet.has-cabinet-art--tall {
+    background-color: #1c1c1c;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.led-cabinet.has-cabinet-art--square {
+    background-image:
+        linear-gradient(rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0.42)),
+        url('/images/led-cabinet-square.png');
+}
+
+.led-cabinet.has-cabinet-art--tall {
+    background-image:
+        linear-gradient(rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0.42)),
+        url('/images/led-cabinet-500x1000.png');
+}
+
+.led-cabinet-label {
+    position: relative;
+    z-index: 1;
+    color: inherit;
+    line-height: 1;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
+}
+
+.led-cabinet.label-large .led-cabinet-label {
+    font-weight: 800;
+}
+
+.led-cabinet.label-medium .led-cabinet-label,
+.led-cabinet.label-small .led-cabinet-label {
+    font-weight: 700;
+}
+
+@media (min-width: 900px) {
+    .led-cabinet {
+        cursor: default;
+    }
+}
+
+.led-cabinet.dimmed {
+    background: linear-gradient(145deg, #1f1f1f 0%, #141414 100%);
+    border-color: rgba(255, 255, 255, 0.06);
+}
+
+.led-overlay-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.led-overlay-shade {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.62);
+}
+
+.led-overlay-frame {
+    position: absolute;
+    border: 2px solid rgba(255, 106, 45, 0.85);
+    box-shadow: inset 0 0 20px rgba(255, 106, 45, 0.06);
+    pointer-events: none;
+}
+
+.led-overlay-label {
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 106, 45, 0.9);
+    color: #111;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.led-overlay-debug {
+    margin-top: 12px;
+    padding: 12px 14px;
+    background: rgba(255, 106, 45, 0.1);
+    border: 1px dashed rgba(255, 106, 45, 0.45);
+    border-radius: 8px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.82rem;
+}
+
+.led-overlay-debug[hidden] {
+    display: none;
+}
+
+.led-overlay-debug-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--accent-color);
+    margin-bottom: 8px;
+}
+
+.led-overlay-debug p {
+    margin-bottom: 4px;
+    color: var(--secondary-text);
+}
+
+.led-overlay-debug strong {
+    color: var(--primary-text);
+}
+
+@media (min-width: 900px) {
+    body.led-calculator-page {
+        overflow: hidden;
+    }
+
+    .led-calculator-page .calculator-page {
+        margin-top: 72px;
+        height: calc(100vh - 72px);
+        max-height: calc(100vh - 72px);
+        padding: 16px 24px;
+        overflow: hidden;
+    }
+
+    .led-calculator-page .tool-title {
+        font-size: clamp(1.2rem, 2vw, 1.45rem);
+        margin: 0;
+    }
+
+    .led-calculator-page .tool-subtitle {
+        display: none;
+    }
+
+    .calculator-layout {
+        flex: 1;
+        height: 100%;
+        min-height: 0;
+        display: grid;
+        grid-template-columns: 340px 1fr;
+        gap: 16px;
+        overflow: hidden;
+    }
+
+    .sidebar {
+        height: 100%;
+        min-height: 0;
+        display: grid;
+        grid-template-rows: auto 1fr;
+        gap: 12px;
+        overflow: hidden;
+    }
+
+    .wall-configuration-card {
+        height: 100%;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        padding: 8px 10px;
+    }
+
+    .led-config-swap {
+        flex: 1 1 auto;
+        min-height: 0;
+    }
+
+    .led-config-swap > .led-quick-start,
+    .led-config-swap > .led-advanced-panel {
+        position: static;
+        overflow: visible;
+        inset: auto;
+    }
+
+    .led-config-swap.is-advanced > .led-quick-start {
+        display: none;
+    }
+
+    .led-config-footer {
+        flex-shrink: 0;
+        margin-top: 8px;
+        padding-top: 8px;
+    }
+
+    .preview-column {
+        height: 100%;
+        min-height: 0;
+        display: grid;
+        grid-template-rows: 1fr auto;
+        gap: 12px;
+        overflow: hidden;
+    }
+
+    .wall-preview-card {
+        min-height: 0;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .results-row {
+        height: auto;
+        padding: 8px 10px;
+        overflow: visible;
+    }
+
+    .led-grid-summary.led-panel {
+        padding: 8px 10px;
+    }
+
+    .led-grid-summary .led-panel-title {
+        margin-bottom: 4px;
+    }
+
+    .led-grid-controls .led-panel-title {
+        font-size: clamp(0.85rem, 1.2vw, 0.95rem);
+        margin-bottom: 6px;
+    }
+
+    .led-quick-start {
+        padding-top: 8px;
+    }
+
+    .led-quick-start-title {
+        margin-bottom: 8px;
+    }
+
+    .led-workflow-step {
+        margin-bottom: 10px;
+        padding-bottom: 0;
+    }
+
+    .led-workflow-step-title {
+        margin-bottom: 8px;
+        font-size: 0.88rem;
+    }
+
+    .led-panel {
+        padding: clamp(10px, 1.2vw, 14px);
+    }
+
+    .led-grid-preview .led-panel-title,
+    .led-grid-results .led-panel-title {
+        display: none;
+    }
+
+    .led-preview-header {
+        justify-content: flex-end;
+        margin-bottom: clamp(4px, 0.6vh, 8px);
+    }
+
+    .led-preview-stage {
+        flex: 1 1 auto;
+        min-height: 0;
+        height: auto;
+        max-height: none;
+        padding: clamp(8px, 1vw, 12px);
+    }
+
+    .led-cabinet {
+        font-size: clamp(10px, 1.1vw, 14px);
+    }
+
+    .led-result-cards {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 8px;
+        height: auto;
+    }
+
+    .led-grid-results .led-result-card {
+        padding: 8px 10px;
+    }
+}
+
+@media (min-width: 1400px) {
+    .led-calculator-page .header .container,
+    .led-calculator-page .calculator-page {
+        width: min(95vw, 2200px);
+        max-width: min(95vw, 2200px);
+    }
+
+    .led-chip-row--common-pitches {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
+    .led-chip-row--common-pitches .led-chip:nth-child(5):last-child {
+        grid-column: auto;
+    }
+}
+
+@media (max-width: 899px) {
+    body.led-calculator-page {
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+
+    .led-calculator-page .calculator-page {
+        margin-top: 72px;
+        height: auto;
+        max-height: none;
+        overflow: visible;
+        padding: 16px;
+    }
+
+    .led-calculator-page .led-app {
+        height: auto;
+        overflow: visible;
+    }
+
+    .calculator-layout,
+    .sidebar,
+    .preview-column {
+        height: auto;
+        overflow: visible;
+    }
+
+    .wall-configuration-card,
+    .wall-preview-card {
+        height: auto;
+    }
+
+    .led-config-swap {
+        min-height: clamp(260px, 42vh, 380px);
+    }
+
+    .led-grid-controls > .led-panel-title {
+        display: none;
+    }
+
+    .led-preview-stage {
+        min-height: clamp(220px, 40vw, 360px);
+        max-height: min(52vh, 480px);
+    }
+
+    .led-stepper-btn {
+        flex: 0 0 48px;
+        height: 48px;
+    }
+
+    .led-chip-row--common-pitches {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .led-chip-row--common-pitches .led-chip:nth-child(5):last-child {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 768px) {
+    .nav-dropdown-menu {
+        left: auto;
+        right: 0;
+        transform: translateY(6px);
+    }
+
+    .nav-dropdown.open .nav-dropdown-menu {
+        transform: translateY(0);
+    }
+
+    .led-input-grid,
+    .led-custom-format,
+    .led-stepper-group,
+    .led-advanced-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .led-actions:not(.led-actions--grid) {
+        flex-direction: column;
+    }
+
+    .led-actions:not(.led-actions--grid) .led-btn {
+        width: 100%;
+        text-align: center;
+    }
 }

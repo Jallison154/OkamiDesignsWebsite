@@ -30,12 +30,26 @@
                     <a href="home.html" class="nav-link">HOME</a>
                     <a href="services.html" class="nav-link">SERVICES</a>
                     <a href="support.html" class="nav-link">SUPPORT</a>
+                    <div class="nav-dropdown">
+                        <button type="button" class="nav-link nav-dropdown-toggle" aria-expanded="false" aria-haspopup="true">
+                            TOOLS <span class="nav-dropdown-caret" aria-hidden="true">▾</span>
+                        </button>
+                        <div class="nav-dropdown-menu" role="menu">
+                            <a href="tools/led-wall-visualizer.html" class="nav-dropdown-item" role="menuitem">LED Video Wall Calculator</a>
+                        </div>
+                    </div>
                     <a href="contact.html" class="nav-link contact-btn active">CONTACT</a>
                 </nav>
                 <nav class="nav-mobile">
                     <a href="home.html" class="nav-link">HOME</a>
                     <a href="services.html" class="nav-link">SERVICES</a>
                     <a href="support.html" class="nav-link">SUPPORT</a>
+                    <div class="nav-mobile-group">
+                        <button type="button" class="nav-link nav-dropdown-toggle" aria-expanded="false">TOOLS <span class="nav-dropdown-caret" aria-hidden="true">▾</span></button>
+                        <div class="nav-mobile-submenu">
+                            <a href="tools/led-wall-visualizer.html" class="nav-link nav-sublink">LED Video Wall Calculator</a>
+                        </div>
+                    </div>
                     <a href="contact.html" class="nav-link contact-btn active">CONTACT</a>
                 </nav>
             </div>
@@ -106,26 +120,7 @@
         </div>
     </main>
 
-    <footer class="footer">
-        <div class="container">
-            <div class="footer-content">
-                <div class="footer-links">
-                    <a href="home.html" class="footer-link">Home</a>
-                    <a href="services.html" class="footer-link">Services</a>
-                    <a href="support.html" class="footer-link">Support</a>
-                    <a href="contact.html" class="footer-link active-footer">Contact</a>
-                </div>
-                <div class="footer-tech">
-                    <div class="tech-indicator">
-                        <div class="pulse-dot"></div>
-                        <span>MONTANA-BASED • ENGINEERING CREATIVITY</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </footer>
-    
-    <!-- Animated background particles -->
+<!-- Animated background particles -->
     <div id="particles-js"></div>
 
     <script src="script.js"></script>
