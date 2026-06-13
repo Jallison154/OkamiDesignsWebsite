@@ -158,6 +158,22 @@
                                         </div>
                                     </div>
                                 </div>
+
+                                <div class="led-overlay-controls led-workflow-step led-workflow-step--compact" id="workflow-step-overlay">
+                                    <div class="led-field">
+                                        <label for="overlay-format">Content Format Overlay</label>
+                                        <select id="overlay-format" class="led-select">
+                                            <option value="none">None</option>
+                                            <option value="16:9" selected>16:9</option>
+                                            <option value="4:3">4:3</option>
+                                            <option value="1:1">1:1</option>
+                                            <option value="21:9">21:9</option>
+                                            <option value="2.35:1">2.35:1</option>
+                                            <option value="3:1">3:1</option>
+                                            <option value="custom">Custom</option>
+                                        </select>
+                                    </div>
+                                </div>
                             </div>
 
                             <div class="led-advanced-panel" id="led-advanced-panel" hidden>
@@ -302,29 +318,6 @@
                         <input type="hidden" id="cabinet-height-mm" value="500">
                         <input type="hidden" id="pixel-pitch-mm" value="2.6">
                         <div class="led-config-footer">
-                            <div class="led-overlay-controls">
-                                <div class="led-field">
-                                    <label id="overlay-format-label" for="overlay-format-trigger">Content Format Overlay</label>
-                                    <div class="led-custom-select" id="overlay-format-select">
-                                        <input type="hidden" id="overlay-format" value="16:9">
-                                        <button type="button" class="led-custom-select-trigger" id="overlay-format-trigger" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="overlay-format-label overlay-format-value">
-                                            <span class="led-custom-select-value" id="overlay-format-value">16:9</span>
-                                            <span class="led-custom-select-caret" aria-hidden="true"></span>
-                                        </button>
-                                        <ul class="led-custom-select-menu" id="overlay-format-menu" role="listbox" aria-labelledby="overlay-format-label" hidden>
-                                            <li class="led-custom-select-option" role="option" data-value="none" tabindex="-1">None</li>
-                                            <li class="led-custom-select-option is-selected" role="option" data-value="16:9" aria-selected="true" tabindex="-1">16:9</li>
-                                            <li class="led-custom-select-option" role="option" data-value="4:3" tabindex="-1">4:3</li>
-                                            <li class="led-custom-select-option" role="option" data-value="1:1" tabindex="-1">1:1</li>
-                                            <li class="led-custom-select-option" role="option" data-value="21:9" tabindex="-1">21:9</li>
-                                            <li class="led-custom-select-option" role="option" data-value="2.35:1" tabindex="-1">2.35:1</li>
-                                            <li class="led-custom-select-option" role="option" data-value="3:1" tabindex="-1">3:1</li>
-                                            <li class="led-custom-select-option" role="option" data-value="custom" tabindex="-1">Custom</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-
                             <div class="led-actions led-actions--grid">
                                 <button type="button" class="led-btn led-btn-secondary led-btn-small" id="led-clear-overlay">Clear Overlay</button>
                                 <button type="button" class="led-btn led-btn-secondary" id="led-reset">Reset Calculator</button>

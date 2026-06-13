@@ -2950,12 +2950,8 @@ html {
 
 .led-config-swap > .led-quick-start,
 .led-config-swap > .led-advanced-panel {
-    position: absolute;
-    inset: 0;
-    overflow-x: hidden;
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255, 106, 45, 0.3) transparent;
+    position: static;
+    overflow: visible;
 }
 
 .led-quick-start {
@@ -2968,8 +2964,7 @@ html {
 }
 
 .led-config-swap.is-advanced > .led-quick-start {
-    visibility: hidden;
-    pointer-events: none;
+    display: none;
 }
 
 .led-advanced-panel {
@@ -2986,13 +2981,13 @@ html {
 
 .led-config-footer {
     flex-shrink: 0;
-    margin-top: 10px;
-    padding-top: 10px;
+    margin-top: 8px;
+    padding-top: 8px;
     border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .led-config-footer-actions {
-    margin-top: clamp(10px, 1.5vh, 14px);
+    margin-top: 10px;
 }
 
 .led-config-footer-actions .led-btn {
@@ -3004,7 +2999,7 @@ html {
 }
 
 .led-config-footer .led-actions {
-    margin-top: clamp(10px, 1.5vh, 14px);
+    margin-top: 0;
 }
 
 .led-custom-pitch-field {
@@ -3025,8 +3020,12 @@ html {
 }
 
 .led-workflow-step {
-    margin-bottom: clamp(20px, 3vh, 28px);
-    padding-bottom: clamp(4px, 1vh, 8px);
+    margin-bottom: clamp(16px, 2vh, 20px);
+    padding-bottom: 0;
+}
+
+.led-workflow-step--compact {
+    margin-bottom: 0;
 }
 
 .led-workflow-step:last-child {
@@ -3180,7 +3179,7 @@ html {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
-    margin-bottom: 14px;
+    margin-bottom: 0;
 }
 
 .led-stepper-row {
@@ -3198,49 +3197,53 @@ html {
 
 .led-stepper {
     display: flex;
-    align-items: center;
+    align-items: stretch;
     gap: 0;
     border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 6px;
+    border-radius: 8px;
     overflow: hidden;
-    background: rgba(0, 0, 0, 0.35);
+    background: #111;
+    min-height: 44px;
 }
 
 .led-stepper-btn {
-    flex: 0 0 40px;
-    height: 40px;
+    flex: 0 0 44px;
+    height: 44px;
     border: none;
-    background: rgba(255, 255, 255, 0.04);
-    color: var(--primary-text);
+    background: rgba(0, 0, 0, 0.45);
+    color: #fff;
     font-family: inherit;
     font-size: 1.1rem;
     font-weight: 700;
     cursor: pointer;
-    transition: background 0.2s ease;
+    transition: background 0.2s ease, color 0.2s ease;
 }
 
 .led-stepper-btn:hover {
-    background: rgba(255, 106, 45, 0.18);
+    background: rgba(255, 106, 45, 0.22);
+    color: #fff;
 }
 
 .led-stepper-btn:active {
-    background: rgba(255, 106, 45, 0.28);
+    background: rgba(255, 106, 45, 0.32);
 }
 
 .led-stepper-value {
     flex: 1;
     width: 100%;
     min-width: 44px;
-    padding: 0 4px;
+    min-height: 44px;
+    padding: 0 6px;
     border: none;
-    background: transparent;
+    background: #111;
+    color: #fff;
     text-align: center;
     font-family: inherit;
     font-size: 1rem;
     font-weight: 700;
-    color: var(--primary-text);
     appearance: textfield;
     -moz-appearance: textfield;
+    -webkit-appearance: none;
 }
 
 .led-stepper-value::-webkit-outer-spin-button,
@@ -3251,12 +3254,20 @@ html {
 
 .led-stepper-value:focus {
     outline: none;
-    background: rgba(255, 106, 45, 0.08);
+    background: #111;
+}
+
+.led-stepper-value:-webkit-autofill,
+.led-stepper-value:-webkit-autofill:hover,
+.led-stepper-value:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 1000px #111 inset;
+    -webkit-text-fill-color: #fff;
+    caret-color: #fff;
 }
 
 .led-stepper:focus-within {
-    border-color: rgba(255, 106, 45, 0.45);
-    box-shadow: 0 0 0 2px rgba(255, 106, 45, 0.12);
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(255, 106, 45, 0.15);
 }
 
 .led-resolution-note {
@@ -3505,43 +3516,59 @@ html {
 
 .led-field select,
 .led-select {
+    display: block;
     width: 100%;
-    padding: 10px 36px 10px 12px;
+    min-height: 44px;
+    height: 44px;
+    padding: 0 36px 0 12px;
     border-radius: 8px;
-    border: 1px solid rgba(255, 106, 45, 0.28);
-    background-color: rgba(26, 26, 26, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background-color: #111;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23FF6A2D' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 12px center;
     background-size: 12px 8px;
-    color: var(--primary-text);
+    color: #fff;
     font-family: inherit;
     font-size: 0.95rem;
     font-weight: 600;
-    line-height: 1.4;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+    line-height: 44px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
     cursor: pointer;
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
     color-scheme: dark;
+    box-sizing: border-box;
 }
 
 .led-field select:hover,
 .led-select:hover {
-    border-color: rgba(255, 106, 45, 0.5);
-    background-color: rgba(34, 34, 34, 0.98);
+    border-color: rgba(255, 106, 45, 0.45);
+    background-color: #161616;
+}
+
+.led-field select:focus,
+.led-select:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(255, 106, 45, 0.15);
 }
 
 .led-field select option,
 .led-select option {
-    background-color: var(--secondary-bg);
-    color: var(--primary-text);
+    background-color: #1a1a1a;
+    color: #fff;
     font-weight: 500;
 }
 
 .led-overlay-controls {
     margin-top: 0;
+    margin-bottom: 12px;
+}
+
+.led-overlay-controls .led-field {
+    gap: 8px;
 }
 
 .led-overlay-controls .led-field label {
@@ -3550,108 +3577,6 @@ html {
     letter-spacing: 0.6px;
     text-transform: uppercase;
     font-size: 0.72rem;
-}
-
-.led-custom-select {
-    position: relative;
-}
-
-.led-custom-select-trigger {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 10px 12px;
-    border-radius: 8px;
-    border: 1px solid rgba(255, 106, 45, 0.28);
-    background: rgba(26, 26, 26, 0.95);
-    color: var(--primary-text);
-    font-family: inherit;
-    font-size: 0.95rem;
-    font-weight: 600;
-    line-height: 1.4;
-    cursor: pointer;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
-}
-
-.led-custom-select-trigger:hover,
-.led-custom-select.is-open .led-custom-select-trigger {
-    border-color: rgba(255, 106, 45, 0.55);
-    background: rgba(34, 34, 34, 0.98);
-}
-
-.led-custom-select-trigger:focus {
-    outline: none;
-    border-color: var(--accent-color);
-    box-shadow: 0 0 0 3px rgba(255, 106, 45, 0.15);
-}
-
-.led-custom-select-value {
-    text-align: left;
-}
-
-.led-custom-select-caret {
-    flex-shrink: 0;
-    width: 12px;
-    height: 8px;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23FF6A2D' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: contain;
-    transition: transform 0.2s ease;
-}
-
-.led-custom-select.is-open .led-custom-select-caret {
-    transform: rotate(180deg);
-}
-
-.led-custom-select-menu {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: calc(100% + 8px);
-    z-index: 10003;
-    margin: 0;
-    padding: 6px;
-    list-style: none;
-    background: rgba(22, 22, 22, 0.98);
-    border: 1px solid rgba(255, 106, 45, 0.28);
-    border-radius: 8px;
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(12px);
-    max-height: min(280px, 50vh);
-    overflow-y: auto;
-}
-
-.led-custom-select-menu[hidden] {
-    display: none;
-}
-
-.led-custom-select-option {
-    padding: 10px 12px;
-    border-radius: 6px;
-    color: var(--secondary-text);
-    font-size: 0.92rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.15s ease, color 0.15s ease;
-    user-select: none;
-}
-
-.led-custom-select-option:hover {
-    background: rgba(255, 106, 45, 0.12);
-    color: var(--primary-text);
-}
-
-.led-custom-select-option.is-selected {
-    background: rgba(255, 106, 45, 0.2);
-    color: var(--accent-color);
-}
-
-.led-custom-select-option.is-selected:hover {
-    background: rgba(255, 106, 45, 0.28);
-    color: var(--accent-color);
 }
 
 .led-custom-format {
@@ -4308,15 +4233,8 @@ html {
     }
 
     .led-config-swap {
-        flex: 1 1 auto;
+        flex: 0 0 auto;
         min-height: 0;
-    }
-
-    .led-config-swap > .led-quick-start,
-    .led-config-swap > .led-advanced-panel {
-        position: static;
-        overflow: visible;
-        inset: auto;
     }
 
     .led-config-swap.is-advanced > .led-quick-start {
@@ -4484,10 +4402,6 @@ html {
     .wall-configuration-card,
     .wall-preview-card {
         height: auto;
-    }
-
-    .led-config-swap {
-        min-height: clamp(260px, 42vh, 380px);
     }
 
     .led-grid-controls > .led-panel-title {
