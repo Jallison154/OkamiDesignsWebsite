@@ -88,6 +88,17 @@
     const MAX_PANEL_COUNT = 500;
     const PANEL_COUNT_IDS = ['panels-wide', 'panels-tall'];
 
+    const OVERLAY_FORMAT_OPTIONS = {
+        none: 'None',
+        '16:9': '16:9',
+        '4:3': '4:3',
+        '1:1': '1:1',
+        '21:9': '21:9',
+        '2.35:1': '2.35:1',
+        '3:1': '3:1',
+        custom: 'Custom'
+    };
+
     const OVERLAY_DEBUG = new URLSearchParams(window.location.search).has('debug');
     const CABINET_NUMBERS_SESSION_KEY = 'led-show-cabinet-numbers';
     const CABINET_ART = {
@@ -131,10 +142,7 @@
         document.getElementById('mesh-pitch-horizontal-mm')?.addEventListener('input', onMeshPitchChange);
         document.getElementById('mesh-pitch-vertical-mm')?.addEventListener('input', onMeshPitchChange);
 
-        document.getElementById('overlay-format')?.addEventListener('change', () => {
-            toggleCustomFormatFields();
-            updateAll();
-        });
+        initOverlayFormatDropdown();
 
         document.getElementById('custom-format-width')?.addEventListener('input', updateAll);
         document.getElementById('custom-format-height')?.addEventListener('input', updateAll);
@@ -592,6 +600,83 @@
         setInputValue('pixel-height', pixelHeight);
     }
 
+    function initOverlayFormatDropdown() {
+        const root = document.getElementById('overlay-format-select');
+        const trigger = document.getElementById('overlay-format-trigger');
+        const menu = document.getElementById('overlay-format-menu');
+        if (!root || !trigger || !menu || root.dataset.bound === 'true') {
+            return;
+        }
+
+        root.dataset.bound = 'true';
+
+        const openMenu = () => {
+            root.classList.add('is-open');
+            trigger.setAttribute('aria-expanded', 'true');
+            menu.hidden = false;
+        };
+
+        const closeMenu = () => {
+            root.classList.remove('is-open');
+            trigger.setAttribute('aria-expanded', 'false');
+            menu.hidden = true;
+        };
+
+        trigger.addEventListener('click', () => {
+            if (root.classList.contains('is-open')) {
+                closeMenu();
+            } else {
+                openMenu();
+            }
+        });
+
+        menu.querySelectorAll('.led-custom-select-option').forEach((option) => {
+            option.addEventListener('click', () => {
+                const value = option.dataset.value;
+                if (!value) {
+                    return;
+                }
+
+                setOverlayFormat(value);
+                toggleCustomFormatFields();
+                updateAll();
+                closeMenu();
+                trigger.focus();
+            });
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!root.contains(event.target)) {
+                closeMenu();
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && root.classList.contains('is-open')) {
+                closeMenu();
+                trigger.focus();
+            }
+        });
+
+        syncOverlayFormatDropdown(getOverlayFormat());
+    }
+
+    function syncOverlayFormatDropdown(format) {
+        const valueEl = document.getElementById('overlay-format-value');
+        const menu = document.getElementById('overlay-format-menu');
+        const label = OVERLAY_FORMAT_OPTIONS[format] || format;
+
+        if (valueEl) {
+            valueEl.textContent = label;
+        }
+
+        menu?.querySelectorAll('.led-custom-select-option').forEach((option) => {
+            const isSelected = option.dataset.value === format;
+            option.classList.toggle('is-selected', isSelected);
+            option.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+        });
+    }
+
     function toggleCustomFormatFields() {
         const customAspect = document.getElementById('led-custom-aspect-section');
         const format = getOverlayFormat();
@@ -636,10 +721,11 @@
     }
 
     function setOverlayFormat(format) {
-        const select = document.getElementById('overlay-format');
-        if (select) {
-            select.value = format;
+        const input = document.getElementById('overlay-format');
+        if (input) {
+            input.value = format;
         }
+        syncOverlayFormatDropdown(format);
     }
 
     function openAdvancedView() {
