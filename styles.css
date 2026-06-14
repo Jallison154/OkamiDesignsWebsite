@@ -3629,6 +3629,11 @@ html {
     margin: 4px 0 0;
 }
 
+.led-result-secondary--stacked {
+    white-space: pre-line;
+    line-height: 1.45;
+}
+
 .led-result-summary {
     font-size: clamp(0.78rem, 1.5vw, 0.86rem);
     font-weight: 600;

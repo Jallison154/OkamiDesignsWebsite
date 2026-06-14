@@ -19,6 +19,7 @@
         autoCalculateResolution: true,
         overlayFormat: '16:9',
         portCapacity: 650000,
+        portFillThreshold: 90,
         customFormatWidth: 32,
         customFormatHeight: 9,
         showCabinetNumbers: false
@@ -128,6 +129,14 @@
         document.getElementById('pixel-width')?.addEventListener('input', onManualPixelChange);
         document.getElementById('pixel-height')?.addEventListener('input', onManualPixelChange);
         document.getElementById('port-capacity')?.addEventListener('input', updateAll);
+        document.getElementById('port-fill-threshold')?.addEventListener('input', updateAll);
+        document.getElementById('port-fill-threshold')?.addEventListener('blur', () => {
+            const input = document.getElementById('port-fill-threshold');
+            if (input) {
+                input.value = readPortFillThreshold();
+            }
+            updateAll();
+        });
         document.getElementById('mesh-pitch-horizontal-mm')?.addEventListener('input', onMeshPitchChange);
         document.getElementById('mesh-pitch-vertical-mm')?.addEventListener('input', onMeshPitchChange);
 
@@ -691,6 +700,7 @@
         setInputValue('pixel-width', DEFAULTS.pixelWidth);
         setInputValue('pixel-height', DEFAULTS.pixelHeight);
         setInputValue('port-capacity', DEFAULTS.portCapacity);
+        setInputValue('port-fill-threshold', DEFAULTS.portFillThreshold);
         setInputValue('custom-format-width', DEFAULTS.customFormatWidth);
         setInputValue('custom-format-height', DEFAULTS.customFormatHeight);
         setOverlayFormat(DEFAULTS.overlayFormat);
@@ -726,6 +736,14 @@
         return Number.isFinite(value) && value > 0 ? value : fallback;
     }
 
+    function readPortFillThreshold() {
+        const value = parseInt(document.getElementById('port-fill-threshold')?.value, 10);
+        if (!Number.isFinite(value)) {
+            return DEFAULTS.portFillThreshold;
+        }
+        return Math.min(100, Math.max(50, Math.round(value)));
+    }
+
     function getState() {
         const cabinetWidthMM = readNumber('cabinet-width-mm', DEFAULTS.cabinetWidthMM);
         const cabinetHeightMM = readNumber('cabinet-height-mm', DEFAULTS.cabinetHeightMM);
@@ -735,6 +753,7 @@
         const pixelWidth = readInt('pixel-width', DEFAULTS.pixelWidth);
         const pixelHeight = readInt('pixel-height', DEFAULTS.pixelHeight);
         const portCapacity = readInt('port-capacity', DEFAULTS.portCapacity);
+        const portFillThreshold = readPortFillThreshold();
         const overlayFormat = getOverlayFormat();
         const displayType = getDisplayType();
 
@@ -744,7 +763,10 @@
         const totalPixelWidth = pixelWidth * panelsWide;
         const totalPixelHeight = pixelHeight * panelsTall;
         const totalPixels = totalPixelWidth * totalPixelHeight;
-        const portsRequired = Math.ceil(totalPixels / portCapacity);
+        const usablePixelsPerPort = Math.floor(portCapacity * (portFillThreshold / 100));
+        const portsRequired = usablePixelsPerPort > 0
+            ? Math.ceil(totalPixels / usablePixelsPerPort)
+            : 0;
         const aspectRatio = totalPixelWidth / totalPixelHeight;
         const closestRatio = getClosestStandardRatio(aspectRatio);
         const targetRatio = isOverlayActive() ? getTargetRatio(overlayFormat) : null;
@@ -768,6 +790,8 @@
             totalPixelHeight,
             totalPixels,
             portCapacity,
+            portFillThreshold,
+            usablePixelsPerPort,
             portsRequired,
             aspectRatio,
             closestRatio,
@@ -969,10 +993,18 @@
             `${state.totalPixels.toLocaleString()} total px · ${state.closestRatio.label}`
         );
         setText('result-processor-primary', `${state.portsRequired} ports`);
-        setText(
-            'result-processor-secondary',
-            `${formatPortCapacity(state.portCapacity)} px/port`
-        );
+        setMultilineText('result-processor-secondary', [
+            `${state.portFillThreshold}% max fill`,
+            `${formatPortCapacity(state.usablePixelsPerPort)} usable / port`,
+            `${formatPortCapacity(state.portCapacity)} max / port`
+        ]);
+    }
+
+    function setMultilineText(id, lines) {
+        const el = document.getElementById(id);
+        if (el) {
+            el.textContent = lines.join('\n');
+        }
     }
 
     function updateDeveloperDebug(state) {
