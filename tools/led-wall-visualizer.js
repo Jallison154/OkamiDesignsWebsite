@@ -975,28 +975,45 @@
         setText('summary-processor-ports', String(state.portsRequired));
     }
 
+    function formatTotalPixels(totalPixels) {
+        if (totalPixels >= 1000000) {
+            const millions = totalPixels / 1000000;
+            const formatted = millions >= 10 ? millions.toFixed(1) : millions.toFixed(2);
+            return `${formatted.replace(/\.?0+$/, '')}M`;
+        }
+        if (totalPixels >= 1000) {
+            return `${Math.round(totalPixels / 1000)}k`;
+        }
+        return totalPixels.toLocaleString();
+    }
+
+    function formatPortCount(count) {
+        const label = count === 1 ? 'Port' : 'Ports';
+        return `${count} ${label}`;
+    }
+
     function updateResults(state) {
         setText(
             'result-wall-primary',
             `${formatFeetInches(state.physicalWidthFt)} × ${formatFeetInches(state.physicalHeightFt)}`
         );
-        setText(
-            'result-wall-secondary',
-            `${state.panelsWide}×${state.panelsTall} · ${state.totalPanels.toLocaleString()} panels`
-        );
+        setMultilineText('result-wall-secondary', [
+            `${state.panelsWide} × ${state.panelsTall}`,
+            `${state.totalPanels.toLocaleString()} panels`
+        ]);
         setText(
             'result-resolution-primary',
-            `${formatPixelPair(state.totalPixelWidth, state.totalPixelHeight, true)} px`
+            formatPixelPair(state.totalPixelWidth, state.totalPixelHeight, true)
         );
-        setText(
-            'result-resolution-secondary',
-            `${state.totalPixels.toLocaleString()} total px · ${state.closestRatio.label}`
-        );
-        setText('result-processor-primary', `${state.portsRequired} ports`);
+        setMultilineText('result-resolution-secondary', [
+            `${formatTotalPixels(state.totalPixels)} pixels`,
+            state.closestRatio.label
+        ]);
+        setText('result-processor-primary', formatPortCount(state.portsRequired));
         setMultilineText('result-processor-secondary', [
             `${state.portFillThreshold}% max fill`,
-            `${formatPortCapacity(state.usablePixelsPerPort)} usable / port`,
-            `${formatPortCapacity(state.portCapacity)} max / port`
+            `${formatPortCapacity(state.usablePixelsPerPort)} usable/port`,
+            `${formatPortCapacity(state.portCapacity)} max/port`
         ]);
     }
 
@@ -1039,21 +1056,11 @@
 
         fitCard.hidden = false;
         const usedPercent = Math.round(state.overlay.usedPercentage);
-        setText(
-            'result-content-fit-summary',
-            `${state.overlayFormatLabel} · ${formatPixelPair(state.overlay.overlayPixelWidth, state.overlay.overlayPixelHeight, false)} · ${usedPercent}% used`
-        );
-
-        if (state.overlay.unusedHorizontal > 0) {
-            setText('content-fit-unused', `Unused: ${state.overlay.unusedHorizontal} px horizontal`);
-        } else if (state.overlay.unusedVertical > 0) {
-            setText('content-fit-unused', `Unused: ${state.overlay.unusedVertical} px vertical`);
-        } else {
-            setText('content-fit-unused', 'No unused pixels');
-        }
-
-        setText('content-fit-wall-ratio', `Wall ratio: ${state.aspectRatio.toFixed(3)}`);
-        setText('content-fit-overlay-ratio', `Overlay ratio: ${state.overlay.overlayAspectRatio.toFixed(3)}`);
+        setText('result-content-fit-primary', `${usedPercent}% Used`);
+        setMultilineText('result-content-fit-secondary', [
+            state.overlayFormatLabel,
+            formatPixelPair(state.overlay.overlayPixelWidth, state.overlay.overlayPixelHeight, false)
+        ]);
         updateOverlayDebug(state);
     }
 
