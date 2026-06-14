@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Analytics - Okami Designs</title>
+    <meta name="description" content="Okami Designs Admin Analytics">
+    <link rel="icon" href="images/Okami_Designs_HeadWhite.png" type="image/png">
+    <link rel="stylesheet" href="styles.css?v=20251107">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body class="admin-analytics-page">
+    <div id="admin-panel" class="admin-panel">
+        <header class="header">
+            <div class="container">
+                <div class="nav-wrapper">
+                    <div class="logo">
+                        <a href="home.html">
+                            <img src="GFX/Full/Okami_Designs_FullW.png" alt="Okami Designs" class="logo-img">
+                        </a>
+                    </div>
+                    <button class="mobile-menu-toggle" aria-label="Toggle menu">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
+                    <nav class="nav">
+                        <a href="admin.html" class="nav-link">DASHBOARD</a>
+                        <a href="admin-analytics.html" class="nav-link active">ANALYTICS</a>
+                        <button type="button" id="logout-btn" class="nav-link contact-btn">LOGOUT</button>
+                    </nav>
+                    <nav class="nav-mobile">
+                        <a href="admin.html" class="nav-link">DASHBOARD</a>
+                        <a href="admin-analytics.html" class="nav-link active">ANALYTICS</a>
+                        <button type="button" id="logout-btn-mobile" class="nav-link contact-btn">LOGOUT</button>
+                    </nav>
+                </div>
+            </div>
+        </header>
+
+        <main class="main">
+            <div class="container">
+                <div class="admin-dashboard">
+                    <h1 class="admin-title">Analytics</h1>
+                    <p class="admin-subtitle">First-party page view tracking for public site pages.</p>
+
+                    <section class="analytics-section">
+                        <div class="analytics-toolbar">
+                            <div class="analytics-sort">
+                                <label for="analytics-sort" class="analytics-sort-label">Sort by</label>
+                                <select id="analytics-sort" class="analytics-select">
+                                    <option value="most-viewed">Most viewed</option>
+                                    <option value="newest-viewed">Newest viewed</option>
+                                    <option value="page-name">Page name</option>
+                                </select>
+                            </div>
+                            <div class="analytics-actions">
+                                <span class="analytics-actions-label">Reset data</span>
+                                <div class="analytics-actions-buttons">
+                                    <button type="button" id="analytics-reset-today" class="analytics-btn analytics-btn-secondary">Reset Today</button>
+                                    <button type="button" id="analytics-reset-month" class="analytics-btn analytics-btn-secondary">Reset This Month</button>
+                                    <button type="button" id="analytics-reset-all" class="analytics-btn analytics-btn-danger">Reset All</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <p id="analytics-status" class="analytics-status">Loading analytics...</p>
+
+                        <div class="analytics-table-wrap">
+                            <table class="analytics-table" aria-describedby="analytics-status">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Page</th>
+                                        <th scope="col">Today</th>
+                                        <th scope="col">This Month</th>
+                                        <th scope="col">Total</th>
+                                        <th scope="col">Daily Avg</th>
+                                        <th scope="col">Monthly Avg</th>
+                                        <th scope="col">Last Viewed</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="analytics-table-body">
+                                    <tr>
+                                        <td colspan="7">Loading...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="modal-container" class="modal-container" aria-hidden="true">
+        <div class="modal-backdrop"></div>
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1">
+            <div class="modal-header">
+                <h3 id="modal-title">Notice</h3>
+                <button type="button" id="modal-close" class="modal-close" aria-label="Close dialog">&times;</button>
+            </div>
+            <div id="modal-body" class="modal-body"></div>
+            <div id="modal-actions" class="modal-actions"></div>
+        </div>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="admin-api.js?v=20251107"></script>
+    <script src="admin-analytics.js?v=20251107"></script>
+</body>
+</html>

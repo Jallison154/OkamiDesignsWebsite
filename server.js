@@ -10,6 +10,7 @@ const PORT = 3000;
 const FILES_DIR = path.join(__dirname, 'files');
 const MANIFEST_PATH = path.join(FILES_DIR, 'manifest.json');
 const SITE_SETTINGS_PATH = path.join(FILES_DIR, 'site-settings.json');
+const ANALYTICS_PATH = path.join(FILES_DIR, 'analytics.json');
 
 const DEFAULT_SITE_SETTINGS = {
     constructionMode: false,
@@ -166,6 +167,181 @@ async function writeSiteSettings(settings) {
     normalized.updatedAt = new Date().toISOString();
     await fs.writeFile(SITE_SETTINGS_PATH, JSON.stringify(normalized, null, 2));
     return normalized;
+}
+
+// Keep in sync with page-registry.js
+const TRACKABLE_PAGES = [
+    { path: '/home.html', title: 'Home' },
+    { path: '/services.html', title: 'Services' },
+    { path: '/support.html', title: 'Support' },
+    { path: '/contact.html', title: 'Contact' },
+    { path: '/tools/led-wall-visualizer.html', title: 'LED Video Wall Calculator' },
+    { path: '/', title: 'Construction Splash' }
+];
+
+function createEmptyPageRecord(title) {
+    return {
+        title,
+        totalViews: 0,
+        dailyViews: {},
+        monthlyViews: {},
+        lastViewedAt: null
+    };
+}
+
+function normalizeAnalyticsStore(raw) {
+    const pages = {};
+    TRACKABLE_PAGES.forEach((entry) => {
+        const existing = raw?.pages?.[entry.path] || {};
+        pages[entry.path] = {
+            title: existing.title || entry.title,
+            totalViews: Number(existing.totalViews) || 0,
+            dailyViews: existing.dailyViews && typeof existing.dailyViews === 'object' ? existing.dailyViews : {},
+            monthlyViews: existing.monthlyViews && typeof existing.monthlyViews === 'object' ? existing.monthlyViews : {},
+            lastViewedAt: existing.lastViewedAt || null
+        };
+    });
+
+    Object.entries(raw?.pages || {}).forEach(([pathKey, page]) => {
+        if (pages[pathKey]) {
+            return;
+        }
+        pages[pathKey] = {
+            title: page?.title || pathKey,
+            totalViews: Number(page?.totalViews) || 0,
+            dailyViews: page?.dailyViews && typeof page.dailyViews === 'object' ? page.dailyViews : {},
+            monthlyViews: page?.monthlyViews && typeof page.monthlyViews === 'object' ? page.monthlyViews : {},
+            lastViewedAt: page?.lastViewedAt || null
+        };
+    });
+
+    return {
+        pages,
+        updatedAt: raw?.updatedAt || null
+    };
+}
+
+async function readAnalytics() {
+    try {
+        const data = await fs.readFile(ANALYTICS_PATH, 'utf8');
+        return normalizeAnalyticsStore(JSON.parse(data));
+    } catch {
+        return normalizeAnalyticsStore({ pages: {} });
+    }
+}
+
+async function writeAnalytics(analytics) {
+    const normalized = normalizeAnalyticsStore(analytics);
+    normalized.updatedAt = new Date().toISOString();
+    await fs.writeFile(ANALYTICS_PATH, JSON.stringify(normalized, null, 2));
+    return normalized;
+}
+
+function getDateKeys(date = new Date()) {
+    const iso = date.toISOString();
+    return {
+        day: iso.slice(0, 10),
+        month: iso.slice(0, 7)
+    };
+}
+
+function computePageStats(page, dateKeys) {
+    const dayCount = Object.keys(page.dailyViews || {}).length;
+    const monthCount = Object.keys(page.monthlyViews || {}).length;
+    const viewsToday = Number(page.dailyViews?.[dateKeys.day]) || 0;
+    const viewsThisMonth = Number(page.monthlyViews?.[dateKeys.month]) || 0;
+    const totalViews = Number(page.totalViews) || 0;
+
+    return {
+        path: page.path,
+        title: page.title,
+        totalViews,
+        viewsToday,
+        viewsThisMonth,
+        dailyAverage: dayCount > 0 ? Math.round((totalViews / dayCount) * 10) / 10 : 0,
+        monthlyAverage: monthCount > 0 ? Math.round((totalViews / monthCount) * 10) / 10 : 0,
+        lastViewedAt: page.lastViewedAt || null
+    };
+}
+
+function buildAnalyticsReport(analytics) {
+    const dateKeys = getDateKeys();
+    const rows = Object.entries(analytics.pages).map(([pathKey, page]) => {
+        return computePageStats({ ...page, path: pathKey }, dateKeys);
+    });
+
+    return {
+        updatedAt: analytics.updatedAt,
+        pages: rows
+    };
+}
+
+async function recordAnalyticsView(path, title) {
+    const analytics = await readAnalytics();
+    const normalizedPath = path || '/';
+    const registryEntry = TRACKABLE_PAGES.find((entry) => entry.path === normalizedPath);
+
+    if (!analytics.pages[normalizedPath]) {
+        analytics.pages[normalizedPath] = createEmptyPageRecord(
+            title || registryEntry?.title || normalizedPath
+        );
+    }
+
+    const page = analytics.pages[normalizedPath];
+    const dateKeys = getDateKeys();
+    const now = new Date().toISOString();
+
+    page.title = title || page.title || registryEntry?.title || normalizedPath;
+    page.totalViews = (Number(page.totalViews) || 0) + 1;
+    page.dailyViews[dateKeys.day] = (Number(page.dailyViews[dateKeys.day]) || 0) + 1;
+    page.monthlyViews[dateKeys.month] = (Number(page.monthlyViews[dateKeys.month]) || 0) + 1;
+    page.lastViewedAt = now;
+
+    return writeAnalytics(analytics);
+}
+
+async function resetAnalytics(scope) {
+    const analytics = await readAnalytics();
+    const dateKeys = getDateKeys();
+
+    if (scope === 'all') {
+        Object.keys(analytics.pages).forEach((pathKey) => {
+            const title = analytics.pages[pathKey].title;
+            analytics.pages[pathKey] = createEmptyPageRecord(title);
+        });
+    } else if (scope === 'today') {
+        Object.values(analytics.pages).forEach((page) => {
+            if (page.dailyViews?.[dateKeys.day]) {
+                const removed = Number(page.dailyViews[dateKeys.day]) || 0;
+                delete page.dailyViews[dateKeys.day];
+                page.totalViews = Math.max(0, (Number(page.totalViews) || 0) - removed);
+
+                Object.keys(page.monthlyViews || {}).forEach((monthKey) => {
+                    if (monthKey === dateKeys.month) {
+                        page.monthlyViews[monthKey] = Math.max(
+                            0,
+                            (Number(page.monthlyViews[monthKey]) || 0) - removed
+                        );
+                    }
+                });
+            }
+        });
+    } else if (scope === 'month') {
+        Object.values(analytics.pages).forEach((page) => {
+            const monthViews = Number(page.monthlyViews?.[dateKeys.month]) || 0;
+            if (monthViews > 0) {
+                Object.entries(page.dailyViews || {}).forEach(([dayKey, count]) => {
+                    if (dayKey.startsWith(dateKeys.month)) {
+                        delete page.dailyViews[dayKey];
+                    }
+                });
+                delete page.monthlyViews[dateKeys.month];
+                page.totalViews = Math.max(0, (Number(page.totalViews) || 0) - monthViews);
+            }
+        });
+    }
+
+    return writeAnalytics(analytics);
 }
 
 // API Routes
@@ -474,6 +650,49 @@ app.put('/api/site-settings', async (req, res) => {
     } catch (error) {
         console.error('Error saving site settings:', error);
         res.status(500).json({ error: 'Failed to save site settings' });
+    }
+});
+
+// Site analytics
+app.post('/api/analytics/view', async (req, res) => {
+    try {
+        const pathValue = (req.body?.path || '').trim();
+        const title = (req.body?.title || '').trim();
+
+        if (!pathValue) {
+            return res.status(400).json({ error: 'Page path is required' });
+        }
+
+        const analytics = await recordAnalyticsView(pathValue, title);
+        res.json({ success: true, updatedAt: analytics.updatedAt });
+    } catch (error) {
+        console.error('Error recording analytics view:', error);
+        res.status(500).json({ error: 'Failed to record analytics view' });
+    }
+});
+
+app.get('/api/analytics', async (req, res) => {
+    try {
+        const analytics = await readAnalytics();
+        res.json(buildAnalyticsReport(analytics));
+    } catch (error) {
+        console.error('Error reading analytics:', error);
+        res.status(500).json({ error: 'Failed to read analytics' });
+    }
+});
+
+app.post('/api/analytics/reset', async (req, res) => {
+    try {
+        const scope = req.body?.scope;
+        if (!['today', 'month', 'all'].includes(scope)) {
+            return res.status(400).json({ error: 'Invalid reset scope' });
+        }
+
+        const analytics = await resetAnalytics(scope);
+        res.json({ success: true, report: buildAnalyticsReport(analytics) });
+    } catch (error) {
+        console.error('Error resetting analytics:', error);
+        res.status(500).json({ error: 'Failed to reset analytics' });
     }
 });
 

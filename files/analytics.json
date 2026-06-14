@@ -1,0 +1,55 @@
+{
+  "pages": {
+    "/home.html": {
+      "title": "Home",
+      "totalViews": 1,
+      "dailyViews": {
+        "2026-06-14": 1
+      },
+      "monthlyViews": {
+        "2026-06": 1
+      },
+      "lastViewedAt": "2026-06-14T00:10:52.619Z"
+    },
+    "/services.html": {
+      "title": "Services",
+      "totalViews": 0,
+      "dailyViews": {},
+      "monthlyViews": {},
+      "lastViewedAt": null
+    },
+    "/support.html": {
+      "title": "Support",
+      "totalViews": 0,
+      "dailyViews": {},
+      "monthlyViews": {},
+      "lastViewedAt": null
+    },
+    "/contact.html": {
+      "title": "Contact",
+      "totalViews": 0,
+      "dailyViews": {},
+      "monthlyViews": {},
+      "lastViewedAt": null
+    },
+    "/tools/led-wall-visualizer.html": {
+      "title": "LED Video Wall Calculator",
+      "totalViews": 0,
+      "dailyViews": {},
+      "monthlyViews": {},
+      "lastViewedAt": null
+    },
+    "/": {
+      "title": "Construction Splash",
+      "totalViews": 1,
+      "dailyViews": {
+        "2026-06-14": 1
+      },
+      "monthlyViews": {
+        "2026-06": 1
+      },
+      "lastViewedAt": "2026-06-14T00:10:52.564Z"
+    }
+  },
+  "updatedAt": "2026-06-14T00:10:52.619Z"
+}

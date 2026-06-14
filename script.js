@@ -294,6 +294,10 @@ async function updatePageContent(html, url, anchor = '') {
     } else {
         window.scrollTo({ top: 0, behavior: 'auto' });
     }
+
+    if (window.OkamiAnalytics && typeof window.OkamiAnalytics.trackPageView === 'function') {
+        window.OkamiAnalytics.trackPageView(url);
+    }
 }
 
 async function loadPageScripts(doc, pageUrl) {

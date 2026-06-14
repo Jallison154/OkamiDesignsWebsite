@@ -155,6 +155,40 @@ async function saveSiteSettings(settings) {
     }
 }
 
+async function getAnalyticsReport() {
+    try {
+        const response = await fetch(`${API_BASE}/analytics`, { cache: 'no-store' });
+        if (!response.ok) {
+            throw new Error(`Failed to fetch analytics: ${response.statusText}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching analytics:', error);
+        throw error;
+    }
+}
+
+async function resetAnalytics(scope) {
+    try {
+        const response = await fetch(`${API_BASE}/analytics/reset`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ scope })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to reset analytics: ${response.statusText}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error resetting analytics:', error);
+        throw error;
+    }
+}
+
 // Check if API is available
 async function checkAPIHealth() {
     try {

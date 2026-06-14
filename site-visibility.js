@@ -13,7 +13,7 @@
         }
     };
 
-    const PAGE_PATHS = {
+    const PAGE_PATHS = window.OkamiPageRegistry?.getVisibilityPagePaths?.() || {
         home: ['home.html'],
         services: ['services.html'],
         support: ['support.html'],
@@ -21,8 +21,9 @@
         ledVideoWallCalculator: ['tools/led-wall-visualizer.html']
     };
 
-    const EXEMPT_PATHS = new Set([
+    const EXEMPT_PATHS = window.OkamiPageRegistry?.EXEMPT_PATHS || new Set([
         'admin.html',
+        'admin-analytics.html',
         '404.html',
         '50x.html'
     ]);
