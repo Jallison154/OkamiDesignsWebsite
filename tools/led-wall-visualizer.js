@@ -1070,7 +1070,7 @@
     }
 
     function isDesktopPreview() {
-        return window.matchMedia('(min-width: 900px)').matches;
+        return window.matchMedia('(min-width: 1200px)').matches;
     }
 
     function getLabelTier(cellWidth) {
@@ -1105,7 +1105,7 @@
     }
 
     function getTierFontSize(tier, cellWidth) {
-        const isMobile = window.matchMedia('(max-width: 899px)').matches;
+        const isMobile = window.matchMedia('(max-width: 767px)').matches;
         const minFont = isMobile ? 8 : 10;
 
         if (tier === LABEL_TIER.LARGE) {

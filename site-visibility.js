@@ -21,18 +21,22 @@
         ledVideoWallCalculator: ['tools/led-wall-visualizer.html']
     };
 
-    const EXEMPT_PATHS = window.OkamiPageRegistry?.EXEMPT_PATHS || new Set([
-        'admin.html',
-        'admin-analytics.html',
-        '404.html',
-        '50x.html'
-    ]);
+    const SYSTEM_PAGES = new Set(['404.html', '50x.html']);
+    const ADMIN_LOGIN_PAGE = 'admin.html';
+    const ADMIN_ANALYTICS_PAGE = 'admin-analytics.html';
+    const SETTINGS_POLL_INTERVAL_MS = 15000;
 
     let settingsCache = null;
     let settingsPromise = null;
+    let settingsPollTimer = null;
+    let lastAppliedSettingsSignature = null;
 
     function isAdminUser() {
         return sessionStorage.getItem('adminAuthenticated') === 'true';
+    }
+
+    function getUserRole() {
+        return isAdminUser() ? 'admin' : 'public';
     }
 
     function normalizePath(pathname) {
@@ -44,18 +48,24 @@
     }
 
     function isSplashPage(pathname) {
-        const path = normalizePath(pathname);
-        return path === '';
+        return normalizePath(pathname) === '';
     }
 
-    function isAdminPage(pathname) {
-        const path = normalizePath(pathname);
-        return path === 'admin.html';
+    function isSystemPage(pathname) {
+        return SYSTEM_PAGES.has(normalizePath(pathname));
     }
 
-    function isExemptPage(pathname) {
+    function isAdminLoginPage(pathname) {
+        return normalizePath(pathname) === ADMIN_LOGIN_PAGE;
+    }
+
+    function isAdminAnalyticsPage(pathname) {
+        return normalizePath(pathname) === ADMIN_ANALYTICS_PAGE;
+    }
+
+    function isAdminRoute(pathname) {
         const path = normalizePath(pathname);
-        return EXEMPT_PATHS.has(path);
+        return path === ADMIN_LOGIN_PAGE || path === ADMIN_ANALYTICS_PAGE;
     }
 
     function getPageKeyFromPath(pathname) {
@@ -66,7 +76,7 @@
         }
 
         for (const [key, paths] of Object.entries(PAGE_PATHS)) {
-            if (paths.includes(path)) {
+            if (paths.some((candidate) => candidate.toLowerCase() === path)) {
                 return key;
             }
         }
@@ -83,23 +93,39 @@
         }
     }
 
+    function isToolsPath(pathname) {
+        return normalizePath(pathname).startsWith('tools/');
+    }
+
     function getSplashUrl() {
-        const path = window.location.pathname;
-        if (path.includes('/tools/')) {
-            return '../index.html';
-        }
-        return 'index.html';
+        return window.location.pathname.includes('/tools/') ? '../index.html' : 'index.html';
     }
 
     function getNotFoundUrl() {
-        const path = window.location.pathname;
-        if (path.includes('/tools/')) {
-            return '../404.html';
-        }
-        return '404.html';
+        return window.location.pathname.includes('/tools/') ? '../404.html' : '404.html';
     }
 
-    async function fetchSiteSettings() {
+    function getHomeUrl() {
+        return window.location.pathname.includes('/tools/') ? '../home.html' : 'home.html';
+    }
+
+    function getAdminLoginUrl() {
+        return window.location.pathname.includes('/tools/') ? '../admin.html' : 'admin.html';
+    }
+
+    function getSettingsSignature(settings) {
+        return JSON.stringify({
+            constructionMode: Boolean(settings?.constructionMode),
+            pages: settings?.pages || {}
+        });
+    }
+
+    async function fetchSiteSettings(forceRefresh = false) {
+        if (forceRefresh) {
+            settingsCache = null;
+            settingsPromise = null;
+        }
+
         if (settingsCache) {
             return settingsCache;
         }
@@ -117,7 +143,9 @@
                 }
 
                 try {
-                    const staticPrefix = window.location.pathname.includes('/tools/') ? '../files/site-settings.json' : 'files/site-settings.json';
+                    const staticPrefix = window.location.pathname.includes('/tools/')
+                        ? '../files/site-settings.json'
+                        : 'files/site-settings.json';
                     const response = await fetch(`${staticPrefix}?t=${Date.now()}`, { cache: 'no-store' });
                     if (response.ok) {
                         settingsCache = mergeSettings(await response.json());
@@ -148,48 +176,88 @@
         };
     }
 
-    function getAccessBlockReason(settings, pathname) {
-        if (isAdminUser() || isAdminPage(pathname) || isExemptPage(pathname)) {
-            return null;
+    /**
+     * Central route visibility check.
+     * @param {string} pathname
+     * @param {'admin'|'public'} userRole
+     * @param {object} settings
+     * @returns {{ allowed: boolean, reason: string|null }}
+     */
+    function canAccessPage(pathname, userRole, settings) {
+        if (isSystemPage(pathname)) {
+            return { allowed: true, reason: null };
         }
 
-        const splash = isSplashPage(pathname);
+        if (isAdminLoginPage(pathname)) {
+            return { allowed: true, reason: null };
+        }
+
+        if (isAdminAnalyticsPage(pathname)) {
+            if (userRole === 'admin') {
+                return { allowed: true, reason: null };
+            }
+            return { allowed: false, reason: 'admin-auth' };
+        }
+
+        if (userRole === 'admin') {
+            return { allowed: true, reason: null };
+        }
 
         if (settings.constructionMode) {
-            return splash ? null : 'construction';
+            if (isSplashPage(pathname)) {
+                return { allowed: true, reason: null };
+            }
+            return { allowed: false, reason: 'construction' };
         }
 
-        if (splash) {
-            return 'home';
+        if (isSplashPage(pathname)) {
+            return { allowed: true, reason: null };
         }
 
-        const path = normalizePath(pathname);
-        if (path.startsWith('tools/') && settings.pages.tools === false) {
-            return 'hidden';
+        if (isToolsPath(pathname) && settings.pages.tools === false) {
+            return { allowed: false, reason: 'hidden' };
         }
 
         const pageKey = getPageKeyFromPath(pathname);
         if (pageKey && settings.pages[pageKey] === false) {
-            return 'hidden';
+            return { allowed: false, reason: 'hidden' };
         }
 
-        return null;
+        return { allowed: true, reason: null };
     }
 
-    function redirectForReason(reason) {
+    function getAccessBlockReason(settings, pathname) {
+        const access = canAccessPage(pathname, getUserRole(), settings);
+        return access.allowed ? null : access.reason;
+    }
+
+    function redirectForReason(reason, settings) {
         if (reason === 'construction') {
             window.location.replace(getSplashUrl());
             return;
         }
 
-        if (reason === 'home') {
-            const homeUrl = window.location.pathname.includes('/tools/') ? '../home.html' : 'home.html';
-            window.location.replace(homeUrl);
+        if (reason === 'hidden') {
+            if (settings?.constructionMode) {
+                window.location.replace(getSplashUrl());
+            } else {
+                window.location.replace(getNotFoundUrl());
+            }
             return;
         }
 
-        if (reason === 'hidden') {
-            window.location.replace(getNotFoundUrl());
+        if (reason === 'admin-auth') {
+            window.location.replace(getAdminLoginUrl());
+        }
+    }
+
+    function revealPage() {
+        document.documentElement.classList.remove('site-visibility-pending');
+    }
+
+    function hidePageUntilCheck() {
+        if (getUserRole() !== 'admin') {
+            document.documentElement.classList.add('site-visibility-pending');
         }
     }
 
@@ -197,17 +265,15 @@
         const settings = await fetchSiteSettings();
         const reason = getAccessBlockReason(settings, window.location.pathname);
         if (reason) {
-            redirectForReason(reason);
+            redirectForReason(reason, settings);
             return false;
         }
+
+        revealPage();
         return true;
     }
 
     async function canAccessUrl(url) {
-        if (isAdminUser()) {
-            return true;
-        }
-
         const settings = await fetchSiteSettings();
 
         try {
@@ -215,34 +281,24 @@
             if (parsed.origin !== window.location.origin) {
                 return true;
             }
-            return getAccessBlockReason(settings, parsed.pathname) === null;
+
+            return canAccessPage(parsed.pathname, getUserRole(), settings).allowed;
         } catch {
             return true;
         }
     }
 
     async function enforceUrlAccess(url) {
-        if (isAdminUser()) {
-            return true;
-        }
-
         const settings = await fetchSiteSettings();
 
         try {
             const parsed = new URL(url, window.location.origin);
-            const reason = getAccessBlockReason(settings, parsed.pathname);
-            if (!reason) {
+            const access = canAccessPage(parsed.pathname, getUserRole(), settings);
+            if (access.allowed) {
                 return true;
             }
 
-            if (reason === 'construction') {
-                window.location.href = parsed.pathname.includes('/tools/') ? '../index.html' : 'index.html';
-            } else if (reason === 'home') {
-                window.location.href = parsed.pathname.includes('/tools/') ? '../home.html' : 'home.html';
-            } else {
-                window.location.href = parsed.pathname.includes('/tools/') ? '../404.html' : '404.html';
-            }
-
+            redirectForReason(access.reason, settings);
             return false;
         } catch {
             return true;
@@ -282,7 +338,6 @@
         });
 
         const showToolsMenu = pages.tools !== false && pages.ledVideoWallCalculator !== false;
-        // Tools menu requires both the Tools section and at least one visible tool page.
         document.querySelectorAll('.nav-dropdown').forEach((dropdown) => {
             setNavItemVisible(dropdown, showToolsMenu);
         });
@@ -291,14 +346,66 @@
         });
     }
 
+    async function applyLiveSettingsUpdate(settings) {
+        applyNavigation(settings);
+
+        if (getUserRole() === 'admin') {
+            return;
+        }
+
+        const reason = getAccessBlockReason(settings, window.location.pathname);
+        if (reason) {
+            redirectForReason(reason, settings);
+        }
+    }
+
+    function startSettingsPolling() {
+        if (settingsPollTimer) {
+            return;
+        }
+
+        settingsPollTimer = window.setInterval(async () => {
+            await pollSettingsUpdate();
+        }, SETTINGS_POLL_INTERVAL_MS);
+
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                pollSettingsUpdate();
+            }
+        });
+
+        window.addEventListener('storage', (event) => {
+            if (event.key === 'okami-site-settings-updated') {
+                pollSettingsUpdate();
+            }
+        });
+    }
+
+    async function pollSettingsUpdate() {
+        const previousSignature = lastAppliedSettingsSignature;
+        const settings = await fetchSiteSettings(true);
+        const nextSignature = getSettingsSignature(settings);
+
+        if (previousSignature === nextSignature) {
+            return;
+        }
+
+        lastAppliedSettingsSignature = nextSignature;
+        await applyLiveSettingsUpdate(settings);
+    }
+
     async function initSiteVisibility() {
+        hidePageUntilCheck();
+
         const allowed = await enforceCurrentPage();
         if (!allowed) {
             return;
         }
 
         const settings = await fetchSiteSettings();
+        lastAppliedSettingsSignature = getSettingsSignature(settings);
         applyNavigation(settings);
+        startSettingsPolling();
     }
 
     function refreshSiteVisibility() {
@@ -312,11 +419,15 @@
         fetchSiteSettings,
         applyNavigation,
         enforceCurrentPage,
+        canAccessPage,
         canAccessUrl,
         enforceUrlAccess,
         refreshSiteVisibility,
         isAdminUser,
-        getPageKeyFromUrl
+        getUserRole,
+        getPageKeyFromUrl,
+        isAdminRoute,
+        isSplashPage
     };
 
     initSiteVisibility();

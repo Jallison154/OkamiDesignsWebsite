@@ -13,7 +13,16 @@
     
     // Session timeout configuration (30 minutes in milliseconds)
     const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+    const ADMIN_COOKIE_MAX_AGE = 30 * 60;
     let sessionTimeoutInterval = null;
+
+    function setAdminAccessCookie() {
+        document.cookie = `okami_admin=1; path=/; max-age=${ADMIN_COOKIE_MAX_AGE}; SameSite=Strict`;
+    }
+
+    function clearAdminAccessCookie() {
+        document.cookie = 'okami_admin=; path=/; max-age=0; SameSite=Strict';
+    }
 
     // Track selected files
     let selectedLogo = null;
@@ -410,6 +419,7 @@
     }
 
     function showAdminPanel() {
+        setAdminAccessCookie();
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('admin-panel').style.display = 'block';
         loadSiteVisibilitySettings();
@@ -536,6 +546,7 @@
             if (apiAvailable) {
                 await saveSiteSettings(settings);
                 localStorage.setItem(SITE_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+                localStorage.setItem('okami-site-settings-updated', Date.now().toString());
                 setVisibilitySaveStatus('Settings saved successfully.');
                 showToast('Site visibility settings saved.', 'success');
                 return;
@@ -606,6 +617,7 @@
                 // Store authentication state and timestamp
                 sessionStorage.setItem('adminAuthenticated', 'true');
                 sessionStorage.setItem('adminAuthTime', Date.now().toString());
+                setAdminAccessCookie();
                 showAdminPanel();
                 errorMsg.textContent = '';
                 // Start session timeout
@@ -652,6 +664,7 @@
         // Clear session data
         sessionStorage.removeItem('adminAuthenticated');
         sessionStorage.removeItem('adminAuthTime');
+        clearAdminAccessCookie();
         
         // Clear timeout interval
         if (sessionTimeoutInterval) {

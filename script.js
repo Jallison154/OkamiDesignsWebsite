@@ -142,6 +142,18 @@ function handleDocumentLinkClick(event) {
 function handlePopState(event) {
     const stateUrl = event.state && event.state.url ? event.state.url : window.location.href;
     const parsedUrl = new URL(stateUrl, window.location.origin);
+
+    if (window.SiteVisibility && typeof window.SiteVisibility.canAccessUrl === 'function') {
+        window.SiteVisibility.canAccessUrl(parsedUrl.toString()).then((allowed) => {
+            if (!allowed) {
+                window.SiteVisibility.enforceUrlAccess(parsedUrl.toString());
+                return;
+            }
+            navigateTo(parsedUrl.toString(), { addToHistory: false, anchor: parsedUrl.hash });
+        });
+        return;
+    }
+
     navigateTo(parsedUrl.toString(), { addToHistory: false, anchor: parsedUrl.hash });
 }
 
@@ -185,6 +197,14 @@ async function hideTransitionOverlay() {
 async function navigateTo(url, { addToHistory = true, anchor = '' } = {}) {
     if (isNavigating) {
         return;
+    }
+
+    if (window.SiteVisibility && typeof window.SiteVisibility.canAccessUrl === 'function') {
+        const allowed = await window.SiteVisibility.canAccessUrl(url);
+        if (!allowed) {
+            window.SiteVisibility.enforceUrlAccess(url);
+            return;
+        }
     }
 
     isNavigating = true;

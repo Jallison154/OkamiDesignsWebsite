@@ -2,14 +2,15 @@
   "pages": {
     "/home.html": {
       "title": "Home",
-      "totalViews": 1,
+      "totalViews": 2,
       "dailyViews": {
-        "2026-06-14": 1
+        "2026-06-14": 1,
+        "2026-06-15": 1
       },
       "monthlyViews": {
-        "2026-06": 1
+        "2026-06": 2
       },
-      "lastViewedAt": "2026-06-14T00:10:52.619Z"
+      "lastViewedAt": "2026-06-15T01:49:53.899Z"
     },
     "/services.html": {
       "title": "Services",
@@ -34,22 +35,27 @@
     },
     "/tools/led-wall-visualizer.html": {
       "title": "LED Video Wall Calculator",
-      "totalViews": 0,
-      "dailyViews": {},
-      "monthlyViews": {},
-      "lastViewedAt": null
-    },
-    "/": {
-      "title": "Construction Splash",
       "totalViews": 1,
       "dailyViews": {
-        "2026-06-14": 1
+        "2026-06-15": 1
       },
       "monthlyViews": {
         "2026-06": 1
       },
-      "lastViewedAt": "2026-06-14T00:10:52.564Z"
+      "lastViewedAt": "2026-06-15T01:49:57.051Z"
+    },
+    "/": {
+      "title": "Construction Splash",
+      "totalViews": 2,
+      "dailyViews": {
+        "2026-06-14": 1,
+        "2026-06-15": 1
+      },
+      "monthlyViews": {
+        "2026-06": 2
+      },
+      "lastViewedAt": "2026-06-15T01:49:53.438Z"
     }
   },
-  "updatedAt": "2026-06-14T00:10:52.619Z"
+  "updatedAt": "2026-06-15T01:49:57.051Z"
 }

@@ -10,6 +10,10 @@ html {
     scrollbar-width: none;
 }
 
+html.site-visibility-pending body {
+    visibility: hidden;
+}
+
 html::-webkit-scrollbar,
 body::-webkit-scrollbar {
     width: 0;
@@ -3062,6 +3066,8 @@ html {
 /* LED Video Wall Calculator */
 .led-calculator-page {
     --calculator-header-offset: 92px;
+    --calculator-sidebar-width: minmax(340px, 380px);
+    --calculator-layout-gap: clamp(12px, 2vw, 16px);
     overflow-x: hidden;
 }
 
@@ -3081,27 +3087,28 @@ html {
 }
 
 .led-calculator-page .calculator-page {
-    width: 95vw;
-    max-width: 2200px;
+    width: min(95vw, 2200px);
+    max-width: min(95vw, 2200px);
     margin-left: auto;
     margin-right: auto;
     margin-top: 0;
-    padding: calc(var(--calculator-header-offset) + 14px) clamp(16px, 3vw, 24px) 16px;
-    height: calc(100vh - var(--calculator-header-offset));
+    padding: calc(var(--calculator-header-offset) + clamp(12px, 2vh, 18px)) clamp(16px, 3vw, 24px) clamp(16px, 2vh, 24px);
+    height: auto;
+    max-height: none;
     box-sizing: border-box;
-    overflow: hidden;
+    overflow: visible;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: var(--calculator-layout-gap);
 }
 
 .led-calculator-page .led-app {
-    flex: 1;
+    flex: 1 1 auto;
     min-height: 0;
-    height: 100%;
+    height: auto;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .tool-header {
@@ -3135,18 +3142,44 @@ html {
 }
 
 .calculator-layout {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-areas:
+        "summary"
+        "config"
+        "preview"
+        "results";
+    gap: var(--calculator-layout-gap);
+    align-items: start;
     min-height: 0;
 }
 
 .sidebar,
 .preview-column {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    min-height: 0;
+    display: contents;
+}
+
+.led-grid-summary {
+    grid-area: summary;
+}
+
+.wall-configuration-card {
+    grid-area: config;
+}
+
+.wall-preview-card {
+    grid-area: preview;
+}
+
+.results-row {
+    grid-area: results;
+}
+
+.led-grid-summary,
+.wall-configuration-card,
+.wall-preview-card,
+.results-row {
+    min-width: 0;
 }
 
 .led-panel {
@@ -3824,7 +3857,7 @@ html {
 
 .led-result-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: 1fr;
     gap: clamp(10px, 1.5vw, 14px);
 }
 
@@ -4067,12 +4100,12 @@ html {
 }
 
 .led-preview-stage {
-    flex: 1;
+    flex: 1 1 auto;
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: clamp(200px, 32vh, 280px);
+    min-height: clamp(220px, 36vh, 320px);
     padding: clamp(10px, 2vw, 16px);
     background: rgba(0, 0, 0, 0.35);
     border-radius: 10px;
@@ -4318,7 +4351,7 @@ html {
     font-weight: 700;
 }
 
-@media (min-width: 900px) {
+@media (min-width: 1200px) {
     .led-cabinet {
         cursor: default;
     }
@@ -4400,19 +4433,59 @@ html {
     color: var(--primary-text);
 }
 
-@media (min-width: 900px) {
+/* Tablet: 768–1199px */
+@media (min-width: 768px) and (max-width: 1199px) {
+    .led-calculator-page {
+        --calculator-header-offset: 92px;
+    }
+
+    .calculator-layout {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-areas:
+            "summary config"
+            "preview preview"
+            "results results";
+    }
+
+    .led-preview-stage {
+        min-height: clamp(280px, 42vw, 520px);
+    }
+
+    .led-result-cards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .led-grid-results .led-result-card {
+        min-height: clamp(104px, 12vw, 128px);
+    }
+
+    .led-chip-row--common-pitches {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .led-chip-row--common-pitches .led-chip:nth-child(5):last-child {
+        grid-column: auto;
+    }
+}
+
+/* Desktop: 1200–1799px */
+@media (min-width: 1200px) {
     body.led-calculator-page {
         overflow: hidden;
     }
 
     .led-calculator-page .calculator-page {
-        margin-top: 0;
-        padding-top: calc(var(--calculator-header-offset) + 12px);
         height: calc(100vh - var(--calculator-header-offset));
         max-height: calc(100vh - var(--calculator-header-offset));
-        padding-right: 24px;
+        overflow: hidden;
+        padding-top: calc(var(--calculator-header-offset) + 12px);
         padding-bottom: 16px;
-        padding-left: 24px;
+    }
+
+    .led-calculator-page .led-app {
+        flex: 1;
+        min-height: 0;
+        height: 100%;
         overflow: hidden;
     }
 
@@ -4433,72 +4506,73 @@ html {
 
     .calculator-layout {
         flex: 1;
-        height: 100%;
         min-height: 0;
-        display: grid;
-        grid-template-columns: 340px 1fr;
-        gap: 16px;
+        height: 100%;
+        grid-template-columns: var(--calculator-sidebar-width) minmax(0, 1fr);
+        grid-template-rows: minmax(0, 1fr);
+        grid-template-areas: "sidebar preview-col";
+        gap: var(--calculator-layout-gap);
         overflow: hidden;
     }
 
     .sidebar {
-        height: 100%;
-        min-height: 0;
+        grid-area: sidebar;
         display: grid;
-        grid-template-rows: auto 1fr;
+        grid-template-rows: auto minmax(0, 1fr);
         gap: 12px;
-        overflow: hidden;
-    }
-
-    .wall-configuration-card {
-        height: 100%;
         min-height: 0;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-        padding: 8px 10px;
-    }
-
-    .led-config-swap {
-        flex: 0 0 auto;
-        min-height: 0;
-    }
-
-    .led-config-swap.is-advanced > .led-quick-start {
-        display: none;
-    }
-
-    .led-config-footer {
-        flex-shrink: 0;
-        margin-top: 8px;
-        padding-top: 8px;
+        align-self: stretch;
+        overflow: visible;
     }
 
     .preview-column {
-        height: 100%;
-        min-height: 0;
+        grid-area: preview-col;
         display: grid;
-        grid-template-rows: 1fr auto;
+        grid-template-rows: minmax(0, 1fr) auto;
         gap: 12px;
-        overflow: hidden;
+        min-height: 0;
+        align-self: stretch;
+        overflow: visible;
+    }
+
+    .led-grid-summary,
+    .wall-configuration-card,
+    .wall-preview-card,
+    .results-row {
+        grid-area: auto;
+    }
+
+    .wall-configuration-card {
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: visible;
+        padding: clamp(8px, 1vw, 12px);
+    }
+
+    .led-config-swap {
+        flex: 1 1 auto;
+        min-height: 0;
     }
 
     .wall-preview-card {
         min-height: 0;
-        height: 100%;
         display: flex;
         flex-direction: column;
-        overflow: hidden;
-    }
-
-    .results-row {
-        height: auto;
-        padding: 8px 10px;
         overflow: visible;
     }
 
+    .led-preview-panel {
+        flex: 1 1 auto;
+        min-height: 0;
+    }
+
+    .results-row {
+        padding: clamp(8px, 1vw, 12px);
+    }
+
     .led-grid-summary.led-panel {
-        padding: 8px 10px;
+        padding: clamp(8px, 1vw, 12px);
     }
 
     .led-grid-summary .led-panel-title {
@@ -4520,7 +4594,6 @@ html {
 
     .led-workflow-step {
         margin-bottom: 10px;
-        padding-bottom: 0;
     }
 
     .led-workflow-step-title {
@@ -4544,7 +4617,7 @@ html {
 
     .led-preview-stage {
         flex: 1 1 auto;
-        min-height: 0;
+        min-height: clamp(220px, 38vh, 560px);
         height: auto;
         max-height: none;
         padding: clamp(8px, 1vw, 12px);
@@ -4555,26 +4628,40 @@ html {
     }
 
     .led-result-cards {
-        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 8px;
-        height: auto;
+    }
+
+    .led-result-cards:not(:has(#result-content-fit-card:not([hidden]))) {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
     .led-grid-results .led-result-card {
-        min-height: 104px;
+        min-height: clamp(96px, 11vh, 120px);
         padding: 10px;
     }
 
     .led-grid-results .led-result-primary {
-        font-size: clamp(1.2rem, 5vw, 1.6rem);
+        font-size: clamp(1.15rem, 1.6vw, 1.55rem);
+    }
+
+    .led-config-footer {
+        flex-shrink: 0;
+        margin-top: 8px;
+        padding-top: 8px;
     }
 }
 
-@media (min-width: 1400px) {
+/* Large desktop / ultrawide: 1800px+ */
+@media (min-width: 1800px) {
+    .led-calculator-page {
+        --calculator-sidebar-width: 400px;
+    }
+
     .led-calculator-page .header .container,
     .led-calculator-page .calculator-page {
-        width: min(95vw, 2200px);
-        max-width: min(95vw, 2200px);
+        width: min(98vw, 3200px);
+        max-width: min(98vw, 3200px);
     }
 
     .led-chip-row--common-pitches {
@@ -4590,9 +4677,18 @@ html {
         padding: 7px 14px;
         letter-spacing: 0.8px;
     }
+
+    .led-preview-stage {
+        min-height: clamp(320px, 52vh, 820px);
+    }
+
+    .led-grid-results .led-result-primary {
+        font-size: clamp(1.25rem, 1.4vw, 1.85rem);
+    }
 }
 
-@media (max-width: 899px) {
+/* Mobile: 0–767px */
+@media (max-width: 767px) {
     .led-calculator-page {
         --calculator-header-offset: 100px;
     }
@@ -4603,11 +4699,10 @@ html {
     }
 
     .led-calculator-page .calculator-page {
-        margin-top: 0;
-        height: auto;
-        max-height: none;
-        overflow: visible;
-        padding: calc(var(--calculator-header-offset) + 18px) 16px 16px;
+        width: 100%;
+        max-width: 100%;
+        padding-left: 16px;
+        padding-right: 16px;
     }
 
     .led-calculator-page .led-app-header {
@@ -4619,35 +4714,41 @@ html {
         margin-bottom: 10px;
     }
 
-    .led-calculator-page .led-app {
-        height: auto;
-        overflow: visible;
-    }
-
-    .calculator-layout,
-    .sidebar,
-    .preview-column {
-        height: auto;
-        overflow: visible;
-    }
-
-    .wall-configuration-card,
-    .wall-preview-card {
-        height: auto;
-    }
-
     .led-grid-controls > .led-panel-title {
         display: none;
     }
 
     .led-preview-stage {
-        min-height: clamp(220px, 40vw, 360px);
-        max-height: min(52vh, 480px);
+        min-height: clamp(240px, 58vw, 400px);
     }
 
     .led-stepper-btn {
         flex: 0 0 48px;
         height: 48px;
+    }
+
+    .led-stepper {
+        min-height: 48px;
+    }
+
+    .led-stepper-value {
+        min-height: 48px;
+    }
+
+    .led-chip {
+        min-height: 48px;
+        padding: 12px 16px;
+    }
+
+    .led-field select,
+    .led-select {
+        min-height: 48px;
+        height: 48px;
+        line-height: 48px;
+    }
+
+    .led-btn {
+        min-height: 48px;
     }
 
     .led-chip-row--common-pitches {
@@ -4656,18 +4757,6 @@ html {
 
     .led-chip-row--common-pitches .led-chip:nth-child(5):last-child {
         grid-column: 1 / -1;
-    }
-}
-
-@media (max-width: 768px) {
-    .nav-dropdown-menu {
-        left: auto;
-        right: 0;
-        transform: translateY(6px);
-    }
-
-    .nav-dropdown.open .nav-dropdown-menu {
-        transform: translateY(0);
     }
 
     .led-input-grid,
@@ -4684,5 +4773,15 @@ html {
     .led-actions:not(.led-actions--grid) .led-btn {
         width: 100%;
         text-align: center;
+    }
+
+    .nav-dropdown-menu {
+        left: auto;
+        right: 0;
+        transform: translateY(6px);
+    }
+
+    .nav-dropdown.open .nav-dropdown-menu {
+        transform: translateY(0);
     }
 }

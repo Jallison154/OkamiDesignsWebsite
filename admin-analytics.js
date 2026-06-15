@@ -159,6 +159,7 @@
     function handleLogout() {
         sessionStorage.removeItem('adminAuthenticated');
         sessionStorage.removeItem('adminAuthTime');
+        document.cookie = 'okami_admin=; path=/; max-age=0; SameSite=Strict';
         if (sessionTimeoutInterval) {
             clearInterval(sessionTimeoutInterval);
             sessionTimeoutInterval = null;

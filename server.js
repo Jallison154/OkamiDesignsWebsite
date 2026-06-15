@@ -55,6 +55,151 @@ async function buildUniqueFilename(manifest, slugCandidate, extension, excludeId
 // Middleware
 app.use(express.json());
 
+function parseRequestCookies(req) {
+    const header = req.headers.cookie || '';
+    return header.split(';').reduce((cookies, part) => {
+        const [name, ...rest] = part.trim().split('=');
+        if (!name) {
+            return cookies;
+        }
+        cookies[name] = decodeURIComponent(rest.join('='));
+        return cookies;
+    }, {});
+}
+
+function isAdminRequest(req) {
+    return parseRequestCookies(req).okami_admin === '1';
+}
+
+function normalizeVisibilityPath(requestPath) {
+    let normalized = (requestPath || '/').split('?')[0].replace(/\\/g, '/').toLowerCase();
+    if (normalized.endsWith('/')) {
+        normalized = normalized.slice(0, -1) || '/';
+    }
+    if (normalized === '/' || normalized === '/index.html') {
+        return '';
+    }
+    return normalized.replace(/^\//, '');
+}
+
+function getVisibilityPageKey(pathValue) {
+    if (pathValue === 'home.html') {
+        return 'home';
+    }
+    if (pathValue === 'services.html') {
+        return 'services';
+    }
+    if (pathValue === 'support.html') {
+        return 'support';
+    }
+    if (pathValue === 'contact.html') {
+        return 'contact';
+    }
+    if (pathValue === 'tools/led-wall-visualizer.html') {
+        return 'ledVideoWallCalculator';
+    }
+    return null;
+}
+
+function getServerAccessDecision(pathValue, settings, isAdmin) {
+    if (pathValue === '404.html' || pathValue === '50x.html' || pathValue === 'admin.html') {
+        return { allowed: true };
+    }
+
+    if (pathValue === 'admin-analytics.html') {
+        return isAdmin ? { allowed: true } : { allowed: false, reason: 'admin-auth' };
+    }
+
+    if (isAdmin) {
+        return { allowed: true };
+    }
+
+    if (settings.constructionMode) {
+        if (pathValue === '') {
+            return { allowed: true };
+        }
+        return { allowed: false, reason: 'construction' };
+    }
+
+    if (pathValue === '') {
+        return { allowed: true };
+    }
+
+    if (pathValue.startsWith('tools/') && settings.pages.tools === false) {
+        return { allowed: false, reason: 'hidden' };
+    }
+
+    const pageKey = getVisibilityPageKey(pathValue);
+    if (pageKey && settings.pages[pageKey] === false) {
+        return { allowed: false, reason: 'hidden' };
+    }
+
+    return { allowed: true };
+}
+
+function buildVisibilityRedirect(pathValue, reason, settings) {
+    const inTools = pathValue.startsWith('tools/');
+    if (reason === 'construction' || (reason === 'hidden' && settings.constructionMode)) {
+        return inTools ? '/index.html' : '/index.html';
+    }
+    if (reason === 'hidden') {
+        return inTools ? '/404.html' : '/404.html';
+    }
+    if (reason === 'admin-auth') {
+        return inTools ? '/admin.html' : '/admin.html';
+    }
+    return '/index.html';
+}
+
+async function siteVisibilityMiddleware(req, res, next) {
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+        return next();
+    }
+
+    if (req.path.startsWith('/api/') || req.path.startsWith('/files/')) {
+        return next();
+    }
+
+    const extension = path.extname(req.path).toLowerCase();
+    if (extension && extension !== '.html') {
+        return next();
+    }
+
+    const pathValue = normalizeVisibilityPath(req.path);
+    const isManagedPage = pathValue === ''
+        || pathValue.endsWith('.html')
+        || pathValue.startsWith('tools/');
+
+    if (!isManagedPage) {
+        return next();
+    }
+
+    try {
+        const settings = await readSiteSettings();
+        const access = getServerAccessDecision(pathValue, settings, isAdminRequest(req));
+
+        if (access.allowed) {
+            return next();
+        }
+
+        const redirectTarget = buildVisibilityRedirect(pathValue, access.reason, settings);
+        if (req.get('X-Requested-With') === 'fetch') {
+            return res.status(403).json({
+                error: 'access_denied',
+                reason: access.reason,
+                redirect: redirectTarget
+            });
+        }
+
+        return res.redirect(302, redirectTarget);
+    } catch (error) {
+        console.error('Site visibility middleware error:', error);
+        return next();
+    }
+}
+
+app.use(siteVisibilityMiddleware);
+
 const STATIC_CACHE_PATTERN = /\.(?:css|js|png|jpe?g|gif|webp|svg|ico|woff2?)$/i;
 app.use(express.static('.', {
     setHeaders: (res, filePath) => {
