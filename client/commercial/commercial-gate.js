@@ -176,6 +176,10 @@
         };
     }
 
+    async function checkLedWallLoadAllowed() {
+        return checkLedWallSaveAllowed();
+    }
+
     function showUpgradeNotice(message, containerOverride) {
         const container = containerOverride
             || document.getElementById('signal-lab-module-options')
@@ -200,6 +204,7 @@
         checkExportAllowed,
         checkPopoutAllowed,
         checkLedWallSaveAllowed,
+        checkLedWallLoadAllowed,
         checkLedWallReportAllowed,
         exportNeedsPremium,
         isPremiumPattern,

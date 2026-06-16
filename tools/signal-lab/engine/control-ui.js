@@ -16,15 +16,20 @@
 
     const DEFAULT_OPEN_SECTIONS = new Set(['pattern', 'motion', 'output']);
 
-    function escapeHtml(value) {
-        return String(value)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/"/g, '&quot;');
+    function getComponents() {
+        return global.OkamiSignalLab?.ControlComponents;
     }
 
     function getControlUtils() {
         return global.OkamiSignalLab?.ControlUtils;
+    }
+
+    function escapeHtml(value) {
+        return getComponents()?.escapeHtml?.(value) ?? String(value);
+    }
+
+    function disabledAttrs(disabled) {
+        return getComponents()?.disabledAttrs?.(disabled) ?? (disabled ? ' disabled' : '');
     }
 
     function getControlVisibility(control, state) {
@@ -137,46 +142,51 @@
             }));
     }
 
-    function controlShell(content, control, disabled, extraClass = '') {
-        const disabledClass = disabled ? ' signal-lab-control--disabled' : '';
-        const disabledAttr = disabled ? ' aria-disabled="true"' : '';
-        return `<div class="signal-lab-control${disabledClass}${extraClass ? ` ${extraClass}` : ''}" data-control-key="${control.key || ''}"${disabledAttr}>${content}</div>`;
-    }
-
-    function disabledAttrs(disabled) {
-        return disabled ? ' disabled' : '';
-    }
-
     function formatUnit(control) {
         const utils = getControlUtils();
         if (utils?.isPercentRangeControl(control)) {
             return '%';
         }
-        const unit = (control.unit || '').trim();
-        return unit;
+        return (control.unit || '').trim();
     }
 
     function controlExtraClass(base, extra) {
         return [base, extra].filter(Boolean).join(' ');
     }
 
-    function renderControl(control, state, disabled, extraClass = '') {
+    function renderControlRowFromParts(parts, layout, disabled, extraClass, controlKey, modifier) {
+        const CC = getComponents();
+        if (!CC) {
+            return '';
+        }
+        return CC.renderControlRow({
+            labelHtml: parts.labelHtml,
+            bodyHtml: parts.bodyHtml,
+            layout,
+            disabled,
+            extraClass,
+            controlKey,
+            modifier
+        });
+    }
+
+    function renderControl(control, state, disabled, extraClass = '', layout = 'stacked') {
+        const CC = getComponents();
+        const CL = CC?.CLASSES || {};
         const current = state?.[control.key];
         const dis = disabledAttrs(disabled);
+        const isInline = layout === 'inline' || extraClass.includes('toolbar');
 
         if (control.type === 'select') {
-            const options = (control.options || []).map((opt) => {
-                const selected = current === opt.value ? ' selected' : '';
-                return `<option value="${escapeHtml(opt.value)}"${selected}>${escapeHtml(opt.label)}</option>`;
-            }).join('');
-
-            return controlShell(`
-                <label class="signal-lab-control-label" for="sl-ctrl-${control.key}">${escapeHtml(control.label)}</label>
-                <select id="sl-ctrl-${control.key}" class="led-select signal-lab-select signal-lab-field"
-                    data-control-key="${control.key}" data-control-type="select"${dis}>
-                    ${options}
-                </select>
-            `, control, disabled, extraClass);
+            const id = `sl-ctrl-${control.key}`;
+            const body = CC.renderSelect(id, control.key, control.options, current, disabled);
+            return renderControlRowFromParts(
+                { labelHtml: CC.renderLabel(control.label, id), bodyHtml: body },
+                isInline ? 'inline' : 'stacked',
+                disabled,
+                extraClass,
+                control.key
+            );
         }
 
         if (control.type === 'range') {
@@ -188,32 +198,44 @@
             const numMin = isPercent ? utils.rangeToDisplay(control.min, control) : control.min;
             const numMax = isPercent ? utils.rangeToDisplay(control.max, control) : control.max;
             const numStep = isPercent ? utils.rangeToDisplay(control.step, control) : (control.step || 0.1);
+            const id = `sl-ctrl-${control.key}`;
 
-            return controlShell(`
-                <div class="signal-lab-range-header">
-                    <label class="signal-lab-control-label" for="sl-ctrl-${control.key}">${escapeHtml(control.label)}</label>
-                    <div class="signal-lab-value-field">
-                        <input type="number" id="sl-ctrl-num-${control.key}" class="signal-lab-range-input signal-lab-field"
-                            data-control-key="${control.key}" data-control-type="range-number"
-                            min="${numMin}" max="${numMax}" step="${numStep}" value="${displayVal}"
-                            aria-label="${escapeHtml(control.label)} value"${dis}>
-                        ${unit ? `<span class="signal-lab-field-unit">${escapeHtml(unit)}</span>` : ''}
-                    </div>
-                </div>
-                <input type="range" id="sl-ctrl-${control.key}" class="signal-lab-range"
+            const numberInput = `<input type="number" id="sl-ctrl-num-${control.key}" class="signal-lab-range-input ${CL.field}"
+                data-control-key="${control.key}" data-control-type="range-number"
+                min="${numMin}" max="${numMax}" step="${numStep}" value="${displayVal}"
+                aria-label="${escapeHtml(control.label)} value"${dis}>`;
+
+            const body = `
+                ${CC.renderValueField(numberInput, unit)}
+                <input type="range" id="${id}" class="signal-lab-range"
                     data-control-key="${control.key}" data-control-type="range"
                     min="${control.min}" max="${control.max}" step="${control.step || 0.1}" value="${val}"${dis}>
-            `, control, disabled, extraClass);
+            `;
+
+            return renderControlRowFromParts(
+                { labelHtml: CC.renderLabel(control.label, id), bodyHtml: body },
+                isInline ? 'inline' : 'range',
+                disabled,
+                extraClass,
+                control.key
+            );
         }
 
         if (control.type === 'checkbox') {
-            const checked = current ? ' checked' : '';
-            return controlShell(`
-                <label class="signal-lab-checkbox">
-                    <input type="checkbox" id="sl-ctrl-${control.key}" data-control-key="${control.key}" data-control-type="checkbox"${checked}${dis}>
+            const id = `sl-ctrl-${control.key}`;
+            const body = `
+                <label class="${CL.checkbox}">
+                    <input type="checkbox" id="${id}" data-control-key="${control.key}" data-control-type="checkbox"${current ? ' checked' : ''}${dis}>
                     <span>${escapeHtml(control.label)}</span>
                 </label>
-            `, control, disabled, controlExtraClass('signal-lab-control--checkbox', extraClass));
+            `;
+            return renderControlRowFromParts(
+                { labelHtml: '', bodyHtml: body },
+                'inline',
+                disabled,
+                controlExtraClass('signal-lab-control-row--checkbox', extraClass),
+                control.key
+            );
         }
 
         if (control.type === 'transport') {
@@ -224,27 +246,40 @@
             const stopLabel = control.stopLabel || 'Pause';
             const transportKey = control.key || 'playing';
 
-            return controlShell(`
-                <span class="signal-lab-control-label">${escapeHtml(control.label)}</span>
-                <div class="signal-lab-transport">
-                    <button type="button" class="led-btn signal-lab-btn signal-lab-transport-btn${isOn ? ' is-active' : ''}"
+            const body = `
+                <div class="${CL.transport}">
+                    <button type="button" class="${CL.btn} ${CL.transportBtn}${isOn ? ' is-active' : ''}"
                         data-control-key="${transportKey}" data-control-value="true" aria-pressed="${isOn ? 'true' : 'false'}"${dis}>${escapeHtml(startLabel)}</button>
-                    <button type="button" class="led-btn signal-lab-btn signal-lab-transport-btn${!isOn ? ' is-active' : ''}"
+                    <button type="button" class="${CL.btn} ${CL.transportBtn}${!isOn ? ' is-active' : ''}"
                         data-control-key="${transportKey}" data-control-value="false" aria-pressed="${!isOn ? 'true' : 'false'}"${dis}>${escapeHtml(stopLabel)}</button>
                 </div>
-            `, control, disabled, extraClass);
+            `;
+
+            return renderControlRowFromParts(
+                { labelHtml: CC.renderLabel(control.label), bodyHtml: body },
+                'inline',
+                disabled,
+                extraClass,
+                transportKey
+            );
         }
 
         if (control.type === 'peak-meter') {
-            return controlShell(`
-                <span class="signal-lab-control-label">${escapeHtml(control.label)}</span>
+            const body = `
                 <div class="signal-lab-peak-meter">
                     <div class="signal-lab-peak-track">
                         <div class="signal-lab-peak-fill" data-peak-fill style="width: 0%"></div>
                     </div>
                     <span class="signal-lab-peak-label" data-peak-label">−∞ dB</span>
                 </div>
-            `, control, disabled, controlExtraClass('signal-lab-control--meter', extraClass));
+            `;
+            return renderControlRowFromParts(
+                { labelHtml: CC.renderLabel(control.label), bodyHtml: body },
+                isInline ? 'inline' : 'stacked',
+                disabled,
+                controlExtraClass('signal-lab-control-row--meter', extraClass),
+                control.key
+            );
         }
 
         if (control.type === 'display-metrics') {
@@ -264,9 +299,13 @@
                 </div>
             `).join('');
 
-            return controlShell(`
-                <div class="signal-lab-display-metrics" data-display-metrics-root>${rows}</div>
-            `, control, disabled, controlExtraClass('signal-lab-control--display-metrics', extraClass));
+            return renderControlRowFromParts(
+                { labelHtml: '', bodyHtml: `<div class="signal-lab-display-metrics" data-display-metrics-root>${rows}</div>` },
+                'stacked',
+                disabled,
+                controlExtraClass('signal-lab-control-row--display-metrics', extraClass),
+                control.key
+            );
         }
 
         if (control.type === 'led-wall-metrics') {
@@ -286,61 +325,91 @@
                 </div>
             `).join('');
 
-            return controlShell(`
+            const body = `
                 <div class="signal-lab-display-metrics" data-led-wall-metrics-root>${rows}</div>
                 <div class="signal-lab-led-warnings-wrap">
-                    <span class="signal-lab-control-label">Scaling Warnings</span>
+                    ${CC.renderLabel('Scaling Warnings')}
                     <ul class="signal-lab-led-warnings" data-led-wall-warnings>
                         <li class="signal-lab-led-warning">—</li>
                     </ul>
                 </div>
-            `, control, disabled, controlExtraClass('signal-lab-control--led-metrics', extraClass));
+            `;
+
+            return renderControlRowFromParts(
+                { labelHtml: '', bodyHtml: body },
+                'stacked',
+                disabled,
+                controlExtraClass('signal-lab-control-row--led-metrics', extraClass),
+                control.key
+            );
         }
 
         if (control.type === 'text') {
+            const id = `sl-ctrl-${control.key}`;
             const value = current ?? control.placeholder ?? '';
-            return controlShell(`
-                <label class="signal-lab-control-label" for="sl-ctrl-${control.key}">${escapeHtml(control.label)}</label>
-                <input type="text" id="sl-ctrl-${control.key}" class="signal-lab-text-input signal-lab-field"
-                    data-control-key="${control.key}" data-control-type="text"
-                    value="${escapeHtml(value)}"
-                    placeholder="${escapeHtml(control.placeholder || '')}" maxlength="${control.maxLength || 120}"${dis}>
-            `, control, disabled, extraClass);
+            const body = CC.renderTextInput(id, control.key, value, disabled, {
+                placeholder: control.placeholder || '',
+                maxLength: control.maxLength || 120
+            });
+            return renderControlRowFromParts(
+                { labelHtml: CC.renderLabel(control.label, id), bodyHtml: body },
+                isInline ? 'inline' : 'stacked',
+                disabled,
+                extraClass,
+                control.key
+            );
         }
 
         if (control.type === 'number') {
+            const id = `sl-ctrl-${control.key}`;
             const val = current ?? control.min ?? 0;
             const unit = formatUnit(control);
-            return controlShell(`
-                <label class="signal-lab-control-label" for="sl-ctrl-${control.key}">${escapeHtml(control.label)}</label>
-                <div class="signal-lab-value-field${unit ? '' : ' signal-lab-value-field--solo'}">
-                    <input type="number" id="sl-ctrl-${control.key}" class="signal-lab-number-input signal-lab-field"
-                        data-control-key="${control.key}" data-control-type="number"
-                        min="${control.min}" max="${control.max}" step="${control.step || 1}" value="${val}"${dis}>
-                    ${unit ? `<span class="signal-lab-field-unit">${escapeHtml(unit)}</span>` : ''}
-                </div>
-            `, control, disabled, extraClass);
+            const input = CC.renderNumberInput(id, control.key, val, control, disabled);
+            const body = CC.renderValueField(input, unit);
+            return renderControlRowFromParts(
+                { labelHtml: CC.renderLabel(control.label, id), bodyHtml: body },
+                isInline ? 'inline' : 'stacked',
+                disabled,
+                extraClass,
+                control.key
+            );
         }
 
         if (control.type === 'action') {
-            return controlShell(`
-                <button type="button" class="led-btn signal-lab-btn signal-lab-action-btn"
-                    data-control-key="${control.key}" data-control-type="action"${dis}>${escapeHtml(control.buttonLabel || control.label)}</button>
-            `, control, disabled, controlExtraClass('signal-lab-control--action', extraClass));
+            const body = CC.renderButton(control.buttonLabel || control.label, {
+                controlKey: control.key,
+                controlType: 'action',
+                disabled,
+                extraClass: 'signal-lab-action-btn'
+            });
+            return renderControlRowFromParts(
+                { labelHtml: '', bodyHtml: body },
+                'inline',
+                disabled,
+                controlExtraClass('signal-lab-control-row--action', extraClass),
+                control.key
+            );
         }
 
         if (control.type === 'file-upload') {
+            const id = `sl-ctrl-${control.key}`;
             const hasFile = Boolean(current);
-            return controlShell(`
-                <label class="signal-lab-control-label" for="sl-ctrl-${control.key}">${escapeHtml(control.label)}</label>
-                <input type="file" id="sl-ctrl-${control.key}" class="signal-lab-file-input signal-lab-field"
+            const body = `
+                <input type="file" id="${id}" class="signal-lab-file-input ${CL.field}"
                     data-control-key="${control.key}" data-control-type="file-upload"
                     accept="${control.accept || 'image/*'}"${dis}>
                 <div class="signal-lab-file-meta">
                     <span class="signal-lab-file-status">${hasFile ? 'Image loaded' : 'No image uploaded'}</span>
-                    ${hasFile && !disabled ? `<button type="button" class="led-btn led-btn-text signal-lab-btn signal-lab-file-clear" data-clear-upload data-control-key="${control.key}">Remove</button>` : ''}
+                    ${hasFile && !disabled ? `<button type="button" class="${CL.btn} ${CL.btnText} signal-lab-file-clear" data-clear-upload data-control-key="${control.key}">Remove</button>` : ''}
                 </div>
-            `, control, disabled, controlExtraClass('signal-lab-control--file', extraClass));
+            `;
+            return renderControlRowFromParts(
+                { labelHtml: CC.renderLabel(control.label, id), bodyHtml: body },
+                'stacked',
+                disabled,
+                controlExtraClass('signal-lab-control-row--file', extraClass),
+                control.key
+            );
         }
 
         if (control.type === 'radio') {
@@ -355,18 +424,22 @@
                 `;
             }).join('');
 
-            return controlShell(`
-                <span class="signal-lab-control-label">${escapeHtml(control.label)}</span>
-                <div class="signal-lab-radio-group">${options}</div>
-            `, control, disabled, extraClass);
+            return renderControlRowFromParts(
+                { labelHtml: CC.renderLabel(control.label), bodyHtml: `<div class="signal-lab-radio-group">${options}</div>` },
+                isInline ? 'inline' : 'stacked',
+                disabled,
+                extraClass,
+                control.key
+            );
         }
 
         return '';
     }
 
     function buildOptionsHtml(schema, state, moduleId) {
+        const CC = getComponents();
         const sections = groupSchemaIntoSections(schema, state, moduleId);
-        if (!sections.length) {
+        if (!sections.length || !CC) {
             return '';
         }
 
@@ -376,12 +449,12 @@
                 || (moduleId === 'branding' && section.id === 'branding');
             const open = openByDefault ? ' open' : '';
             const controlsHtml = section.items
-                .map(({ control, disabled }) => renderControl(control, state, disabled))
+                .map(({ control, disabled }) => renderControl(control, state, disabled, '', 'stacked'))
                 .join('');
 
             return `
                 <details class="signal-lab-collapsible" data-section="${section.id}"${open}>
-                    <summary class="signal-lab-collapsible-summary">${escapeHtml(section.label)}</summary>
+                    ${CC.renderSectionHeader(section.label, { tag: 'summary', extraClass: 'signal-lab-collapsible-summary', attrs: '' })}
                     <div class="signal-lab-collapsible-body">
                         ${controlsHtml}
                     </div>
@@ -391,25 +464,27 @@
     }
 
     function buildToolbarHtml(schema, state, moduleId) {
+        const CC = getComponents();
         const sections = groupSchemaIntoSections(schema, state, moduleId);
-        if (!sections.length) {
+        if (!sections.length || !CC) {
             return '';
         }
 
         const groups = sections.map((section) => {
             const controlsHtml = section.items
-                .map(({ control, disabled }) => renderControl(control, state, disabled, 'signal-lab-toolbar-control'))
+                .map(({ control, disabled }) => renderControl(
+                    control,
+                    state,
+                    disabled,
+                    'signal-lab-toolbar-control',
+                    'inline'
+                ))
                 .join('');
 
-            return `
-                <div class="signal-lab-toolbar-group" data-section="${section.id}">
-                    <span class="signal-lab-toolbar-label">${escapeHtml(section.label)}</span>
-                    <div class="signal-lab-toolbar-controls">${controlsHtml}</div>
-                </div>
-            `;
+            return CC.renderSectionGroup(section.id, section.label, controlsHtml);
         }).join('');
 
-        return `<div class="signal-lab-toolbar">${groups}</div>`;
+        return `<div class="${CC.CLASSES.toolbar}">${groups}</div>`;
     }
 
     function flattenSchema(schema, state, moduleId) {

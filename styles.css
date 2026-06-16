@@ -5039,6 +5039,20 @@ body.signal-lab-page {
 }
 
 .signal-lab-app {
+    --sl-space-1: 4px;
+    --sl-space-2: 8px;
+    --sl-space-3: 12px;
+    --sl-space-4: 16px;
+    --sl-control-h: 36px;
+    --sl-label-size: 0.68rem;
+    --sl-field-size: 0.8125rem;
+    --sl-btn-size: 0.8125rem;
+    --sl-radius: 8px;
+    --sl-border: 1px solid rgba(255, 255, 255, 0.12);
+    --sl-border-focus: rgba(255, 106, 45, 0.55);
+    --sl-bg-field: rgba(255, 255, 255, 0.04);
+    --sl-bg-btn: rgba(255, 255, 255, 0.06);
+    --sl-bg-btn-secondary: rgba(0, 0, 0, 0.28);
     display: grid;
     grid-template-rows: auto 1fr;
     gap: clamp(6px, 1vh, 12px);
@@ -5046,6 +5060,238 @@ body.signal-lab-page {
     min-height: 0;
     min-width: 0;
     overflow: hidden;
+}
+
+/* ── Shared section header ── */
+.signal-lab-section-header {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--sl-control-h);
+    margin: 0;
+    padding: 0;
+    font-size: var(--sl-label-size);
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent-color);
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.signal-lab-section-group {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sl-space-2) var(--sl-space-3);
+    min-width: 0;
+}
+
+.signal-lab-section-body {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sl-space-2);
+    min-width: 0;
+}
+
+/* ── Shared control row ── */
+.signal-lab-control-row {
+    display: grid;
+    gap: var(--sl-space-2);
+    min-width: 0;
+    align-items: center;
+}
+
+.signal-lab-control-row--stacked {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.signal-lab-control-row--inline {
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: var(--sl-space-3);
+    row-gap: var(--sl-space-2);
+}
+
+.signal-lab-control-row--range {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sl-space-2);
+}
+
+.signal-lab-control-row--disabled {
+    opacity: 0.45;
+    pointer-events: none;
+}
+
+.signal-lab-control-row__label {
+    display: flex;
+    align-items: center;
+    min-height: var(--sl-control-h);
+}
+
+.signal-lab-control-body {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sl-space-2);
+    min-width: 0;
+    width: 100%;
+}
+
+/* ── Shared label (alias legacy control-label) ── */
+.signal-lab-label,
+.signal-lab-control-label {
+    margin: 0;
+    font-size: var(--sl-label-size);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--secondary-text);
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+/* ── Shared fields ── */
+.signal-lab-app .signal-lab-field,
+.signal-lab-app .signal-lab-select,
+.signal-lab-app select.signal-lab-select {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    min-height: var(--sl-control-h);
+    height: var(--sl-control-h);
+    padding: 0 var(--sl-space-3);
+    border-radius: var(--sl-radius);
+    border: var(--sl-border);
+    background: var(--sl-bg-field);
+    color: var(--primary-text);
+    font-family: inherit;
+    font-size: var(--sl-field-size);
+    font-weight: 600;
+    line-height: 1.2;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.signal-lab-app select.signal-lab-select {
+    padding-right: 36px;
+    background-color: #111;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23FF6A2D' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 12px 8px;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    color-scheme: dark;
+}
+
+.signal-lab-app .signal-lab-field:hover,
+.signal-lab-app .signal-lab-select:hover {
+    border-color: rgba(255, 106, 45, 0.35);
+}
+
+.signal-lab-app .signal-lab-field:focus,
+.signal-lab-app .signal-lab-select:focus {
+    outline: none;
+    border-color: var(--sl-border-focus);
+    box-shadow: 0 0 0 2px rgba(255, 106, 45, 0.12);
+    z-index: 5;
+    position: relative;
+}
+
+.signal-lab-app .signal-lab-number-input,
+.signal-lab-app .signal-lab-text-input,
+.signal-lab-app .signal-lab-range-input {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.signal-lab-app .signal-lab-range-input {
+    width: clamp(64px, 12vw, 84px);
+    text-align: right;
+    flex: 0 0 auto;
+}
+
+/* ── Shared buttons ── */
+.signal-lab-app .signal-lab-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    min-height: var(--sl-control-h);
+    height: var(--sl-control-h);
+    padding: 0 var(--sl-space-3);
+    border-radius: var(--sl-radius);
+    border: var(--sl-border);
+    background: var(--sl-bg-btn);
+    color: var(--primary-text);
+    font-family: inherit;
+    font-size: var(--sl-btn-size);
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1.2;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.signal-lab-app .signal-lab-btn--secondary {
+    background: var(--sl-bg-btn-secondary);
+}
+
+.signal-lab-app .signal-lab-btn--text {
+    background: transparent;
+    border-color: transparent;
+    color: var(--secondary-text);
+    font-weight: 600;
+}
+
+.signal-lab-app .signal-lab-btn:hover:not(:disabled) {
+    border-color: rgba(255, 106, 45, 0.45);
+    background: rgba(255, 106, 45, 0.1);
+}
+
+.signal-lab-app .signal-lab-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.signal-lab-app .signal-lab-transport {
+    display: inline-grid;
+    grid-template-columns: repeat(2, minmax(88px, 1fr));
+    gap: var(--sl-space-2);
+    width: 100%;
+    min-width: min(180px, 100%);
+}
+
+.signal-lab-app .signal-lab-transport-btn {
+    width: 100%;
+}
+
+.signal-lab-app .signal-lab-transport-btn.is-active {
+    background: rgba(255, 106, 45, 0.22);
+    border-color: rgba(255, 106, 45, 0.55);
+}
+
+.signal-lab-sidebar-stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sl-space-3);
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-bottom: var(--sl-space-2);
+}
+
+.signal-lab-sidebar-stack > .signal-lab-control-row--stacked {
+    width: 100%;
+}
+
+.signal-lab-sidebar-stack .signal-lab-control-row--stacked .signal-lab-control-row__label {
+    min-height: auto;
+}
+
+.signal-lab-sidebar-stack .signal-lab-control-row--stacked .signal-lab-label {
+    white-space: normal;
 }
 
 .signal-lab-header,
@@ -5140,15 +5386,8 @@ body.signal-lab-page {
     flex-shrink: 0;
 }
 
-.signal-lab-module-picker {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
 .signal-lab-module-select {
     width: 100%;
-    min-height: 40px;
     cursor: pointer;
     pointer-events: auto;
 }
@@ -5323,17 +5562,12 @@ body.signal-lab-page {
     margin-top: 0;
 }
 
-.signal-lab-collapsible-summary {
+.signal-lab-collapsible-summary.signal-lab-section-header {
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    gap: 8px;
-    padding: clamp(8px, 1.2vh, 10px) clamp(10px, 1.5vw, 12px);
-    font-size: clamp(0.68rem, 1.4vw, 0.72rem);
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--accent-color);
+    gap: var(--sl-space-2);
+    width: 100%;
+    padding: var(--sl-space-2) var(--sl-space-3);
     cursor: pointer;
     list-style: none;
     user-select: none;
@@ -5357,12 +5591,17 @@ body.signal-lab-page {
 .signal-lab-collapsible-body {
     display: flex;
     flex-direction: column;
-    gap: clamp(8px, 1.2vh, 10px);
-    padding: 0 clamp(10px, 1.5vw, 12px) clamp(10px, 1.5vh, 12px);
+    gap: var(--sl-space-3);
+    padding: 0 var(--sl-space-3) var(--sl-space-3);
     border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.signal-lab-control--disabled {
+.signal-lab-collapsible-body .signal-lab-control-row--stacked {
+    width: 100%;
+}
+
+.signal-lab-control--disabled,
+.signal-lab-control-row--disabled {
     opacity: 0.45;
     pointer-events: none;
 }
@@ -5370,8 +5609,9 @@ body.signal-lab-page {
 .signal-lab-value-field {
     display: inline-flex;
     align-items: center;
-    gap: clamp(4px, 0.8vw, 6px);
+    gap: var(--sl-space-2);
     min-width: 0;
+    width: 100%;
 }
 
 .signal-lab-value-field--solo {
@@ -5385,7 +5625,7 @@ body.signal-lab-page {
 
 .signal-lab-field-unit {
     flex-shrink: 0;
-    font-size: clamp(0.68rem, 1.3vw, 0.72rem);
+    font-size: var(--sl-label-size);
     font-weight: 700;
     letter-spacing: 0.04em;
     color: var(--secondary-text);
@@ -5393,65 +5633,78 @@ body.signal-lab-page {
     text-align: right;
 }
 
-.signal-lab-field {
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    background: rgba(255, 255, 255, 0.04);
+.signal-lab-range {
+    width: 100%;
+    min-width: 72px;
+    height: 6px;
+    accent-color: var(--accent-color);
+    cursor: pointer;
+}
+
+.signal-lab-control-row--checkbox .signal-lab-control-body {
+    min-height: var(--sl-control-h);
+}
+
+.signal-lab-checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sl-space-2);
+    min-height: var(--sl-control-h);
+    font-size: var(--sl-field-size);
+    font-weight: 600;
     color: var(--primary-text);
-    font-family: inherit;
+    cursor: pointer;
+    user-select: none;
 }
 
-.signal-lab-field:focus {
-    outline: none;
-    border-color: rgba(255, 106, 45, 0.55);
-    box-shadow: 0 0 0 2px rgba(255, 106, 45, 0.12);
+.signal-lab-checkbox input {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent-color);
+    cursor: pointer;
 }
 
-.signal-lab-range-input {
-    width: clamp(64px, 18vw, 84px);
-    min-height: 34px;
-    padding: 6px 10px;
-    font-size: clamp(0.78rem, 1.6vw, 0.84rem);
-    font-weight: 700;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    text-align: right;
+.signal-lab-control-row--meter .signal-lab-control-body {
+    min-width: clamp(140px, 18vw, 220px);
 }
 
-.signal-lab-number-input {
-    min-height: 36px;
-    font-size: clamp(0.8rem, 1.6vw, 0.86rem);
+.signal-lab-control-row--display-metrics .signal-lab-control-body,
+.signal-lab-control-row--led-metrics .signal-lab-control-body {
+    flex-basis: 100%;
 }
 
-.signal-lab-btn {
-    min-height: 36px;
-    padding-top: 8px;
-    padding-bottom: 8px;
-    line-height: 1.2;
-    border-radius: 8px;
-    font-weight: 700;
-    letter-spacing: 0.02em;
+.signal-lab-output-setting {
+    display: contents;
 }
 
-.signal-lab-transport {
+.signal-lab-pattern-custom {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: clamp(6px, 1vw, 8px);
+    gap: var(--sl-space-3);
 }
 
-.signal-lab-transport-btn {
-    width: 100%;
+.signal-lab-resolution-warning,
+.signal-lab-screen-note {
+    margin: 0;
+    font-size: 0.74rem;
+    font-weight: 600;
+    line-height: 1.4;
+    color: #ffb347;
 }
 
-.signal-lab-action-btn {
-    width: 100%;
+.signal-lab-screen-note {
+    color: var(--secondary-text);
+}
+
+.signal-lab-screen-note[data-tone="ok"] {
+    color: #7dcea0;
 }
 
 .signal-lab-output-actions {
     display: flex;
     flex-direction: column;
-    gap: clamp(6px, 1vh, 8px);
+    gap: var(--sl-space-2);
     margin-top: 0;
-    padding-top: clamp(8px, 1.2vh, 12px);
+    padding-top: var(--sl-space-3);
     border-top: 1px solid rgba(255, 255, 255, 0.06);
     flex-shrink: 0;
 }
@@ -5464,19 +5717,9 @@ body.signal-lab-page {
     display: none;
 }
 
+/* Legacy control shell — maps to control-row */
 .signal-lab-control {
-    display: flex;
-    flex-direction: column;
-    gap: clamp(6px, 1vh, 8px);
-    min-width: 0;
-}
-
-.signal-lab-control-label {
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.6px;
-    text-transform: uppercase;
-    color: var(--secondary-text);
+    display: contents;
 }
 
 .signal-lab-select {
@@ -5500,37 +5743,12 @@ body.signal-lab-page {
 }
 
 .signal-lab-output-setting {
-    display: flex;
-    flex-direction: column;
-    gap: clamp(6px, 1vh, 8px);
-    min-width: 0;
-}
-
-.signal-lab-output-setting:last-child {
-    margin-bottom: 0;
+    display: contents;
 }
 
 .signal-lab-pattern-custom {
     display: grid;
-    gap: 8px;
-    margin-bottom: 8px;
-}
-
-.signal-lab-resolution-warning,
-.signal-lab-screen-note {
-    margin: 0 0 10px;
-    font-size: 0.74rem;
-    font-weight: 600;
-    line-height: 1.4;
-    color: #ffb347;
-}
-
-.signal-lab-screen-note {
-    color: var(--secondary-text);
-}
-
-.signal-lab-screen-note[data-tone="ok"] {
-    color: #7dcea0;
+    gap: var(--sl-space-3);
 }
 
 .signal-lab-screen-select-wrap.is-disabled .signal-lab-select {
@@ -5538,60 +5756,10 @@ body.signal-lab-page {
     cursor: not-allowed;
 }
 
-.signal-lab-range-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    flex-wrap: wrap;
-    gap: clamp(4px, 1vw, 8px);
-    min-width: 0;
-}
-
-.signal-lab-range-value {
-    font-size: 0.78rem;
-    font-weight: 700;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    color: var(--accent-color);
-}
-
-.signal-lab-range {
+.signal-lab-control-row--range .signal-lab-control-body {
+    display: grid;
+    gap: var(--sl-space-2);
     width: 100%;
-    height: 6px;
-    accent-color: var(--accent-color);
-    cursor: pointer;
-}
-
-.signal-lab-control--checkbox {
-    padding: 4px 0;
-}
-
-.signal-lab-checkbox {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 0.86rem;
-    font-weight: 600;
-    color: var(--primary-text);
-    cursor: pointer;
-    user-select: none;
-}
-
-.signal-lab-checkbox input {
-    width: 16px;
-    height: 16px;
-    accent-color: var(--accent-color);
-    cursor: pointer;
-}
-
-.signal-lab-transport-btn {
-    min-height: 36px;
-    font-size: clamp(0.78rem, 1.5vw, 0.82rem);
-}
-
-.signal-lab-transport-btn.is-active {
-    background: rgba(255, 106, 45, 0.22);
-    border-color: rgba(255, 106, 45, 0.55);
-    color: var(--primary-text);
 }
 
 .signal-lab-peak-meter {
@@ -5662,8 +5830,9 @@ body.signal-lab-page {
     text-align: right;
 }
 
+.signal-lab-control-row--display-metrics .signal-lab-label,
 .signal-lab-control--display-metrics .signal-lab-control-label {
-    margin-bottom: 8px;
+    margin-bottom: var(--sl-space-2);
 }
 
 .signal-lab-control-section {
@@ -5685,22 +5854,6 @@ body.signal-lab-page {
 
 .signal-lab-text-input {
     width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    box-sizing: border-box;
-    padding: 10px 12px;
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    background: rgba(255, 255, 255, 0.04);
-    color: var(--primary-text);
-    font-size: 0.84rem;
-    font-weight: 600;
-    font-family: Montserrat, sans-serif;
-}
-
-.signal-lab-text-input:focus {
-    outline: none;
-    border-color: rgba(255, 106, 45, 0.55);
 }
 
 .signal-lab-file-input {
@@ -5767,35 +5920,8 @@ body.signal-lab-page {
     width: 100%;
 }
 
-.signal-lab-number-input {
+.signal-lab-control-row--action {
     width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    box-sizing: border-box;
-    padding: 10px 12px;
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    background: rgba(255, 255, 255, 0.04);
-    color: var(--primary-text);
-    font-size: 0.84rem;
-    font-weight: 600;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-
-.signal-lab-number-input:focus {
-    outline: none;
-    border-color: rgba(255, 106, 45, 0.55);
-}
-
-.signal-lab-number-unit {
-    display: block;
-    margin-top: 4px;
-    font-size: 0.72rem;
-    color: var(--secondary-text);
-}
-
-.signal-lab-control--action {
-    margin-top: 8px;
 }
 
 .signal-lab-file-clear {
@@ -5853,14 +5979,13 @@ body.signal-lab-page {
 .signal-lab-actions-row {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: clamp(6px, 1vw, 8px);
+    gap: var(--sl-space-2);
+    width: 100%;
 }
 
-.signal-lab-actions-row .led-btn {
+.signal-lab-actions-row .signal-lab-btn {
+    width: 100%;
     min-width: 0;
-    padding-left: clamp(8px, 1.5vw, 14px);
-    padding-right: clamp(8px, 1.5vw, 14px);
-    font-size: clamp(0.72rem, 1.5vw, 0.82rem);
 }
 
 .signal-lab-preview,
@@ -5898,22 +6023,48 @@ body.signal-lab-page {
 .signal-lab-toolbar {
     display: flex;
     flex-wrap: wrap;
-    align-items: flex-start;
-    gap: clamp(8px, 1.2vw, 14px) clamp(12px, 1.8vw, 18px);
+    align-items: center;
+    gap: var(--sl-space-3) var(--sl-space-4);
     min-width: min-content;
 }
 
-.signal-lab-toolbar-group {
-    display: flex;
-    flex-wrap: wrap;
+.signal-lab-toolbar .signal-lab-section-group {
     align-items: center;
-    gap: clamp(6px, 1vw, 10px);
+}
+
+.signal-lab-toolbar .signal-lab-control-row--inline {
+    align-items: center;
+}
+
+.signal-lab-toolbar .signal-lab-control-row__label {
+    min-height: var(--sl-control-h);
+}
+
+.signal-lab-toolbar-control {
     min-width: 0;
 }
 
+.signal-lab-toolbar-control.signal-lab-control-row--range {
+    min-width: clamp(160px, 20vw, 240px);
+}
+
+.signal-lab-toolbar-control.signal-lab-control-row--range .signal-lab-range {
+    width: 100%;
+}
+
+/* Legacy toolbar aliases */
+.signal-lab-toolbar-group {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sl-space-2) var(--sl-space-3);
+}
+
 .signal-lab-toolbar-label {
-    flex-shrink: 0;
-    font-size: clamp(0.64rem, 1.1vw, 0.68rem);
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--sl-control-h);
+    font-size: var(--sl-label-size);
     font-weight: 800;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -5921,83 +6072,15 @@ body.signal-lab-page {
     white-space: nowrap;
 }
 
-.signal-lab-toolbar-controls {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: clamp(6px, 1vw, 10px);
-    min-width: 0;
+.signal-lab-toolbar .signal-lab-control-row--inline .signal-lab-select {
+    width: auto;
+    min-width: clamp(120px, 14vw, 220px);
+    max-width: min(280px, 40vw);
 }
 
-.signal-lab-toolbar-control {
-    display: inline-flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px;
-    min-width: 0;
-}
-
-.signal-lab-toolbar-control .signal-lab-control-label {
-    margin: 0;
-    font-size: clamp(0.68rem, 1.2vw, 0.72rem);
-    white-space: nowrap;
-}
-
-.signal-lab-toolbar-control .led-select,
-.signal-lab-toolbar-control .signal-lab-field {
-    min-height: 34px;
-    font-size: clamp(0.72rem, 1.3vw, 0.78rem);
-}
-
-.signal-lab-toolbar-control .signal-lab-range {
-    width: clamp(72px, 10vw, 120px);
-    min-width: 72px;
-}
-
-.signal-lab-toolbar-control.signal-lab-control--checkbox {
-    flex-direction: row;
-}
-
-.signal-lab-toolbar-control.signal-lab-control--meter {
-    min-width: clamp(140px, 18vw, 200px);
-}
-
-.signal-lab-toolbar-control.signal-lab-control--display-metrics,
-.signal-lab-toolbar-control.signal-lab-control--led-metrics {
-    flex-basis: 100%;
-}
-
-.signal-lab-sidebar-stack {
-    display: flex;
-    flex-direction: column;
-    gap: clamp(8px, 1.2vh, 12px);
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    padding-bottom: 8px;
-}
-
-.signal-lab-output-setting {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    min-width: 0;
-}
-
-.signal-lab-actions-row {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: clamp(6px, 1vw, 8px);
-}
-
-.signal-lab-actions-row .signal-lab-btn {
-    width: 100%;
-    min-height: 36px;
-    padding-left: 8px;
-    padding-right: 8px;
-    font-size: clamp(0.68rem, 1.2vw, 0.74rem);
+.signal-lab-toolbar .signal-lab-control-row--inline .signal-lab-control-body {
+    width: auto;
+    flex: 0 1 auto;
 }
 
 .signal-lab-preview-header--compact {

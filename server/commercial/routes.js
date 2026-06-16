@@ -10,6 +10,7 @@ const { verifyLicense } = require('./licensing-service');
 const { checkForUpdates, getPublicVersionInfo } = require('./version-service');
 const { getEntitlements } = require('./entitlements-service');
 const { clearLicenseCookie } = require('./session-service');
+const { requestMagicLink } = require('./account-magic-link-stub');
 
 const router = express.Router();
 
@@ -26,7 +27,9 @@ router.get('/config', (req, res) => {
         version: getPublicVersionInfo(),
         commercialEnabled: commercial.commercialEnabled,
         clientCommercialUiEnabled: commercial.clientCommercialUiEnabled,
-        featureGatingEnabled: commercial.commercialEnabled
+        featureGatingEnabled: commercial.commercialEnabled,
+        accountMagicLinkStub: commercial.accountMagicLinkStub,
+        offlineCacheSupported: true
     });
 });
 
@@ -68,6 +71,17 @@ router.get('/account/session', async (req, res) => {
     } catch (error) {
         console.error('Account session error:', error);
         res.status(500).json({ error: 'account_unavailable' });
+    }
+});
+
+/** Staging magic-link request — stub only unless account service is wired. */
+router.post('/account/magic-link', async (req, res) => {
+    try {
+        const result = await requestMagicLink(req.body || {});
+        res.status(result.ok ? 200 : 400).json(result);
+    } catch (error) {
+        console.error('Magic link error:', error);
+        res.status(500).json({ error: 'magic_link_failed' });
     }
 });
 

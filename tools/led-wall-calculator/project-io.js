@@ -102,13 +102,74 @@
         return filename;
     }
 
+    function validateProjectPayload(payload) {
+        if (!payload || typeof payload !== 'object') {
+            throw new Error('Invalid project file.');
+        }
+
+        if (payload.product && payload.product !== PRODUCT_ID) {
+            throw new Error('This file is not an LED wall calculator project.');
+        }
+
+        const version = Number(payload.version);
+        if (version && version > PROJECT_VERSION) {
+            throw new Error(`Project version ${version} is newer than this app supports.`);
+        }
+
+        const inputs = payload.inputs;
+        if (!inputs || typeof inputs !== 'object') {
+            throw new Error('Project file is missing calculator inputs.');
+        }
+
+        return {
+            version: version || PROJECT_VERSION,
+            product: payload.product || PRODUCT_ID,
+            savedAt: payload.savedAt || null,
+            inputs: { ...inputs },
+            results: payload.results || null
+        };
+    }
+
+    function parseProjectJson(text) {
+        let payload;
+        try {
+            payload = JSON.parse(text);
+        } catch {
+            throw new Error('Project file is not valid JSON.');
+        }
+        return validateProjectPayload(payload);
+    }
+
+    function readProjectFile(file) {
+        return new Promise((resolve, reject) => {
+            if (!file) {
+                reject(new Error('No file selected.'));
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = () => {
+                try {
+                    resolve(parseProjectJson(String(reader.result || '')));
+                } catch (error) {
+                    reject(error);
+                }
+            };
+            reader.onerror = () => reject(new Error('Could not read project file.'));
+            reader.readAsText(file);
+        });
+    }
+
     const api = {
         PROJECT_VERSION,
         PRODUCT_ID,
         buildProjectPayload,
         buildReportText,
         downloadProject,
-        downloadReport
+        downloadReport,
+        validateProjectPayload,
+        parseProjectJson,
+        readProjectFile
     };
 
     if (typeof module !== 'undefined' && module.exports) {

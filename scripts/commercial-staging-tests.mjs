@@ -15,12 +15,14 @@ const savedEnv = {
     OKAMI_LICENSE_DEV_ACCEPT_KEY: process.env.OKAMI_LICENSE_DEV_ACCEPT_KEY,
     OKAMI_CLIENT_COMMERCIAL_UI: process.env.OKAMI_CLIENT_COMMERCIAL_UI,
     OKAMI_LICENSE_SERVER_URL: process.env.OKAMI_LICENSE_SERVER_URL,
-    OKAMI_LICENSE_API_KEY: process.env.OKAMI_LICENSE_API_KEY
+    OKAMI_LICENSE_API_KEY: process.env.OKAMI_LICENSE_API_KEY,
+    OKAMI_ACCOUNT_MAGIC_LINK_STUB: process.env.OKAMI_ACCOUNT_MAGIC_LINK_STUB
 };
 
 process.env.OKAMI_COMMERCIAL_ENABLED = 'true';
 process.env.OKAMI_LICENSE_DEV_ACCEPT_KEY = STAGING_KEY;
 process.env.OKAMI_CLIENT_COMMERCIAL_UI = 'true';
+process.env.OKAMI_ACCOUNT_MAGIC_LINK_STUB = 'true';
 
 const { app, prepareServer } = require('../server.js');
 
@@ -229,6 +231,28 @@ async function run() {
             pass('Upstream license provider returns professional tier');
         } else {
             fail('Upstream license provider returns professional tier', JSON.stringify(upstream.body));
+        }
+
+        const magic = await request(baseUrl, '/api/commercial/account/magic-link', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: 'staging@okamidesigns.com' })
+        });
+        if (magic.status === 200 && magic.body?.ok && magic.body?.stub) {
+            pass('POST /api/commercial/account/magic-link stub accepts email');
+        } else {
+            fail('POST /api/commercial/account/magic-link stub accepts email', JSON.stringify(magic.body));
+        }
+
+        const badEmail = await request(baseUrl, '/api/commercial/account/magic-link', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: 'not-an-email' })
+        });
+        if (badEmail.status === 400 && badEmail.body?.ok === false) {
+            pass('Magic link stub rejects invalid email');
+        } else {
+            fail('Magic link stub rejects invalid email', JSON.stringify(badEmail.body));
         }
     } finally {
         await close(server);

@@ -45,6 +45,11 @@
         const productId = options.productId || getShellProductId();
         if (productId && global.OkamiCommercialGate?.initForProduct) {
             await global.OkamiCommercialGate.initForProduct(productId);
+        } else if (productId && global.OkamiCommercialClient?.fetchEntitlements) {
+            const cached = global.OkamiCommercialOfflineCache?.loadEntitlements?.(productId);
+            if (cached) {
+                global.OkamiCommercialEntitlements = cached;
+            }
         }
 
         if (options.checkUpdates) {

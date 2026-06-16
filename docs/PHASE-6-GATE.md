@@ -80,9 +80,10 @@ npm run test:commercial        # includes mock upstream provider
 npm run test:license-upstream
 ```
 
-## Next (Phase 7+)
+## Next (Phase 8+)
 
-- Load Project from saved JSON
-- Account OAuth / magic links
-- Desktop offline entitlement cache
-- Production legal pages
+- Production legal page content
+- Real OAuth / magic-link provider integration
+- Desktop secure storage (OS keychain) instead of localStorage
+
+See `docs/PHASE-7-GATE.md` for load project and offline cache.

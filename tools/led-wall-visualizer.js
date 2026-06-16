@@ -117,6 +117,18 @@
             void saveProjectFile();
         });
 
+        document.getElementById('led-load-project')?.addEventListener('click', () => {
+            document.getElementById('led-load-project-input')?.click();
+        });
+
+        document.getElementById('led-load-project-input')?.addEventListener('change', (event) => {
+            const file = event.target.files?.[0];
+            event.target.value = '';
+            if (file) {
+                void loadProjectFile(file);
+            }
+        });
+
         document.getElementById('led-export-report')?.addEventListener('click', () => {
             void exportProjectReport();
         });
@@ -676,6 +688,68 @@
         }
 
         ProjectIO.downloadReport(gatherInputs(), getState());
+    }
+
+    function applyProjectInputs(inputs = {}) {
+        const data = inputs || {};
+
+        setInputValue('cabinet-preset', data.cabinetPreset ?? DEFAULTS.cabinetPreset);
+        setInputValue('pitch-preset', data.pitchPreset ?? DEFAULTS.pitchPreset);
+        setInputValue('display-type', data.displayType ?? DEFAULTS.displayType);
+        setInputValue('cabinet-width-mm', data.cabinetWidthMM ?? DEFAULTS.cabinetWidthMM);
+        setInputValue('cabinet-height-mm', data.cabinetHeightMM ?? DEFAULTS.cabinetHeightMM);
+        setInputValue('pixel-pitch-mm', data.pixelPitchMM ?? DEFAULTS.pixelPitchMM);
+        setInputValue('mesh-pitch-horizontal-mm', data.meshPitchHorizontalMM ?? DEFAULTS.meshPitchHorizontalMM);
+        setInputValue('mesh-pitch-vertical-mm', data.meshPitchVerticalMM ?? DEFAULTS.meshPitchVerticalMM);
+        setInputValue('panels-wide', data.panelsWide ?? DEFAULTS.panelsWide);
+        setInputValue('panels-tall', data.panelsTall ?? DEFAULTS.panelsTall);
+        setInputValue('pixel-width', data.pixelWidth ?? DEFAULTS.pixelWidth);
+        setInputValue('pixel-height', data.pixelHeight ?? DEFAULTS.pixelHeight);
+        setInputValue('port-capacity', data.portCapacity ?? DEFAULTS.portCapacity);
+        setInputValue('port-fill-threshold', data.portFillThreshold ?? DEFAULTS.portFillThreshold);
+        setInputValue('custom-format-width', data.customFormatWidth ?? DEFAULTS.customFormatWidth);
+        setInputValue('custom-format-height', data.customFormatHeight ?? DEFAULTS.customFormatHeight);
+        setOverlayFormat(data.overlayFormat ?? DEFAULTS.overlayFormat);
+
+        const autoCalculate = document.getElementById('auto-calculate-resolution');
+        if (autoCalculate) {
+            autoCalculate.checked = data.autoCalculateResolution !== false
+                && data.autoCalculateResolution !== 'false';
+        }
+
+        document.querySelectorAll('[name="display-mode"]').forEach((input) => {
+            input.checked = input.value === (data.displayType ?? DEFAULTS.displayType);
+        });
+
+        closeAdvancedView();
+        syncAdvFromHidden();
+        applyAutoCalculateMode();
+        toggleCustomFormatFields();
+        updateAll();
+    }
+
+    async function loadProjectFile(file) {
+        const gate = window.OkamiCommercialGate;
+        const footer = document.querySelector('.led-config-footer');
+        if (gate?.checkLedWallLoadAllowed) {
+            const check = await gate.checkLedWallLoadAllowed();
+            if (!check.allowed) {
+                gate.showUpgradeNotice?.('Load Project requires a Standard license or higher.', footer);
+                return;
+            }
+        }
+
+        const ProjectIO = window.OkamiLedWallCalculator?.ProjectIO;
+        if (!ProjectIO?.readProjectFile) {
+            return;
+        }
+
+        try {
+            const project = await ProjectIO.readProjectFile(file);
+            applyProjectInputs(project.inputs);
+        } catch (error) {
+            window.alert(error.message || 'Could not load project file.');
+        }
     }
 
     function getWallPhysicalAspect(state) {

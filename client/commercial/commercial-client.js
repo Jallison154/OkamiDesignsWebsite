@@ -49,14 +49,20 @@
 
         try {
             configCache = await fetchJson('/config');
+            global.OkamiCommercialOfflineCache?.saveConfig?.(configCache);
         } catch (error) {
             console.warn('Commercial config unavailable:', error.message || error);
-            configCache = {
-                commercialEnabled: false,
-                clientCommercialUiEnabled: false,
-                featureGatingEnabled: false,
-                legal: global.OkamiShared?.CommercialPublic?.LEGAL_LINKS || {}
-            };
+            const offlineConfig = global.OkamiCommercialOfflineCache?.loadConfig?.();
+            if (offlineConfig) {
+                configCache = offlineConfig;
+            } else {
+                configCache = {
+                    commercialEnabled: false,
+                    clientCommercialUiEnabled: false,
+                    featureGatingEnabled: false,
+                    legal: global.OkamiShared?.CommercialPublic?.LEGAL_LINKS || {}
+                };
+            }
         }
 
         return configCache;
@@ -73,14 +79,28 @@
 
         try {
             entitlements = await fetchJson(`/entitlements${query}`);
+            global.OkamiCommercialOfflineCache?.saveEntitlements?.(productId, entitlements);
         } catch (error) {
             console.warn('Commercial entitlements unavailable:', error.message || error);
-            entitlements = {
-                productId: productId || null,
-                tier: 'professional',
-                featureMap: buildAllFeaturesMap(),
-                license: { valid: true, source: 'fallback' }
-            };
+            const offline = global.OkamiCommercialOfflineCache?.loadEntitlements?.(productId);
+            const preferOffline = global.OkamiCommercialOfflineCache?.isDesktopOfflinePreferred?.();
+            if (offline && (preferOffline || isGatingActive(configCache))) {
+                entitlements = {
+                    ...offline,
+                    license: {
+                        ...(offline.license || {}),
+                        source: 'offline-cache',
+                        valid: offline.license?.valid !== false
+                    }
+                };
+            } else {
+                entitlements = {
+                    productId: productId || null,
+                    tier: 'professional',
+                    featureMap: buildAllFeaturesMap(),
+                    license: { valid: true, source: 'fallback' }
+                };
+            }
         }
 
         if (!isGatingActive(configCache)) {
@@ -110,6 +130,15 @@
         await fetchJson('/license/clear', { method: 'POST' });
         clearCache();
         global.OkamiCommercialEntitlements = null;
+        global.OkamiCommercialOfflineCache?.clearAll?.();
+    }
+
+    async function requestMagicLink(email) {
+        return fetchJson('/account/magic-link', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
     }
 
     async function fetchAccountSession() {
@@ -145,6 +174,7 @@
         fetchEntitlements,
         activateLicense,
         clearLicense,
+        requestMagicLink,
         fetchAccountSession,
         checkVersion,
         hasFeature,

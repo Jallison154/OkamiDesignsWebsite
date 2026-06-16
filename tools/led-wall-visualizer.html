@@ -337,6 +337,8 @@
                             <div class="led-config-footer-actions">
                                 <div class="led-license-host" aria-label="License"></div>
                                 <button type="button" class="led-btn led-btn-secondary" id="led-save-project">Save Project</button>
+                                <button type="button" class="led-btn led-btn-secondary" id="led-load-project">Load Project</button>
+                                <input type="file" id="led-load-project-input" accept="application/json,.json" hidden>
                                 <button type="button" class="led-btn led-btn-secondary" id="led-export-report">Export Report</button>
                                 <button type="button" class="led-btn led-btn-secondary" id="led-advanced-open">Advanced Settings</button>
                             </div>
@@ -422,6 +424,7 @@
     <script src="../shared/commercial/features.js"></script>
     <script src="../shared/commercial/public-config.js"></script>
     <script src="../client/commercial/commercial-client.js"></script>
+    <script src="../client/commercial/offline-cache.js"></script>
     <script src="../client/commercial/commercial-ui.js"></script>
     <script src="../client/commercial/commercial-gate.js"></script>
     <script src="../client/commercial/license-panel.js"></script>

@@ -18,7 +18,8 @@ function readCommercialConfig() {
         licenseDevAcceptKey: process.env.OKAMI_LICENSE_DEV_ACCEPT_KEY || '',
         licenseVerifyPath: process.env.OKAMI_LICENSE_VERIFY_PATH || '/verify',
         licenseVerifyTimeoutMs: Number(process.env.OKAMI_LICENSE_VERIFY_TIMEOUT_MS) || 10000,
-        licenseDevAcceptTier: process.env.OKAMI_LICENSE_DEV_ACCEPT_TIER || 'standard'
+        licenseDevAcceptTier: process.env.OKAMI_LICENSE_DEV_ACCEPT_TIER || 'standard',
+        accountMagicLinkStub: process.env.OKAMI_ACCOUNT_MAGIC_LINK_STUB === 'true'
     };
 }
 
