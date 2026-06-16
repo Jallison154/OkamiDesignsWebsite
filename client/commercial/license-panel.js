@@ -2,7 +2,9 @@
     'use strict';
 
     function mount(options = {}) {
-        const host = document.querySelector('.signal-lab-header-meta')
+        const host = (options.hostSelector && document.querySelector(options.hostSelector))
+            || document.querySelector('.signal-lab-header-meta')
+            || document.querySelector('.led-license-host')
             || document.querySelector('.signal-lab-heading');
         if (!host || host.querySelector('[data-okami-license-panel]')) {
             return;

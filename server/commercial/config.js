@@ -10,11 +10,15 @@ function readCommercialConfig() {
         licenseApiKey: process.env.OKAMI_LICENSE_API_KEY || '',
         accountServiceUrl: process.env.OKAMI_ACCOUNT_SERVICE_URL || '',
         updateFeedUrl: process.env.OKAMI_UPDATE_FEED_URL || '',
+        updateFeedTimeoutMs: Number(process.env.OKAMI_UPDATE_FEED_TIMEOUT_MS) || 10000,
         sessionSecret: process.env.OKAMI_SESSION_SECRET || '',
         commercialEnabled: process.env.OKAMI_COMMERCIAL_ENABLED === 'true',
         clientCommercialUiEnabled: process.env.OKAMI_CLIENT_COMMERCIAL_UI === 'true',
         strictValidation: process.env.OKAMI_COMMERCIAL_STRICT === 'true',
-        licenseDevAcceptKey: process.env.OKAMI_LICENSE_DEV_ACCEPT_KEY || ''
+        licenseDevAcceptKey: process.env.OKAMI_LICENSE_DEV_ACCEPT_KEY || '',
+        licenseVerifyPath: process.env.OKAMI_LICENSE_VERIFY_PATH || '/verify',
+        licenseVerifyTimeoutMs: Number(process.env.OKAMI_LICENSE_VERIFY_TIMEOUT_MS) || 10000,
+        licenseDevAcceptTier: process.env.OKAMI_LICENSE_DEV_ACCEPT_TIER || 'standard'
     };
 }
 

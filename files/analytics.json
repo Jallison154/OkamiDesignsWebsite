@@ -2,39 +2,40 @@
   "pages": {
     "/home.html": {
       "title": "Home",
-      "totalViews": 20,
+      "totalViews": 23,
       "dailyViews": {
         "2026-06-14": 1,
         "2026-06-15": 13,
-        "2026-06-16": 6
+        "2026-06-16": 9
       },
       "monthlyViews": {
-        "2026-06": 20
+        "2026-06": 23
       },
-      "lastViewedAt": "2026-06-16T03:12:08.795Z"
+      "lastViewedAt": "2026-06-16T03:28:05.092Z"
     },
     "/services.html": {
       "title": "Services",
-      "totalViews": 1,
+      "totalViews": 2,
       "dailyViews": {
-        "2026-06-15": 1
+        "2026-06-15": 1,
+        "2026-06-16": 1
       },
       "monthlyViews": {
-        "2026-06": 1
+        "2026-06": 2
       },
-      "lastViewedAt": "2026-06-15T23:40:57.485Z"
+      "lastViewedAt": "2026-06-16T03:27:52.974Z"
     },
     "/support.html": {
       "title": "Support",
-      "totalViews": 3,
+      "totalViews": 5,
       "dailyViews": {
         "2026-06-15": 1,
-        "2026-06-16": 2
+        "2026-06-16": 4
       },
       "monthlyViews": {
-        "2026-06": 3
+        "2026-06": 5
       },
-      "lastViewedAt": "2026-06-16T00:36:55.869Z"
+      "lastViewedAt": "2026-06-16T03:28:31.958Z"
     },
     "/contact.html": {
       "title": "Contact",
@@ -43,40 +44,17 @@
       "monthlyViews": {},
       "lastViewedAt": null
     },
-    "/tools/index.html": {
-      "title": "Tools",
-      "totalViews": 3,
-      "dailyViews": {
-        "2026-06-16": 3
-      },
-      "monthlyViews": {
-        "2026-06": 3
-      },
-      "lastViewedAt": "2026-06-16T00:44:25.364Z"
-    },
     "/tools/led-wall-visualizer.html": {
       "title": "LED Video Wall Calculator",
-      "totalViews": 16,
+      "totalViews": 17,
       "dailyViews": {
         "2026-06-15": 2,
-        "2026-06-16": 14
+        "2026-06-16": 15
       },
       "monthlyViews": {
-        "2026-06": 16
+        "2026-06": 17
       },
-      "lastViewedAt": "2026-06-16T02:56:25.858Z"
-    },
-    "/tools/signal-lab.html": {
-      "title": "Okami Signal Lab",
-      "totalViews": 58,
-      "dailyViews": {
-        "2026-06-15": 8,
-        "2026-06-16": 50
-      },
-      "monthlyViews": {
-        "2026-06": 58
-      },
-      "lastViewedAt": "2026-06-16T03:08:22.135Z"
+      "lastViewedAt": "2026-06-16T03:18:16.689Z"
     },
     "/": {
       "title": "Construction Splash",
@@ -90,7 +68,30 @@
         "2026-06": 7
       },
       "lastViewedAt": "2026-06-16T00:41:33.969Z"
+    },
+    "/tools/index.html": {
+      "title": "Tools",
+      "totalViews": 3,
+      "dailyViews": {
+        "2026-06-16": 3
+      },
+      "monthlyViews": {
+        "2026-06": 3
+      },
+      "lastViewedAt": "2026-06-16T00:44:25.364Z"
+    },
+    "/tools/signal-lab.html": {
+      "title": "Okami Signal Lab",
+      "totalViews": 63,
+      "dailyViews": {
+        "2026-06-15": 8,
+        "2026-06-16": 55
+      },
+      "monthlyViews": {
+        "2026-06": 63
+      },
+      "lastViewedAt": "2026-06-16T03:28:44.106Z"
     }
   },
-  "updatedAt": "2026-06-16T03:12:08.795Z"
+  "updatedAt": "2026-06-16T03:28:44.106Z"
 }

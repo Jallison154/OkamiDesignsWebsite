@@ -9,10 +9,13 @@ const require = createRequire(import.meta.url);
 const { FEATURES } = require('../shared/commercial/features');
 
 const STAGING_KEY = 'staging-test-license-key';
+const UPSTREAM_KEY = 'upstream-professional-key';
 const savedEnv = {
     OKAMI_COMMERCIAL_ENABLED: process.env.OKAMI_COMMERCIAL_ENABLED,
     OKAMI_LICENSE_DEV_ACCEPT_KEY: process.env.OKAMI_LICENSE_DEV_ACCEPT_KEY,
-    OKAMI_CLIENT_COMMERCIAL_UI: process.env.OKAMI_CLIENT_COMMERCIAL_UI
+    OKAMI_CLIENT_COMMERCIAL_UI: process.env.OKAMI_CLIENT_COMMERCIAL_UI,
+    OKAMI_LICENSE_SERVER_URL: process.env.OKAMI_LICENSE_SERVER_URL,
+    OKAMI_LICENSE_API_KEY: process.env.OKAMI_LICENSE_API_KEY
 };
 
 process.env.OKAMI_COMMERCIAL_ENABLED = 'true';
@@ -73,7 +76,53 @@ function restoreEnv() {
     }
 }
 
+function startUpstreamMock() {
+    const server = http.createServer((req, res) => {
+        if (req.method !== 'POST' || req.url !== '/verify') {
+            res.writeHead(404, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ valid: false }));
+            return;
+        }
+
+        const auth = req.headers.authorization || '';
+        if (auth !== 'Bearer staging-api-key') {
+            res.writeHead(401, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ valid: false, message: 'unauthorized' }));
+            return;
+        }
+
+        let raw = '';
+        req.on('data', (chunk) => {
+            raw += chunk;
+        });
+        req.on('end', () => {
+            let payload = {};
+            try {
+                payload = JSON.parse(raw || '{}');
+            } catch {
+                payload = {};
+            }
+
+            if (payload.licenseKey === UPSTREAM_KEY) {
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ valid: true, tier: 'professional', source: 'mock-upstream' }));
+                return;
+            }
+
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ valid: false, status: 'invalid' }));
+        });
+    });
+
+    return listen(server).then(() => server);
+}
+
 async function run() {
+    const upstreamServer = await startUpstreamMock();
+    const upstreamPort = upstreamServer.address().port;
+    process.env.OKAMI_LICENSE_SERVER_URL = `http://127.0.0.1:${upstreamPort}`;
+    process.env.OKAMI_LICENSE_API_KEY = 'staging-api-key';
+
     await prepareServer();
     const server = http.createServer(app);
     await listen(server);
@@ -170,8 +219,20 @@ async function run() {
         } else {
             fail('Invalid license key rejected', JSON.stringify(badKey.body));
         }
+
+        const upstream = await request(baseUrl, '/api/commercial/license/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ licenseKey: UPSTREAM_KEY, productId: 'okami-signal-lab' })
+        });
+        if (upstream.status === 200 && upstream.body?.valid && upstream.body?.tier === 'professional') {
+            pass('Upstream license provider returns professional tier');
+        } else {
+            fail('Upstream license provider returns professional tier', JSON.stringify(upstream.body));
+        }
     } finally {
         await close(server);
+        await close(upstreamServer);
         restoreEnv();
     }
 

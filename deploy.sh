@@ -14,9 +14,23 @@ fi
 # Pull latest changes (if using git)
 if [ -d ".git" ]; then
     echo "📥 Pulling latest changes from Git..."
-    git pull origin main
-    if [ $? -ne 0 ]; then
-        echo "⚠️  Warning: Git pull failed. Continuing with existing files..."
+
+    # Server data files may differ from the repo; don't let them block deploy.
+    for data_file in files/manifest.json files/site-settings.json files/analytics.json; do
+        if [ -f "$data_file" ]; then
+            git update-index --skip-worktree "$data_file" 2>/dev/null || true
+        fi
+    done
+
+    if ! git pull origin main; then
+        echo "⚠️  Git pull failed. Attempting stash + retry..."
+        git stash push -u -m "deploy-autostash $(date -Iseconds)" || true
+        if ! git pull origin main; then
+            echo "❌ Git pull failed. Fix conflicts manually, then re-run deploy.sh"
+            echo "   Run: cd $(pwd) && git status && git pull origin main"
+            exit 1
+        fi
+        git stash pop 2>/dev/null || echo "⚠️  Stash pop skipped (resolve manually if needed)"
     fi
 fi
 

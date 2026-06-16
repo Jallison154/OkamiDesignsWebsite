@@ -45,9 +45,10 @@ npm run test:gate
 npm run test:commercial   # includes cookie persistence + clear
 ```
 
-## Next (Phase 6+)
+## Next (Phase 7+)
 
-- Upstream license provider (`verifyWithUpstream`)
-- LED wall save/report gates when those UI actions ship
-- Desktop shell + offline token exchange
+- Load Project from saved JSON
 - Account OAuth / magic links
+- Desktop offline entitlement cache
+
+See `docs/PHASE-6-GATE.md` for upstream licensing and LED wall I/O.

@@ -77,9 +77,19 @@
         return entitlements;
     }
 
+    function detectProductId() {
+        if (document.body?.classList.contains('signal-lab-page')) {
+            return 'okami-signal-lab';
+        }
+        if (document.body?.classList.contains('led-calculator-page')) {
+            return 'okami-led-wall-calculator';
+        }
+        return productId || 'okami-signal-lab';
+    }
+
     async function canUseFeature(featureKey) {
         if (!productId) {
-            await initForProduct('okami-signal-lab');
+            await initForProduct(detectProductId());
         }
 
         const client = getClient();
@@ -146,9 +156,31 @@
         };
     }
 
-    function showUpgradeNotice(message) {
-        const container = document.getElementById('signal-lab-module-options')
-            || document.querySelector('.signal-lab-controls-scroll');
+    async function checkLedWallSaveAllowed() {
+        const features = getFeatures();
+        const allowed = await canUseFeature(features.LED_WALL_SAVE_PROJECT);
+        return {
+            allowed,
+            featureKey: features.LED_WALL_SAVE_PROJECT,
+            reason: allowed ? null : 'led_wall_save'
+        };
+    }
+
+    async function checkLedWallReportAllowed() {
+        const features = getFeatures();
+        const allowed = await canUseFeature(features.LED_WALL_EXPORT_REPORT);
+        return {
+            allowed,
+            featureKey: features.LED_WALL_EXPORT_REPORT,
+            reason: allowed ? null : 'led_wall_report'
+        };
+    }
+
+    function showUpgradeNotice(message, containerOverride) {
+        const container = containerOverride
+            || document.getElementById('signal-lab-module-options')
+            || document.querySelector('.signal-lab-controls-scroll')
+            || document.querySelector('.led-config-footer');
         if (global.OkamiCommercialUi?.renderUpgradePlaceholder && container) {
             global.OkamiCommercialUi.renderUpgradePlaceholder(container, productId || 'okami-signal-lab');
         }
@@ -167,6 +199,8 @@
         canUseFeature,
         checkExportAllowed,
         checkPopoutAllowed,
+        checkLedWallSaveAllowed,
+        checkLedWallReportAllowed,
         exportNeedsPremium,
         isPremiumPattern,
         canUsePremiumPatternSync,

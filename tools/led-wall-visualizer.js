@@ -113,6 +113,14 @@
             closeAdvancedView();
         });
 
+        document.getElementById('led-save-project')?.addEventListener('click', () => {
+            void saveProjectFile();
+        });
+
+        document.getElementById('led-export-report')?.addEventListener('click', () => {
+            void exportProjectReport();
+        });
+
         const stage = document.getElementById('led-preview-stage');
         if (stage && 'ResizeObserver' in window) {
             resizeObserver = new ResizeObserver(() => renderPreview(getState()));
@@ -125,6 +133,9 @@
         applyAutoCalculateMode();
         toggleCustomFormatFields();
         updateAll();
+
+        void window.OkamiCommercialGate?.initForProduct?.('okami-led-wall-calculator');
+        void window.OkamiDesktopShell?.initDesktopShell?.({ productId: 'okami-led-wall-calculator' });
     }
 
     function initCabinetArt() {
@@ -627,6 +638,44 @@
 
     function getState() {
         return computeWallProject(gatherInputs());
+    }
+
+    async function saveProjectFile() {
+        const gate = window.OkamiCommercialGate;
+        const footer = document.querySelector('.led-config-footer');
+        if (gate?.checkLedWallSaveAllowed) {
+            const check = await gate.checkLedWallSaveAllowed();
+            if (!check.allowed) {
+                gate.showUpgradeNotice?.('Save Project requires a Standard license or higher.', footer);
+                return;
+            }
+        }
+
+        const ProjectIO = window.OkamiLedWallCalculator?.ProjectIO;
+        if (!ProjectIO) {
+            return;
+        }
+
+        ProjectIO.downloadProject(gatherInputs(), getState());
+    }
+
+    async function exportProjectReport() {
+        const gate = window.OkamiCommercialGate;
+        const footer = document.querySelector('.led-config-footer');
+        if (gate?.checkLedWallReportAllowed) {
+            const check = await gate.checkLedWallReportAllowed();
+            if (!check.allowed) {
+                gate.showUpgradeNotice?.('Export Report requires a Standard license or higher.', footer);
+                return;
+            }
+        }
+
+        const ProjectIO = window.OkamiLedWallCalculator?.ProjectIO;
+        if (!ProjectIO) {
+            return;
+        }
+
+        ProjectIO.downloadReport(gatherInputs(), getState());
     }
 
     function getWallPhysicalAspect(state) {

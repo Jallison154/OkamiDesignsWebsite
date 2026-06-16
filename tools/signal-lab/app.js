@@ -62,12 +62,28 @@
     let popoutChannel = null;
     const POPOUT_SYNC_CHANNEL = 'okami-signal-lab-sync';
     let activeModuleId = 'video-patterns';
+    let sidebarView = 'module';
     let initialized = false;
     let moduleSearchIndex = null;
     let currentSearchQuery = '';
     let refreshEstimator = null;
     let popoutDisconnectTimer = null;
     let hadPopoutWindow = false;
+
+    const OUTPUT_SETTINGS_ID = '__output__';
+
+    /** Compact sidebar dropdown — order and labels match UI spec. */
+    const SIDEBAR_MODULE_OPTIONS = [
+        { id: 'welcome', label: 'Signal Check' },
+        { id: 'video-patterns', label: 'Video Patterns' },
+        { id: 'motion-patterns', label: 'Motion Engine' },
+        { id: 'audio-tools', label: 'Audio Generator' },
+        { id: 'sync-tools', label: 'AV Sync' },
+        { id: 'branding', label: 'Branding' },
+        { id: 'export', label: 'Export' },
+        { id: 'led-utilities', label: 'LED Wall Tools' },
+        { id: OUTPUT_SETTINGS_ID, label: 'Output Settings', isOutput: true }
+    ];
     const outputSettings = {
         patternResolution: 'auto',
         patternWidth: 1920,
@@ -140,10 +156,13 @@
             canvas: document.getElementById('signal-lab-canvas'),
             canvasWrap: document.getElementById('signal-lab-canvas-wrap'),
             stage: document.getElementById('signal-lab-stage'),
-            moduleList: document.getElementById('signal-lab-module-list'),
+            moduleSelect: document.getElementById('signal-lab-module-select'),
             moduleSearch: document.getElementById('signal-lab-search'),
             moduleSearchStatus: document.getElementById('signal-lab-search-status'),
+            moduleInfo: document.getElementById('signal-lab-module-info'),
             moduleOptions: document.getElementById('signal-lab-module-options'),
+            outputActions: document.getElementById('signal-lab-output-actions'),
+            outputCollapsible: document.getElementById('signal-lab-output-collapsible'),
             status: document.getElementById('signal-lab-status'),
             resolutionWarning: document.getElementById('signal-lab-resolution-warning'),
             patternResolution: document.getElementById('signal-lab-pattern-resolution'),
@@ -830,13 +849,45 @@
         bindModuleControlEvents(container, schema, moduleId);
     }
 
+    function selectOutputSettings() {
+        sidebarView = 'output';
+        const els = getElements();
+
+        if (els.moduleTitle) {
+            els.moduleTitle.textContent = 'Output Settings';
+        }
+        if (els.moduleDesc) {
+            els.moduleDesc.textContent = 'Pattern resolution, scale mode, fullscreen, and pop-out controls.';
+        }
+        if (els.moduleOptions) {
+            els.moduleOptions.innerHTML = '';
+            els.moduleOptions.hidden = true;
+        }
+        if (els.moduleInfo) {
+            els.moduleInfo.hidden = false;
+        }
+        if (els.outputCollapsible) {
+            els.outputCollapsible.open = true;
+        }
+
+        els.moduleSelect?.closest('.signal-lab-sidebar')?.classList.add('is-output-view');
+        syncModuleDropdownValue(OUTPUT_SETTINGS_ID);
+        setStatus('Output settings');
+    }
+
     function selectModule(moduleId, searchPatch = null) {
+        if (moduleId === OUTPUT_SETTINGS_ID) {
+            selectOutputSettings();
+            return;
+        }
+
         const registry = window.OkamiSignalLab?.ModuleRegistry;
         const meta = registry?.getModuleById(moduleId);
         if (!meta || meta.status !== 'active') {
             return;
         }
 
+        sidebarView = 'module';
         activeModuleId = moduleId;
         const renderer = registry.getRenderer(moduleId);
 
@@ -865,12 +916,12 @@
         if (els.moduleDesc) {
             els.moduleDesc.textContent = meta.description;
         }
+        if (els.moduleInfo) {
+            els.moduleInfo.hidden = false;
+        }
 
-        els.moduleList?.querySelectorAll('[data-module-id]').forEach((btn) => {
-            const isActive = btn.dataset.moduleId === moduleId;
-            btn.classList.toggle('is-active', isActive);
-            btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
-        });
+        els.moduleSelect?.closest('.signal-lab-sidebar')?.classList.remove('is-output-view');
+        syncModuleDropdownValue(moduleId);
 
         buildModuleOptions(moduleId);
         updateExportPreviewContext(moduleId);
@@ -910,80 +961,121 @@
         }
     }
 
-    function renderModuleList(query = '') {
-        const registry = window.OkamiSignalLab?.ModuleRegistry;
-        const list = getElements().moduleList;
-        if (!registry || !list) {
+    function getVisibleModuleOptions(query = '') {
+        const labelById = Object.fromEntries(
+            SIDEBAR_MODULE_OPTIONS.map((entry) => [
+                entry.isOutput ? OUTPUT_SETTINGS_ID : entry.id,
+                entry.label
+            ])
+        );
+
+        const trimmed = query.trim();
+        if (!trimmed) {
+            return SIDEBAR_MODULE_OPTIONS.map((entry) => ({
+                moduleId: entry.isOutput ? OUTPUT_SETTINGS_ID : entry.id,
+                label: entry.label,
+                statePatch: null
+            }));
+        }
+
+        const normalized = window.OkamiSignalLab?.ModuleSearch?.normalizeForSearch(trimmed) || '';
+        const matches = window.OkamiSignalLab?.ModuleSearch?.filterModules(trimmed, getSearchIndex()) || [];
+        const options = matches.map((entry) => ({
+            moduleId: entry.moduleId,
+            label: labelById[entry.moduleId] || entry.label,
+            matchLabel: entry.matchLabel,
+            statePatch: entry.statePatch
+        }));
+
+        const outputTerms = ['output', 'popout', 'pop out', 'fullscreen', 'resolution', 'scale'];
+        if (outputTerms.some((term) => normalized.includes(term))
+            && !options.some((entry) => entry.moduleId === OUTPUT_SETTINGS_ID)) {
+            options.push({
+                moduleId: OUTPUT_SETTINGS_ID,
+                label: labelById[OUTPUT_SETTINGS_ID],
+                matchLabel: null,
+                statePatch: null
+            });
+        }
+
+        return options;
+    }
+
+    function syncModuleDropdownValue(value) {
+        const select = getElements().moduleSelect;
+        if (!select || !value) {
+            return;
+        }
+        const hasOption = Array.from(select.options).some((opt) => opt.value === value);
+        if (hasOption) {
+            select.value = value;
+        }
+    }
+
+    function renderModuleDropdown(query = '') {
+        const select = getElements().moduleSelect;
+        if (!select) {
             return;
         }
 
         currentSearchQuery = query;
-        const normalizedQuery = window.OkamiSignalLab?.ModuleSearch?.normalizeForSearch(query) || '';
-        const filtered = normalizedQuery
-            ? window.OkamiSignalLab.ModuleSearch.filterModules(query, getSearchIndex())
-            : getSearchIndex().map((entry) => ({
-                moduleId: entry.moduleId,
-                label: entry.label,
-                category: entry.category,
-                matchLabel: null,
-                statePatch: null
-            }));
+        const visible = getVisibleModuleOptions(query);
+        updateSearchStatus(query, visible.length);
 
-        const planned = normalizedQuery
-            ? []
-            : registry.getCatalog().filter((entry) => entry.status !== 'active');
+        const selectedValue = sidebarView === 'output'
+            ? OUTPUT_SETTINGS_ID
+            : activeModuleId;
 
-        updateSearchStatus(query, filtered.length);
-
-        const activeButtons = filtered.map((entry) => {
-            const isActive = entry.moduleId === activeModuleId;
-            const meta = entry.matchLabel ? `Match: ${entry.matchLabel}` : entry.category;
+        select.innerHTML = visible.map((entry) => {
             const patchAttr = entry.statePatch
                 ? ` data-state-patch="${encodeURIComponent(JSON.stringify(entry.statePatch))}"`
                 : '';
-
-            return `
-                <button type="button"
-                    class="signal-lab-module-btn${isActive ? ' is-active' : ''}"
-                    data-module-id="${entry.moduleId}"
-                    data-category="${entry.category}"${patchAttr}
-                    aria-pressed="${isActive ? 'true' : 'false'}">
-                    <span class="signal-lab-module-btn-label">${entry.label}</span>
-                    <span class="signal-lab-module-btn-meta">${meta}</span>
-                </button>
-            `;
+            const label = entry.matchLabel
+                ? `${entry.label} — ${entry.matchLabel}`
+                : entry.label;
+            return `<option value="${entry.moduleId}"${patchAttr}>${label}</option>`;
         }).join('');
 
-        const plannedButtons = planned.map((entry) => `
-            <button type="button"
-                class="signal-lab-module-btn is-planned"
-                data-module-id="${entry.id}"
-                data-category="${entry.category}"
-                disabled aria-disabled="true">
-                <span class="signal-lab-module-btn-label">${entry.label}</span>
-                <span class="signal-lab-module-btn-meta">Coming soon</span>
-            </button>
-        `).join('');
+        if (visible.length === 0) {
+            select.innerHTML = '<option value="">No matches</option>';
+            select.disabled = true;
+            return;
+        }
 
-        list.innerHTML = activeButtons + plannedButtons;
+        select.disabled = false;
+        if (visible.some((entry) => entry.moduleId === selectedValue)) {
+            select.value = selectedValue;
+        } else if (visible.length > 0) {
+            select.selectedIndex = 0;
+        }
+    }
 
-        list.querySelectorAll('[data-module-id]:not([disabled])').forEach((btn) => {
-            btn.addEventListener('click', () => {
-                let searchPatch = null;
-                if (btn.dataset.statePatch) {
-                    try {
-                        searchPatch = JSON.parse(decodeURIComponent(btn.dataset.statePatch));
-                    } catch {
-                        searchPatch = null;
-                    }
-                }
-                selectModule(btn.dataset.moduleId, searchPatch);
-            });
-        });
+    function applyModuleSelectionFromDropdown() {
+        const select = getElements().moduleSelect;
+        if (!select || select.disabled || !select.value) {
+            return;
+        }
+
+        const option = select.selectedOptions[0];
+        let searchPatch = null;
+        if (option?.dataset.statePatch) {
+            try {
+                searchPatch = JSON.parse(decodeURIComponent(option.dataset.statePatch));
+            } catch {
+                searchPatch = null;
+            }
+        }
+
+        if (select.value === OUTPUT_SETTINGS_ID) {
+            selectOutputSettings();
+            return;
+        }
+
+        selectModule(select.value, searchPatch);
     }
 
     function filterModuleList() {
-        renderModuleList(getElements().moduleSearch?.value || '');
+        renderModuleDropdown(getElements().moduleSearch?.value || '');
     }
 
     function openPopoutFullscreen() {
@@ -1118,6 +1210,18 @@
             setStatus('Pop-out closed.');
         });
         els.moduleSearch?.addEventListener('input', () => filterModuleList());
+        els.moduleSearch?.addEventListener('keydown', (event) => {
+            if (event.key !== 'Enter') {
+                return;
+            }
+            event.preventDefault();
+            const select = getElements().moduleSelect;
+            if (!select || select.disabled || !select.value) {
+                return;
+            }
+            applyModuleSelectionFromDropdown();
+        });
+        els.moduleSelect?.addEventListener('change', () => applyModuleSelectionFromDropdown());
 
         document.addEventListener('fullscreenchange', () => {
             els.stage?.classList.toggle('is-fullscreen', Boolean(document.fullscreenElement));
@@ -1141,7 +1245,7 @@
 
         window.OkamiSiteLayout?.init?.();
         refreshPreviewLayout();
-        renderModuleList(currentSearchQuery);
+        renderModuleDropdown(currentSearchQuery);
         initEngine();
 
         if (!initialized) {
@@ -1159,6 +1263,7 @@
         updateOutputBadge();
 
         void global.OkamiCommercialGate?.initForProduct?.('okami-signal-lab');
+        void global.OkamiDesktopShell?.initDesktopShell?.({ productId: 'okami-signal-lab' });
     }
 
     window.initSignalLab = initSignalLab;

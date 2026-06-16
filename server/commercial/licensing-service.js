@@ -1,26 +1,8 @@
 'use strict';
 
+const { TIERS } = require('../../shared/commercial/features');
 const { readCommercialConfig, hasLicenseBackend } = require('./config');
-
-/**
- * Upstream license provider — replace body with Stripe / LemonSqueezy / custom API.
- */
-async function verifyWithUpstream(config, payload) {
-    const licenseKey = payload.licenseKey || payload.key || '';
-    const productId = payload.productId || null;
-
-    // Placeholder fetch — never call from browser.
-    void config.licenseServerUrl;
-    void config.licenseApiKey;
-    void productId;
-
-    return {
-        valid: false,
-        tier: 'free',
-        source: 'license-verification-not-implemented',
-        message: 'License verification endpoint is stubbed. Implement server-side verification before production.'
-    };
-}
+const { verifyWithUpstream } = require('./license-upstream');
 
 /**
  * Staging-only dev key (OKAMI_LICENSE_DEV_ACCEPT_KEY). Never expose the key to clients.
@@ -31,9 +13,11 @@ function verifyDevLicenseKey(config, licenseKey) {
         return null;
     }
 
+    const tier = TIERS[config.licenseDevAcceptTier] ? config.licenseDevAcceptTier : 'standard';
+
     return {
         valid: true,
-        tier: 'standard',
+        tier,
         source: 'dev-accept-key',
         message: 'Development license key accepted.'
     };

@@ -78,30 +78,37 @@
 
             <div class="signal-lab-layout">
                 <aside class="signal-lab-controls signal-lab-sidebar led-panel" aria-label="Signal Lab controls">
-                    <h2 class="led-panel-title">Modules</h2>
-                    <p class="signal-lab-controls-note">Select a module, then choose a pattern or setting to update the live output instantly.</p>
+                    <h2 class="led-panel-title">Tools</h2>
+
+                    <div class="signal-lab-sidebar-top">
+                        <div class="signal-lab-search">
+                            <label class="signal-lab-search-label" for="signal-lab-search">Search tools</label>
+                            <input type="search" id="signal-lab-search" class="signal-lab-search-input"
+                                placeholder="Search patterns, audio, sync, export…" autocomplete="off" spellcheck="false">
+                            <p id="signal-lab-search-status" class="signal-lab-search-status" hidden></p>
+                        </div>
+
+                        <div class="signal-lab-module-picker">
+                            <label class="signal-lab-control-label" for="signal-lab-module-select">Module</label>
+                            <select id="signal-lab-module-select" class="led-select signal-lab-select signal-lab-field signal-lab-module-select"
+                                aria-label="Signal Lab module"></select>
+                        </div>
+                    </div>
 
                     <div class="signal-lab-controls-scroll">
-                        <div class="signal-lab-search">
-                        <label class="signal-lab-search-label" for="signal-lab-search">Search tools</label>
-                        <input type="search" id="signal-lab-search" class="signal-lab-search-input"
-                            placeholder="Search patterns, audio, sync, export…" autocomplete="off" spellcheck="false">
-                        <p id="signal-lab-search-status" class="signal-lab-search-status" hidden></p>
+                        <div class="signal-lab-module-info" id="signal-lab-module-info">
+                            <h3 id="signal-lab-module-title" class="signal-lab-module-info-title">Signal Check</h3>
+                            <p id="signal-lab-module-desc" class="signal-lab-module-info-desc">Professional calibration pattern with color bars, focus targets, safe areas, and motion tests.</p>
+                        </div>
+
+                        <div id="signal-lab-module-options" class="signal-lab-module-options" hidden></div>
                     </div>
 
-                    <div id="signal-lab-module-list" class="signal-lab-module-list" role="listbox" aria-label="Signal Lab modules"></div>
-
-                    <div id="signal-lab-module-options" class="signal-lab-module-options" hidden></div>
-
-                    <div class="signal-lab-module-info">
-                        <h3 id="signal-lab-module-title" class="signal-lab-module-info-title">Signal Check</h3>
-                        <p id="signal-lab-module-desc" class="signal-lab-module-info-desc">Professional calibration pattern with color bars, focus targets, safe areas, and motion tests.</p>
-                    </div>
-
-                    <div class="signal-lab-output-actions">
-                        <details class="signal-lab-collapsible signal-lab-collapsible--output" open>
-                            <summary class="signal-lab-collapsible-summary">Output</summary>
-                            <div class="signal-lab-collapsible-body">
+                    <div class="signal-lab-sidebar-footer">
+                        <div class="signal-lab-output-actions" id="signal-lab-output-actions">
+                            <details class="signal-lab-collapsible signal-lab-collapsible--output" id="signal-lab-output-collapsible" open>
+                                <summary class="signal-lab-collapsible-summary">Output</summary>
+                                <div class="signal-lab-collapsible-body">
                                 <div class="signal-lab-output-setting">
                                     <label class="signal-lab-control-label" for="signal-lab-pattern-resolution">Pattern Resolution</label>
                                     <select id="signal-lab-pattern-resolution" class="led-select signal-lab-select signal-lab-field"></select>
@@ -140,9 +147,9 @@
                                     <button type="button" id="signal-lab-popout-fullscreen" class="led-btn led-btn-secondary signal-lab-btn">Pop Out Fullscreen</button>
                                 </div>
                                 <button type="button" id="signal-lab-close-popout" class="led-btn led-btn-text signal-lab-btn" hidden>Close Pop-out</button>
-                            </div>
-                        </details>
-                    </div>
+                                </div>
+                            </details>
+                        </div>
                     </div>
                 </aside>
 
@@ -230,6 +237,7 @@
     <script src="../client/commercial/commercial-ui.js"></script>
     <script src="../client/commercial/commercial-gate.js"></script>
     <script src="../client/commercial/license-panel.js"></script>
+    <script src="../client/desktop/shell-bridge.js"></script>
     <script src="signal-lab/modules/pattern-export.js"></script>
     <script src="signal-lab/modules/led-wall-utilities.js"></script>
     <script src="signal-lab/app.js"></script>
