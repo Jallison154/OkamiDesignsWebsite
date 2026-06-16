@@ -117,6 +117,35 @@
         };
     }
 
+    function isPremiumPattern(moduleId, patternId) {
+        return Boolean(global.OkamiShared?.CommercialPremiumPatterns?.isPremiumPattern?.(moduleId, patternId));
+    }
+
+    function canUsePremiumPatternSync(moduleId, patternId) {
+        if (!isPremiumPattern(moduleId, patternId)) {
+            return true;
+        }
+
+        const client = getClient();
+        if (!client?.isGatingActive(config)) {
+            return true;
+        }
+
+        const activeEntitlements = entitlements || global.OkamiCommercialEntitlements;
+        const features = getFeatures();
+        return client.hasFeature(activeEntitlements, features.SIGNAL_LAB_PREMIUM_PATTERNS);
+    }
+
+    async function checkPopoutAllowed() {
+        const features = getFeatures();
+        const allowed = await canUseFeature(features.SIGNAL_LAB_POPOUT_LIVE);
+        return {
+            allowed,
+            featureKey: features.SIGNAL_LAB_POPOUT_LIVE,
+            reason: allowed ? null : 'premium_popout'
+        };
+    }
+
     function showUpgradeNotice(message) {
         const container = document.getElementById('signal-lab-module-options')
             || document.querySelector('.signal-lab-controls-scroll');
@@ -137,7 +166,10 @@
         refreshEntitlements,
         canUseFeature,
         checkExportAllowed,
+        checkPopoutAllowed,
         exportNeedsPremium,
+        isPremiumPattern,
+        canUsePremiumPatternSync,
         showUpgradeNotice,
         getFeatures,
         isGatingActive() {

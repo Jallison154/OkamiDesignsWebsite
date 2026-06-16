@@ -54,3 +54,5 @@ npm run test:commercial        # commercial ON in-process — tier + verify flow
 - Upstream license provider in `verifyWithUpstream`
 - Gate additional modules (pop-out live sync, premium patterns, LED wall reports)
 - Desktop shell integration
+
+See `docs/PHASE-5-GATE.md` for session cookies and expanded gates.

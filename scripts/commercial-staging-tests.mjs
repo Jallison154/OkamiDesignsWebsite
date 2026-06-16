@@ -50,7 +50,17 @@ async function request(baseUrl, path, options = {}) {
     const body = contentType.includes('application/json')
         ? await response.json()
         : await response.text();
-    return { status: response.status, body };
+    const setCookie = typeof response.headers.getSetCookie === 'function'
+        ? response.headers.getSetCookie()
+        : [];
+    return { status: response.status, body, setCookie };
+}
+
+function cookieHeaderFromSetCookie(setCookies = []) {
+    return setCookies
+        .map((line) => line.split(';')[0].trim())
+        .filter(Boolean)
+        .join('; ');
 }
 
 function restoreEnv() {
@@ -106,6 +116,37 @@ async function run() {
             pass('Dev license key activates standard tier');
         } else {
             fail('Dev license key activates standard tier', JSON.stringify(licensed.body));
+        }
+
+        const licenseCookie = cookieHeaderFromSetCookie(licensed.setCookie);
+        if (licenseCookie.includes('okami_license=')) {
+            pass('Activation sets HttpOnly license cookie');
+        } else {
+            fail('Activation sets HttpOnly license cookie', licensed.setCookie.join(' | '));
+        }
+
+        const persisted = await request(baseUrl, '/api/commercial/entitlements?productId=okami-signal-lab', {
+            headers: { Cookie: licenseCookie }
+        });
+        if (persisted.status === 200
+            && persisted.body?.tier === 'standard'
+            && persisted.body?.license?.source !== 'anonymous') {
+            pass('License cookie restores entitlements without re-posting key');
+        } else {
+            fail('License cookie restores entitlements without re-posting key', JSON.stringify(persisted.body));
+        }
+
+        const cleared = await request(baseUrl, '/api/commercial/license/clear', {
+            method: 'POST',
+            headers: { Cookie: licenseCookie }
+        });
+        const afterClear = await request(baseUrl, '/api/commercial/entitlements?productId=okami-signal-lab');
+        if (cleared.status === 200
+            && cleared.body?.cleared === true
+            && afterClear.body?.tier === 'free') {
+            pass('POST /api/commercial/license/clear resets tier');
+        } else {
+            fail('POST /api/commercial/license/clear resets tier', JSON.stringify(afterClear.body));
         }
 
         const verify = await request(baseUrl, '/api/commercial/license/verify', {

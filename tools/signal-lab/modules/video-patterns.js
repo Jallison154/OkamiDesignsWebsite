@@ -320,7 +320,10 @@
         render(ctx, frame) {
             const w = frame.displayWidth;
             const h = frame.displayHeight;
-            const patternId = frame.state?.patternId || 'okami-calibration';
+            let patternId = frame.state?.patternId || 'okami-calibration';
+            if (!global.OkamiCommercialGate?.canUsePremiumPatternSync?.('video-patterns', patternId)) {
+                patternId = 'okami-calibration';
+            }
             const draw = PATTERN_RENDERERS[patternId] || PATTERN_RENDERERS['okami-calibration'];
             draw(ctx, w, h, frame);
         }

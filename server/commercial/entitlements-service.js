@@ -4,14 +4,15 @@ const publicConfig = require('../../shared/commercial/public-config');
 const { FEATURES, TIERS } = require('../../shared/commercial/features');
 const { getSession } = require('./accounts-service');
 const { verifyLicense } = require('./licensing-service');
+const { setLicenseCookie, clearLicenseCookie } = require('./session-service');
 
 /**
  * Resolve entitlements server-side. Browser receives results only — never validation secrets.
  */
-async function getEntitlements(req, options = {}) {
+async function getEntitlements(req, options = {}, res = null) {
     const config = require('./config').readCommercialConfig();
     const session = await getSession(req);
-    const productId = options.productId || req.query?.productId || null;
+    const productId = options.productId || req.query?.productId || req.body?.productId || null;
 
     if (!config.commercialEnabled) {
         const allFeatures = Object.values(FEATURES);
@@ -35,12 +36,35 @@ async function getEntitlements(req, options = {}) {
         };
     }
 
-    let license = { valid: true, tier: session.tier || 'free', source: session.source };
-    if (options.licenseKey || req.body?.licenseKey) {
-        license = await verifyLicense({ licenseKey: options.licenseKey || req.body.licenseKey, productId });
+    const licenseKey = options.licenseKey || req.body?.licenseKey;
+    let license;
+
+    if (licenseKey) {
+        license = await verifyLicense({ licenseKey, productId });
+        if (license.valid && res) {
+            setLicenseCookie(res, {
+                tier: license.tier,
+                productId,
+                source: license.source
+            });
+        } else if (res) {
+            clearLicenseCookie(res);
+        }
+    } else if (session.tier && session.source !== 'anonymous') {
+        license = {
+            valid: true,
+            tier: session.tier,
+            source: session.source
+        };
+    } else {
+        license = {
+            valid: false,
+            tier: 'free',
+            source: 'anonymous'
+        };
     }
 
-    const tier = license.valid ? (license.tier || session.tier || 'free') : 'free';
+    const tier = license.valid ? (license.tier || 'free') : 'free';
     const tierDef = TIERS[tier] || TIERS.free;
 
     return {

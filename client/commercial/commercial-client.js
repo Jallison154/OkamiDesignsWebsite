@@ -106,6 +106,12 @@
         return entitlements;
     }
 
+    async function clearLicense() {
+        await fetchJson('/license/clear', { method: 'POST' });
+        clearCache();
+        global.OkamiCommercialEntitlements = null;
+    }
+
     async function fetchAccountSession() {
         return fetchJson('/account/session');
     }
@@ -138,6 +144,7 @@
         fetchConfig,
         fetchEntitlements,
         activateLicense,
+        clearLicense,
         fetchAccountSession,
         checkVersion,
         hasFeature,

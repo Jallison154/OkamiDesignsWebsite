@@ -1,6 +1,7 @@
 'use strict';
 
 const { readCommercialConfig } = require('./config');
+const { readLicenseSession } = require('./session-service');
 
 /**
  * Account/session placeholder — replace with OAuth, magic links, or desktop token exchange.
@@ -14,6 +15,17 @@ async function getSession(req) {
             user: null,
             tier: 'professional',
             source: 'commercial-disabled'
+        };
+    }
+
+    const licenseSession = readLicenseSession(req);
+    if (licenseSession) {
+        return {
+            authenticated: false,
+            user: null,
+            tier: licenseSession.tier,
+            source: licenseSession.source,
+            productId: licenseSession.productId
         };
     }
 

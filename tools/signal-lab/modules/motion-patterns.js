@@ -328,7 +328,10 @@
             const state = frame.state || {};
             const t = advanceMotionTime(frame.timestamp, state);
             const scale = getSizeScale(state);
-            const patternId = state.patternId || 'bouncing-ball';
+            let patternId = state.patternId || 'bouncing-ball';
+            if (!global.OkamiCommercialGate?.canUsePremiumPatternSync?.('motion-patterns', patternId)) {
+                patternId = 'bouncing-ball';
+            }
             const draw = MOTION_RENDERERS[patternId] || MOTION_RENDERERS['bouncing-ball'];
             draw(ctx, w, h, t, scale);
         }

@@ -9,6 +9,7 @@ const { getAccountProfile } = require('./accounts-service');
 const { verifyLicense } = require('./licensing-service');
 const { checkForUpdates, getPublicVersionInfo } = require('./version-service');
 const { getEntitlements } = require('./entitlements-service');
+const { clearLicenseCookie } = require('./session-service');
 
 const router = express.Router();
 
@@ -45,12 +46,18 @@ router.post('/entitlements', async (req, res) => {
         const entitlements = await getEntitlements(req, {
             productId: req.body?.productId,
             licenseKey: req.body?.licenseKey
-        });
+        }, res);
         res.json(entitlements);
     } catch (error) {
         console.error('Entitlements error:', error);
         res.status(500).json({ error: 'entitlements_unavailable' });
     }
+});
+
+/** Clear persisted license session (HttpOnly cookie). */
+router.post('/license/clear', (req, res) => {
+    clearLicenseCookie(res);
+    res.json({ cleared: true });
 });
 
 /** Account session placeholder. */

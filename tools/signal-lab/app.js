@@ -442,56 +442,84 @@
     }
 
     function openPopout(requestFullscreen = false) {
-        if (!engine) {
-            setStatus('Preview not ready yet.');
-            return;
-        }
-
-        getPopoutChannel();
-
-        if (isPopoutOpen()) {
-            popoutWindow.focus();
-            if (sendStateToPopout(requestFullscreen)) {
-                setStatus(requestFullscreen
-                    ? 'Pop-out updated (fullscreen requested).'
-                    : 'Pop-out updated with current pattern.');
+        const run = async () => {
+            if (!engine) {
+                setStatus('Preview not ready yet.');
+                return;
             }
-            return;
-        }
 
-        const url = new URL('signal-lab-output.html', window.location.href);
-        if (requestFullscreen) {
-            url.searchParams.set('fullscreen', '1');
-        }
+            const gate = global.OkamiCommercialGate;
+            if (gate?.checkPopoutAllowed) {
+                const check = await gate.checkPopoutAllowed();
+                if (!check.allowed) {
+                    gate.showUpgradeNotice?.('Live pop-out sync requires a Professional license.');
+                    setStatus('Premium feature — license required.');
+                    return;
+                }
+            }
 
-        popoutWindow = window.open(
-            url.href,
-            'okami-signal-lab-output',
-            'width=960,height=540,resizable=yes,scrollbars=no'
-        );
+            getPopoutChannel();
 
-        if (!popoutWindow) {
-            setStatus('Pop-up blocked. Allow pop-ups for this site.');
-            return;
-        }
+            if (isPopoutOpen()) {
+                popoutWindow.focus();
+                if (sendStateToPopout(requestFullscreen)) {
+                    setStatus(requestFullscreen
+                        ? 'Pop-out updated (fullscreen requested).'
+                        : 'Pop-out updated with current pattern.');
+                }
+                return;
+            }
 
-        hadPopoutWindow = true;
-        getElements().closePopoutBtn?.removeAttribute('hidden');
-        updateOutputBadge('popout-connected');
-        setStatus('Pop-out opened. Waiting for output window…');
+            const url = new URL('signal-lab-output.html', window.location.href);
+            if (requestFullscreen) {
+                url.searchParams.set('fullscreen', '1');
+            }
+
+            popoutWindow = window.open(
+                url.href,
+                'okami-signal-lab-output',
+                'width=960,height=540,resizable=yes,scrollbars=no'
+            );
+
+            if (!popoutWindow) {
+                setStatus('Pop-up blocked. Allow pop-ups for this site.');
+                return;
+            }
+
+            hadPopoutWindow = true;
+            getElements().closePopoutBtn?.removeAttribute('hidden');
+            updateOutputBadge('popout-connected');
+            setStatus('Pop-out opened. Waiting for output window…');
+        };
+
+        void run();
     }
 
     function updatePopout() {
-        if (!isPopoutOpen()) {
-            setStatus('Open a pop-out window first.');
-            return;
-        }
+        const run = async () => {
+            const gate = global.OkamiCommercialGate;
+            if (gate?.checkPopoutAllowed) {
+                const check = await gate.checkPopoutAllowed();
+                if (!check.allowed) {
+                    gate.showUpgradeNotice?.('Live pop-out sync requires a Professional license.');
+                    setStatus('Premium feature — license required.');
+                    return;
+                }
+            }
 
-        if (sendStateToPopout()) {
-            setStatus('Pop-out updated with current pattern and resolution.');
-        } else {
-            setStatus('Could not send output to pop-out.');
-        }
+            if (!isPopoutOpen()) {
+                setStatus('Open a pop-out window first.');
+                return;
+            }
+
+            if (sendStateToPopout()) {
+                setStatus('Pop-out updated with current pattern and resolution.');
+            } else {
+                setStatus('Could not send output to pop-out.');
+            }
+        };
+
+        void run();
     }
 
     function applyOutputSettingsToEngine() {
