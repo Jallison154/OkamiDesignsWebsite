@@ -1,7 +1,11 @@
 (function() {
     'use strict';
 
-    const DEFAULT_SITE_SETTINGS = {
+    const settingsApi = window.OkamiShared?.Settings;
+    const visibilityApi = window.OkamiShared?.Visibility;
+    const registryApi = window.OkamiShared?.Registry || window.OkamiPageRegistry;
+
+    const DEFAULT_SITE_SETTINGS = settingsApi?.DEFAULT_SITE_SETTINGS || {
         constructionMode: false,
         pages: {
             home: true,
@@ -14,7 +18,7 @@
         }
     };
 
-    const PAGE_PATHS = window.OkamiPageRegistry?.getVisibilityPagePaths?.() || {
+    const PAGE_PATHS = registryApi?.getVisibilityPagePaths?.() || {
         home: ['home.html'],
         services: ['services.html'],
         support: ['support.html'],
@@ -24,14 +28,14 @@
         okamiSignalLab: ['tools/signal-lab.html']
     };
 
-    const TOOL_PAGE_KEYS = window.OkamiPageRegistry?.TOOL_PAGE_KEYS || [
+    const TOOL_PAGE_KEYS = registryApi?.TOOL_PAGE_KEYS || [
         'ledVideoWallCalculator',
         'okamiSignalLab'
     ];
 
-    const SYSTEM_PAGES = new Set(['404.html', '50x.html']);
-    const ADMIN_LOGIN_PAGE = 'admin.html';
-    const ADMIN_ANALYTICS_PAGE = 'admin-analytics.html';
+    const SYSTEM_PAGES = visibilityApi?.SYSTEM_PAGES || new Set(['404.html', '50x.html']);
+    const ADMIN_LOGIN_PAGE = visibilityApi?.ADMIN_LOGIN_PAGE || 'admin.html';
+    const ADMIN_ANALYTICS_PAGE = visibilityApi?.ADMIN_ANALYTICS_PAGE || 'admin-analytics.html';
     const SETTINGS_POLL_INTERVAL_MS = 15000;
 
     let settingsCache = null;
@@ -78,13 +82,8 @@
 
     function getPageKeyFromPath(pathname) {
         const path = normalizePath(pathname);
-
-        if (path === 'home.html') {
-            return 'home';
-        }
-
-        if (path === 'tools/index.html') {
-            return 'tools';
+        if (registryApi?.getPageKeyFromPathValue) {
+            return registryApi.getPageKeyFromPathValue(path);
         }
 
         for (const [key, paths] of Object.entries(PAGE_PATHS)) {
@@ -176,6 +175,10 @@
     }
 
     function mergeSettings(raw) {
+        if (settingsApi?.mergeSettings) {
+            return settingsApi.mergeSettings(raw);
+        }
+
         const pages = { ...DEFAULT_SITE_SETTINGS.pages, ...(raw?.pages || {}) };
         Object.keys(DEFAULT_SITE_SETTINGS.pages).forEach((key) => {
             pages[key] = pages[key] !== false;
@@ -196,34 +199,30 @@
      * @returns {{ allowed: boolean, reason: string|null }}
      */
     function canAccessPage(pathname, userRole, settings) {
-        if (isSystemPage(pathname)) {
-            return { allowed: true, reason: null };
+        if (visibilityApi?.getAccessDecision) {
+            return visibilityApi.getAccessDecision({
+                pathname,
+                settings,
+                role: userRole
+            });
         }
 
-        if (isAdminLoginPage(pathname)) {
+        if (isSystemPage(pathname) || isAdminLoginPage(pathname)) {
             return { allowed: true, reason: null };
         }
 
         if (isAdminAnalyticsPage(pathname)) {
-            if (userRole === 'admin') {
-                return { allowed: true, reason: null };
-            }
-            return { allowed: false, reason: 'admin-auth' };
+            return userRole === 'admin'
+                ? { allowed: true, reason: null }
+                : { allowed: false, reason: 'admin-auth' };
         }
 
         if (userRole === 'admin') {
             return { allowed: true, reason: null };
         }
 
-        if (settings.constructionMode) {
-            if (isSplashPage(pathname)) {
-                return { allowed: true, reason: null };
-            }
+        if (settings.constructionMode && !isSplashPage(pathname)) {
             return { allowed: false, reason: 'construction' };
-        }
-
-        if (isSplashPage(pathname)) {
-            return { allowed: true, reason: null };
         }
 
         if (isToolsPath(pathname) && settings.pages.tools === false) {
@@ -432,15 +431,20 @@
     async function initSiteVisibility() {
         hidePageUntilCheck();
 
-        const allowed = await enforceCurrentPage();
-        if (!allowed) {
-            return;
-        }
+        try {
+            const allowed = await enforceCurrentPage();
+            if (!allowed) {
+                return;
+            }
 
-        const settings = await fetchSiteSettings();
-        lastAppliedSettingsSignature = getSettingsSignature(settings);
-        applyNavigation(settings);
-        startSettingsPolling();
+            const settings = await fetchSiteSettings();
+            lastAppliedSettingsSignature = getSettingsSignature(settings);
+            applyNavigation(settings);
+            startSettingsPolling();
+        } catch (error) {
+            console.warn('Site visibility init failed, showing page:', error.message || error);
+            revealPage();
+        }
     }
 
     function refreshSiteVisibility() {

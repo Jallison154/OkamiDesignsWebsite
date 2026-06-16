@@ -12,7 +12,7 @@ async function getSession(req) {
         return {
             authenticated: false,
             user: null,
-            tier: 'free',
+            tier: 'professional',
             source: 'commercial-disabled'
         };
     }

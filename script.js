@@ -325,12 +325,28 @@ async function updatePageContent(html, url, anchor = '') {
 }
 
 async function loadPageScripts(doc, pageUrl) {
+    const skipScripts = new Set([
+        'page-registry.js',
+        'site-visibility.js',
+        'site-settings.js',
+        'pages.js',
+        'access-policy.js',
+        'commercial-client.js',
+        'commercial-ui.js',
+        'public-config.js'
+    ]);
+
     const scripts = Array.from(doc.querySelectorAll('script[src]'));
     const baseUrl = new URL(pageUrl, window.location.origin);
 
     for (const script of scripts) {
         const src = script.getAttribute('src');
         if (!src || src.includes('script.js')) {
+            continue;
+        }
+
+        const srcFile = src.split('/').pop()?.split('?')[0] || '';
+        if (skipScripts.has(srcFile)) {
             continue;
         }
 

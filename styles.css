@@ -60,13 +60,25 @@ body {
 }
 
 .full-height-tool {
+    display: flex;
+    flex-direction: column;
     height: calc(100dvh - var(--okami-header-height, 0px));
     max-height: calc(100dvh - var(--okami-header-height, 0px));
     overflow: hidden;
     min-height: 0;
-    margin-top: var(--okami-header-height, 0px);
     padding: 0;
     box-sizing: border-box;
+}
+
+.full-height-tool > .signal-lab-app,
+.full-height-tool > .led-app {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.full-height-tool .okami-commercial-footer {
+    flex-shrink: 0;
 }
 
 /* Page load animation - removed to prevent flash */
@@ -3118,6 +3130,16 @@ html {
     gap: var(--calculator-layout-gap);
 }
 
+.led-calculator-page .calculator-page.full-height-tool {
+    min-height: 0;
+    overflow: hidden;
+}
+
+.led-calculator-page .calculator-page.full-height-tool > .led-app {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
 .led-calculator-page .led-app {
     flex: 1 1 auto;
     min-height: 0;
@@ -3346,6 +3368,13 @@ html {
 
 .led-more-pitches {
     margin-top: 4px;
+    overflow: visible;
+    position: relative;
+    z-index: 1;
+}
+
+.led-more-pitches[open] {
+    z-index: 4;
 }
 
 .led-more-pitches-summary {
@@ -3830,9 +3859,16 @@ html {
 
 .led-field select:focus,
 .led-select:focus {
+    position: relative;
+    z-index: 5;
     outline: none;
     border-color: var(--accent-color);
     box-shadow: 0 0 0 3px rgba(255, 106, 45, 0.15);
+}
+
+.wall-configuration-card details:focus-within {
+    position: relative;
+    z-index: 4;
 }
 
 .led-field select option,
@@ -4526,12 +4562,21 @@ html {
 
     .sidebar {
         grid-area: sidebar;
-        display: grid;
-        grid-template-rows: auto minmax(0, 1fr);
+        display: flex;
+        flex-direction: column;
         gap: 12px;
         min-height: 0;
         align-self: stretch;
-        overflow: visible;
+        overflow: hidden;
+    }
+
+    .sidebar > .led-grid-summary {
+        flex-shrink: 0;
+    }
+
+    .sidebar > .wall-configuration-card {
+        flex: 1 1 auto;
+        min-height: 0;
     }
 
     .preview-column {
@@ -4555,12 +4600,28 @@ html {
         min-height: 0;
         display: flex;
         flex-direction: column;
-        overflow: visible;
+        overflow-x: hidden;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 24px;
+        position: relative;
+        z-index: 2;
+        pointer-events: auto;
         padding: clamp(8px, 1vw, 12px);
     }
 
+    .wall-configuration-card .led-panel-title {
+        flex-shrink: 0;
+    }
+
+    .wall-configuration-card .led-config-swap,
+    .wall-configuration-card .led-config-footer {
+        flex-shrink: 0;
+    }
+
     .led-config-swap {
-        flex: 1 1 auto;
+        flex: 0 0 auto;
         min-height: 0;
     }
 
@@ -4729,7 +4790,12 @@ html {
         height: auto;
         min-height: 0;
         align-self: start;
-        grid-template-rows: auto auto;
+        overflow: visible;
+    }
+
+    .sidebar > .wall-configuration-card {
+        flex: 0 0 auto;
+        max-height: none;
         overflow: visible;
     }
 
@@ -4744,7 +4810,9 @@ html {
     .wall-configuration-card {
         height: auto;
         min-height: 0;
-        overflow: visible;
+        overflow-x: hidden;
+        overflow-y: auto;
+        padding-bottom: 24px;
     }
 
     .led-config-swap {
@@ -4966,6 +5034,8 @@ body.signal-lab-page {
     padding: clamp(8px, 1.2vh, 14px) clamp(12px, 2.5vw, 24px) clamp(10px, 1.2vh, 14px);
     min-height: 0;
     min-width: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
 }
 
 .signal-lab-app {
@@ -5053,10 +5123,31 @@ body.signal-lab-page {
     height: 100%;
     min-height: 0;
     min-width: 0;
+    overflow: hidden;
+    position: relative;
+    z-index: 2;
+    pointer-events: auto;
+}
+
+.signal-lab-controls > .led-panel-title,
+.signal-lab-controls > .signal-lab-controls-note {
+    flex-shrink: 0;
+}
+
+.signal-lab-controls-scroll {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(8px, 1.2vh, 12px);
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
+    padding-bottom: 24px;
+    position: relative;
+    z-index: 1;
+    pointer-events: auto;
 }
 
 .signal-lab-controls-note {
@@ -5115,10 +5206,7 @@ body.signal-lab-page {
     flex-direction: column;
     gap: clamp(6px, 1vh, 8px);
     min-height: 0;
-    max-height: clamp(120px, 26vh, 260px);
-    overflow-x: hidden;
-    overflow-y: auto;
-    overscroll-behavior: contain;
+    flex-shrink: 0;
 }
 
 .signal-lab-module-btn {
@@ -5182,7 +5270,13 @@ body.signal-lab-page {
     border: 1px solid rgba(255, 255, 255, 0.07);
     border-radius: clamp(8px, 1.2vw, 10px);
     background: rgba(0, 0, 0, 0.18);
-    overflow: hidden;
+    overflow: visible;
+    position: relative;
+    z-index: 1;
+}
+
+.signal-lab-collapsible:focus-within {
+    z-index: 4;
 }
 
 .signal-lab-collapsible--output {
@@ -5316,9 +5410,10 @@ body.signal-lab-page {
     display: flex;
     flex-direction: column;
     gap: clamp(6px, 1vh, 8px);
-    margin-top: auto;
+    margin-top: 0;
     padding-top: clamp(8px, 1.2vh, 12px);
     border-top: 1px solid rgba(255, 255, 255, 0.06);
+    flex-shrink: 0;
 }
 
 .signal-lab-output-actions .signal-lab-actions-row {
@@ -5349,6 +5444,13 @@ body.signal-lab-page {
     max-width: 100%;
     min-width: 0;
     box-sizing: border-box;
+    position: relative;
+    z-index: 1;
+}
+
+.signal-lab-select:focus,
+.signal-lab-field:focus {
+    z-index: 5;
 }
 
 .signal-lab-range-unit {
@@ -5967,11 +6069,17 @@ body.signal-lab-page:has(.signal-lab-stage:fullscreen) .signal-lab-preview-frame
         width: 100%;
         max-width: 100%;
         height: auto;
+        max-height: none;
+        min-height: 0;
+    }
+
+    .signal-lab-controls-scroll {
         max-height: var(--signal-lab-controls-stack-max-h);
+        flex: 0 1 auto;
     }
 
     .signal-lab-module-list {
-        max-height: clamp(100px, 18vh, 180px);
+        flex-shrink: 0;
     }
 
     .signal-lab-preview,
@@ -6015,8 +6123,8 @@ body.signal-lab-page:has(.signal-lab-stage:fullscreen) .signal-lab-preview-frame
         gap: clamp(8px, 1.2vh, 10px);
     }
 
-    .signal-lab-module-list {
-        max-height: clamp(96px, 20vh, 160px);
+    .signal-lab-controls-scroll {
+        gap: clamp(8px, 1.2vh, 10px);
     }
 }
 
@@ -6053,4 +6161,60 @@ body.signal-lab-page:has(.signal-lab-stage:fullscreen) .signal-lab-preview-frame
     .signal-lab-preview {
         padding: clamp(10px, 2.5vw, 14px);
     }
+}
+
+/* Commercial footer & upgrade placeholders (web + tools) */
+.okami-commercial-footer {
+    margin-top: clamp(24px, 4vh, 48px);
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 0.8125rem;
+    color: rgba(255, 255, 255, 0.55);
+}
+
+.okami-commercial-footer-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 20px;
+    margin-bottom: 8px;
+}
+
+.okami-commercial-footer-nav a {
+    color: rgba(255, 255, 255, 0.72);
+    text-decoration: none;
+}
+
+.okami-commercial-footer-nav a:hover {
+    color: #fff;
+    text-decoration: underline;
+}
+
+.okami-commercial-footer-note {
+    margin: 0;
+    line-height: 1.5;
+}
+
+.okami-upgrade-placeholder {
+    margin-top: 12px;
+    padding: 14px 16px;
+    border: 1px dashed rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.okami-upgrade-placeholder-title {
+    margin: 0 0 6px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.okami-upgrade-placeholder-text {
+    margin: 0 0 8px;
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.65);
+}
+
+.okami-upgrade-placeholder-link {
+    font-size: 0.875rem;
+    color: var(--accent-color, #c9a227);
 }

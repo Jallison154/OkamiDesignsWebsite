@@ -5,25 +5,17 @@ const path = require('path');
 const fs = require('fs').promises;
 const crypto = require('crypto');
 
+const pageRegistry = require('./shared/registry/pages');
+const { DEFAULT_SITE_SETTINGS, normalizeSiteSettings } = require('./shared/settings/site-settings');
+const accessPolicy = require('./shared/visibility/access-policy');
+const commercialRoutes = require('./server/commercial/routes');
+
 const app = express();
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 const FILES_DIR = path.join(__dirname, 'files');
 const MANIFEST_PATH = path.join(FILES_DIR, 'manifest.json');
 const SITE_SETTINGS_PATH = path.join(FILES_DIR, 'site-settings.json');
 const ANALYTICS_PATH = path.join(FILES_DIR, 'analytics.json');
-
-const DEFAULT_SITE_SETTINGS = {
-    constructionMode: false,
-    pages: {
-        home: true,
-        services: true,
-        tools: true,
-        support: true,
-        contact: true,
-        ledVideoWallCalculator: true,
-        okamiSignalLab: true
-    }
-};
 
 function slugify(value) {
     return value
@@ -72,90 +64,17 @@ function isAdminRequest(req) {
     return parseRequestCookies(req).okami_admin === '1';
 }
 
-function normalizeVisibilityPath(requestPath) {
-    let normalized = (requestPath || '/').split('?')[0].replace(/\\/g, '/').toLowerCase();
-    if (normalized.endsWith('/')) {
-        normalized = normalized.slice(0, -1) || '/';
-    }
-    if (normalized === '/' || normalized === '/index.html') {
-        return '';
-    }
-    return normalized.replace(/^\//, '');
-}
-
-function getVisibilityPageKey(pathValue) {
-    if (pathValue === 'home.html') {
-        return 'home';
-    }
-    if (pathValue === 'services.html') {
-        return 'services';
-    }
-    if (pathValue === 'support.html') {
-        return 'support';
-    }
-    if (pathValue === 'contact.html') {
-        return 'contact';
-    }
-    if (pathValue === 'tools/index.html') {
-        return 'tools';
-    }
-    if (pathValue === 'tools/led-wall-visualizer.html') {
-        return 'ledVideoWallCalculator';
-    }
-    if (pathValue === 'tools/signal-lab.html') {
-        return 'okamiSignalLab';
-    }
-    return null;
-}
+const { normalizeVisibilityPath, getAccessDecision, buildVisibilityRedirect: sharedBuildVisibilityRedirect } = accessPolicy;
 
 function getServerAccessDecision(pathValue, settings, isAdmin) {
-    if (pathValue === '404.html' || pathValue === '50x.html' || pathValue === 'admin.html') {
-        return { allowed: true };
-    }
-
-    if (pathValue === 'admin-analytics.html') {
-        return isAdmin ? { allowed: true } : { allowed: false, reason: 'admin-auth' };
-    }
-
-    if (isAdmin) {
-        return { allowed: true };
-    }
-
-    if (settings.constructionMode) {
-        if (pathValue === '') {
-            return { allowed: true };
-        }
-        return { allowed: false, reason: 'construction' };
-    }
-
-    if (pathValue === '') {
-        return { allowed: true };
-    }
-
-    if (pathValue.startsWith('tools/') && settings.pages.tools === false) {
-        return { allowed: false, reason: 'hidden' };
-    }
-
-    const pageKey = getVisibilityPageKey(pathValue);
-    if (pageKey && settings.pages[pageKey] === false) {
-        return { allowed: false, reason: 'hidden' };
-    }
-
-    return { allowed: true };
+    return getAccessDecision({ pathValue, settings, isAdmin });
 }
 
 function buildVisibilityRedirect(pathValue, reason, settings) {
-    const inTools = pathValue.startsWith('tools/');
-    if (reason === 'construction' || (reason === 'hidden' && settings.constructionMode)) {
-        return inTools ? '/index.html' : '/index.html';
+    if (reason === 'hidden' && settings?.constructionMode) {
+        return sharedBuildVisibilityRedirect(pathValue, 'construction');
     }
-    if (reason === 'hidden') {
-        return inTools ? '/404.html' : '/404.html';
-    }
-    if (reason === 'admin-auth') {
-        return inTools ? '/admin.html' : '/admin.html';
-    }
-    return '/index.html';
+    return sharedBuildVisibilityRedirect(pathValue, reason);
 }
 
 async function siteVisibilityMiddleware(req, res, next) {
@@ -291,20 +210,6 @@ async function writeManifest(manifest) {
     await fs.writeFile(MANIFEST_PATH, JSON.stringify(manifest, null, 2));
 }
 
-function normalizeSiteSettings(raw) {
-    const pages = { ...DEFAULT_SITE_SETTINGS.pages, ...(raw?.pages || {}) };
-
-    Object.keys(DEFAULT_SITE_SETTINGS.pages).forEach((key) => {
-        pages[key] = pages[key] !== false;
-    });
-
-    return {
-        constructionMode: Boolean(raw?.constructionMode),
-        pages,
-        updatedAt: raw?.updatedAt || new Date().toISOString()
-    };
-}
-
 async function readSiteSettings() {
     try {
         const data = await fs.readFile(SITE_SETTINGS_PATH, 'utf8');
@@ -321,17 +226,10 @@ async function writeSiteSettings(settings) {
     return normalized;
 }
 
-// Keep in sync with page-registry.js
-const TRACKABLE_PAGES = [
-    { path: '/home.html', title: 'Home' },
-    { path: '/services.html', title: 'Services' },
-    { path: '/support.html', title: 'Support' },
-    { path: '/contact.html', title: 'Contact' },
-    { path: '/tools/index.html', title: 'Tools' },
-    { path: '/tools/led-wall-visualizer.html', title: 'LED Video Wall Calculator' },
-    { path: '/tools/signal-lab.html', title: 'Okami Signal Lab' },
-    { path: '/', title: 'Construction Splash' }
-];
+const TRACKABLE_PAGES = pageRegistry.getTrackablePages().map((page) => ({
+    path: page.analyticsPath,
+    title: page.title
+}));
 
 function createEmptyPageRecord(title) {
     return {
@@ -849,6 +747,9 @@ app.post('/api/analytics/reset', async (req, res) => {
         res.status(500).json({ error: 'Failed to reset analytics' });
     }
 });
+
+// Commercial API — licensing, accounts, entitlements, version checks (server-side only)
+app.use('/api/commercial', commercialRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

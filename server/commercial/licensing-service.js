@@ -12,7 +12,7 @@ async function verifyLicense(payload = {}) {
     if (!config.commercialEnabled) {
         return {
             valid: true,
-            tier: 'free',
+            tier: 'professional',
             source: 'commercial-disabled',
             message: 'Commercial licensing is not enabled on this deployment.'
         };
