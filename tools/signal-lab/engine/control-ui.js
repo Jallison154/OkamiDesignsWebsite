@@ -1,11 +1,13 @@
 (function(global) {
     'use strict';
 
-    const SECTION_ORDER = ['pattern', 'motion', 'resolution', 'branding', 'output', 'export'];
+    const SECTION_ORDER = ['pattern', 'motion', 'audio', 'sync', 'resolution', 'branding', 'output', 'export'];
 
     const SECTION_LABELS = {
         pattern: 'Pattern',
         motion: 'Motion',
+        audio: 'Audio',
+        sync: 'Sync',
         resolution: 'Resolution',
         branding: 'Branding',
         output: 'Output',
@@ -79,12 +81,18 @@
             if (control.key === 'patternId' || control.key === 'mode') {
                 return 'pattern';
             }
+            if (moduleId === 'sync-tools') {
+                return 'sync';
+            }
             return 'motion';
         }
 
         if (moduleId === 'video-patterns') {
             if (control.key === 'motionPlaying') {
                 return 'motion';
+            }
+            if (control.key === 'toneEnabled') {
+                return 'audio';
             }
             return 'pattern';
         }
@@ -94,7 +102,7 @@
         }
 
         if (moduleId === 'audio-tools') {
-            return 'output';
+            return 'audio';
         }
 
         return 'pattern';
@@ -148,7 +156,11 @@
         return unit;
     }
 
-    function renderControl(control, state, disabled) {
+    function controlExtraClass(base, extra) {
+        return [base, extra].filter(Boolean).join(' ');
+    }
+
+    function renderControl(control, state, disabled, extraClass = '') {
         const current = state?.[control.key];
         const dis = disabledAttrs(disabled);
 
@@ -164,7 +176,7 @@
                     data-control-key="${control.key}" data-control-type="select"${dis}>
                     ${options}
                 </select>
-            `, control, disabled);
+            `, control, disabled, extraClass);
         }
 
         if (control.type === 'range') {
@@ -191,7 +203,7 @@
                 <input type="range" id="sl-ctrl-${control.key}" class="signal-lab-range"
                     data-control-key="${control.key}" data-control-type="range"
                     min="${control.min}" max="${control.max}" step="${control.step || 0.1}" value="${val}"${dis}>
-            `, control, disabled);
+            `, control, disabled, extraClass);
         }
 
         if (control.type === 'checkbox') {
@@ -201,7 +213,7 @@
                     <input type="checkbox" id="sl-ctrl-${control.key}" data-control-key="${control.key}" data-control-type="checkbox"${checked}${dis}>
                     <span>${escapeHtml(control.label)}</span>
                 </label>
-            `, control, disabled, 'signal-lab-control--checkbox');
+            `, control, disabled, controlExtraClass('signal-lab-control--checkbox', extraClass));
         }
 
         if (control.type === 'transport') {
@@ -220,7 +232,7 @@
                     <button type="button" class="led-btn signal-lab-btn signal-lab-transport-btn${!isOn ? ' is-active' : ''}"
                         data-control-key="${transportKey}" data-control-value="false" aria-pressed="${!isOn ? 'true' : 'false'}"${dis}>${escapeHtml(stopLabel)}</button>
                 </div>
-            `, control, disabled);
+            `, control, disabled, extraClass);
         }
 
         if (control.type === 'peak-meter') {
@@ -232,7 +244,7 @@
                     </div>
                     <span class="signal-lab-peak-label" data-peak-label">−∞ dB</span>
                 </div>
-            `, control, disabled, 'signal-lab-control--meter');
+            `, control, disabled, controlExtraClass('signal-lab-control--meter', extraClass));
         }
 
         if (control.type === 'display-metrics') {
@@ -254,7 +266,7 @@
 
             return controlShell(`
                 <div class="signal-lab-display-metrics" data-display-metrics-root>${rows}</div>
-            `, control, disabled, 'signal-lab-control--display-metrics');
+            `, control, disabled, controlExtraClass('signal-lab-control--display-metrics', extraClass));
         }
 
         if (control.type === 'led-wall-metrics') {
@@ -282,7 +294,7 @@
                         <li class="signal-lab-led-warning">—</li>
                     </ul>
                 </div>
-            `, control, disabled, 'signal-lab-control--led-metrics');
+            `, control, disabled, controlExtraClass('signal-lab-control--led-metrics', extraClass));
         }
 
         if (control.type === 'text') {
@@ -293,7 +305,7 @@
                     data-control-key="${control.key}" data-control-type="text"
                     value="${escapeHtml(value)}"
                     placeholder="${escapeHtml(control.placeholder || '')}" maxlength="${control.maxLength || 120}"${dis}>
-            `, control, disabled);
+            `, control, disabled, extraClass);
         }
 
         if (control.type === 'number') {
@@ -307,14 +319,14 @@
                         min="${control.min}" max="${control.max}" step="${control.step || 1}" value="${val}"${dis}>
                     ${unit ? `<span class="signal-lab-field-unit">${escapeHtml(unit)}</span>` : ''}
                 </div>
-            `, control, disabled);
+            `, control, disabled, extraClass);
         }
 
         if (control.type === 'action') {
             return controlShell(`
                 <button type="button" class="led-btn signal-lab-btn signal-lab-action-btn"
                     data-control-key="${control.key}" data-control-type="action"${dis}>${escapeHtml(control.buttonLabel || control.label)}</button>
-            `, control, disabled, 'signal-lab-control--action');
+            `, control, disabled, controlExtraClass('signal-lab-control--action', extraClass));
         }
 
         if (control.type === 'file-upload') {
@@ -328,7 +340,7 @@
                     <span class="signal-lab-file-status">${hasFile ? 'Image loaded' : 'No image uploaded'}</span>
                     ${hasFile && !disabled ? `<button type="button" class="led-btn led-btn-text signal-lab-btn signal-lab-file-clear" data-clear-upload data-control-key="${control.key}">Remove</button>` : ''}
                 </div>
-            `, control, disabled, 'signal-lab-control--file');
+            `, control, disabled, controlExtraClass('signal-lab-control--file', extraClass));
         }
 
         if (control.type === 'radio') {
@@ -346,7 +358,7 @@
             return controlShell(`
                 <span class="signal-lab-control-label">${escapeHtml(control.label)}</span>
                 <div class="signal-lab-radio-group">${options}</div>
-            `, control, disabled);
+            `, control, disabled, extraClass);
         }
 
         return '';
@@ -378,6 +390,28 @@
         }).join('');
     }
 
+    function buildToolbarHtml(schema, state, moduleId) {
+        const sections = groupSchemaIntoSections(schema, state, moduleId);
+        if (!sections.length) {
+            return '';
+        }
+
+        const groups = sections.map((section) => {
+            const controlsHtml = section.items
+                .map(({ control, disabled }) => renderControl(control, state, disabled, 'signal-lab-toolbar-control'))
+                .join('');
+
+            return `
+                <div class="signal-lab-toolbar-group" data-section="${section.id}">
+                    <span class="signal-lab-toolbar-label">${escapeHtml(section.label)}</span>
+                    <div class="signal-lab-toolbar-controls">${controlsHtml}</div>
+                </div>
+            `;
+        }).join('');
+
+        return `<div class="signal-lab-toolbar">${groups}</div>`;
+    }
+
     function flattenSchema(schema, state, moduleId) {
         return groupSchemaIntoSections(schema, state, moduleId)
             .flatMap((section) => section.items.map((item) => item.control));
@@ -404,6 +438,7 @@
         getControlVisibility,
         groupSchemaIntoSections,
         buildOptionsHtml,
+        buildToolbarHtml,
         flattenSchema,
         shouldRebuildOptions,
         renderControl

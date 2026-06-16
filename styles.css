@@ -5296,17 +5296,14 @@ body.signal-lab-page {
 }
 
 .signal-lab-module-options {
-    display: flex;
-    flex-direction: column;
-    gap: clamp(6px, 1vh, 8px);
+    display: block;
+    min-width: min-content;
     padding: 0;
     border-top: none;
     border-bottom: none;
-    min-width: 0;
     min-height: 0;
-    flex: 1 1 auto;
-    overflow-x: hidden;
-    overflow-y: visible;
+    flex: none;
+    overflow: visible;
 }
 
 .signal-lab-collapsible {
@@ -5869,13 +5866,146 @@ body.signal-lab-page {
 .signal-lab-preview,
 .signal-lab-output {
     display: grid;
-    grid-template-rows: auto 1fr;
+    grid-template-rows: auto auto 1fr;
     gap: clamp(6px, 1vh, 10px);
     height: 100%;
     min-height: 0;
     min-width: 0;
     padding: clamp(8px, 1.4vw, 14px);
     overflow: hidden;
+}
+
+.signal-lab-settings-bar {
+    flex-shrink: 0;
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    padding: clamp(6px, 1vh, 8px) clamp(4px, 0.8vw, 6px);
+    border-radius: clamp(8px, 1vw, 10px);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: rgba(0, 0, 0, 0.2);
+    scrollbar-width: thin;
+}
+
+.signal-lab-settings-bar:empty,
+.signal-lab-settings-bar:not(:has(.signal-lab-toolbar)) {
+    display: none;
+}
+
+.signal-lab-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: clamp(8px, 1.2vw, 14px) clamp(12px, 1.8vw, 18px);
+    min-width: min-content;
+}
+
+.signal-lab-toolbar-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: clamp(6px, 1vw, 10px);
+    min-width: 0;
+}
+
+.signal-lab-toolbar-label {
+    flex-shrink: 0;
+    font-size: clamp(0.64rem, 1.1vw, 0.68rem);
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent-color);
+    white-space: nowrap;
+}
+
+.signal-lab-toolbar-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: clamp(6px, 1vw, 10px);
+    min-width: 0;
+}
+
+.signal-lab-toolbar-control {
+    display: inline-flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+.signal-lab-toolbar-control .signal-lab-control-label {
+    margin: 0;
+    font-size: clamp(0.68rem, 1.2vw, 0.72rem);
+    white-space: nowrap;
+}
+
+.signal-lab-toolbar-control .led-select,
+.signal-lab-toolbar-control .signal-lab-field {
+    min-height: 34px;
+    font-size: clamp(0.72rem, 1.3vw, 0.78rem);
+}
+
+.signal-lab-toolbar-control .signal-lab-range {
+    width: clamp(72px, 10vw, 120px);
+    min-width: 72px;
+}
+
+.signal-lab-toolbar-control.signal-lab-control--checkbox {
+    flex-direction: row;
+}
+
+.signal-lab-toolbar-control.signal-lab-control--meter {
+    min-width: clamp(140px, 18vw, 200px);
+}
+
+.signal-lab-toolbar-control.signal-lab-control--display-metrics,
+.signal-lab-toolbar-control.signal-lab-control--led-metrics {
+    flex-basis: 100%;
+}
+
+.signal-lab-sidebar-stack {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(8px, 1.2vh, 12px);
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-bottom: 8px;
+}
+
+.signal-lab-output-setting {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.signal-lab-actions-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(6px, 1vw, 8px);
+}
+
+.signal-lab-actions-row .signal-lab-btn {
+    width: 100%;
+    min-height: 36px;
+    padding-left: 8px;
+    padding-right: 8px;
+    font-size: clamp(0.68rem, 1.2vw, 0.74rem);
+}
+
+.signal-lab-preview-header--compact {
+    gap: clamp(6px, 1vh, 8px);
+}
+
+.signal-lab-preview-stats--inline {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .signal-lab-preview-header {

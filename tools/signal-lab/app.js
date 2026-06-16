@@ -62,27 +62,20 @@
     let popoutChannel = null;
     const POPOUT_SYNC_CHANNEL = 'okami-signal-lab-sync';
     let activeModuleId = 'video-patterns';
-    let sidebarView = 'module';
     let initialized = false;
-    let moduleSearchIndex = null;
-    let currentSearchQuery = '';
     let refreshEstimator = null;
     let popoutDisconnectTimer = null;
     let hadPopoutWindow = false;
 
-    const OUTPUT_SETTINGS_ID = '__output__';
-
-    /** Compact sidebar dropdown — order and labels match UI spec. */
+    /** Sidebar module dropdown — output controls stay in the sidebar. */
     const SIDEBAR_MODULE_OPTIONS = [
-        { id: 'welcome', label: 'Signal Check' },
         { id: 'video-patterns', label: 'Video Patterns' },
         { id: 'motion-patterns', label: 'Motion Engine' },
         { id: 'audio-tools', label: 'Audio Generator' },
         { id: 'sync-tools', label: 'AV Sync' },
         { id: 'branding', label: 'Branding' },
         { id: 'export', label: 'Export' },
-        { id: 'led-utilities', label: 'LED Wall Tools' },
-        { id: OUTPUT_SETTINGS_ID, label: 'Output Settings', isOutput: true }
+        { id: 'led-utilities', label: 'LED Wall Tools' }
     ];
     const outputSettings = {
         patternResolution: 'auto',
@@ -92,8 +85,14 @@
         scaleMode: 'fit'
     };
     const moduleState = {
-        welcome: {},
-        'video-patterns': { patternId: 'okami-calibration', motionPlaying: true, lineThickness: 2, gridSize: 64 },
+        'video-patterns': {
+            patternId: 'okami-calibration',
+            motionPlaying: true,
+            lineThickness: 2,
+            gridSize: 64,
+            toneEnabled: false,
+            toneLevelDbfs: -20
+        },
         'motion-patterns': {
             patternId: 'bouncing-ball',
             playing: true,
@@ -157,12 +156,8 @@
             canvasWrap: document.getElementById('signal-lab-canvas-wrap'),
             stage: document.getElementById('signal-lab-stage'),
             moduleSelect: document.getElementById('signal-lab-module-select'),
-            moduleSearch: document.getElementById('signal-lab-search'),
-            moduleSearchStatus: document.getElementById('signal-lab-search-status'),
-            moduleInfo: document.getElementById('signal-lab-module-info'),
             moduleOptions: document.getElementById('signal-lab-module-options'),
-            outputActions: document.getElementById('signal-lab-output-actions'),
-            outputCollapsible: document.getElementById('signal-lab-output-collapsible'),
+            settingsBar: document.getElementById('signal-lab-settings-bar'),
             status: document.getElementById('signal-lab-status'),
             resolutionWarning: document.getElementById('signal-lab-resolution-warning'),
             patternResolution: document.getElementById('signal-lab-pattern-resolution'),
@@ -170,8 +165,6 @@
             patternCustomWrap: document.getElementById('signal-lab-pattern-custom'),
             patternWidth: document.getElementById('signal-lab-pattern-width'),
             patternHeight: document.getElementById('signal-lab-pattern-height'),
-            moduleTitle: document.getElementById('signal-lab-module-title'),
-            moduleDesc: document.getElementById('signal-lab-module-desc'),
             fullscreenBtn: document.getElementById('signal-lab-fullscreen'),
             popoutBtn: document.getElementById('signal-lab-popout'),
             updatePopoutBtn: document.getElementById('signal-lab-update-popout'),
@@ -843,51 +836,19 @@
         }
 
         container.hidden = false;
-        container.innerHTML = controlUI.buildOptionsHtml(rawSchema, state, moduleId);
+        container.innerHTML = controlUI.buildToolbarHtml(rawSchema, state, moduleId);
 
         const schema = controlUI.flattenSchema(rawSchema, state, moduleId);
         bindModuleControlEvents(container, schema, moduleId);
     }
 
-    function selectOutputSettings() {
-        sidebarView = 'output';
-        const els = getElements();
-
-        if (els.moduleTitle) {
-            els.moduleTitle.textContent = 'Output Settings';
-        }
-        if (els.moduleDesc) {
-            els.moduleDesc.textContent = 'Pattern resolution, scale mode, fullscreen, and pop-out controls.';
-        }
-        if (els.moduleOptions) {
-            els.moduleOptions.innerHTML = '';
-            els.moduleOptions.hidden = true;
-        }
-        if (els.moduleInfo) {
-            els.moduleInfo.hidden = false;
-        }
-        if (els.outputCollapsible) {
-            els.outputCollapsible.open = true;
-        }
-
-        els.moduleSelect?.closest('.signal-lab-sidebar')?.classList.add('is-output-view');
-        syncModuleDropdownValue(OUTPUT_SETTINGS_ID);
-        setStatus('Output settings');
-    }
-
     function selectModule(moduleId, searchPatch = null) {
-        if (moduleId === OUTPUT_SETTINGS_ID) {
-            selectOutputSettings();
-            return;
-        }
-
         const registry = window.OkamiSignalLab?.ModuleRegistry;
         const meta = registry?.getModuleById(moduleId);
         if (!meta || meta.status !== 'active') {
             return;
         }
 
-        sidebarView = 'module';
         activeModuleId = moduleId;
         const renderer = registry.getRenderer(moduleId);
 
@@ -909,20 +870,7 @@
             }
         }
 
-        const els = getElements();
-        if (els.moduleTitle) {
-            els.moduleTitle.textContent = meta.label;
-        }
-        if (els.moduleDesc) {
-            els.moduleDesc.textContent = meta.description;
-        }
-        if (els.moduleInfo) {
-            els.moduleInfo.hidden = false;
-        }
-
-        els.moduleSelect?.closest('.signal-lab-sidebar')?.classList.remove('is-output-view');
         syncModuleDropdownValue(moduleId);
-
         buildModuleOptions(moduleId);
         updateExportPreviewContext(moduleId);
         updatePreviewPatternName();
@@ -933,72 +881,12 @@
             : `Active: ${meta.label}`);
     }
 
-    function getSearchIndex() {
-        if (!moduleSearchIndex && window.OkamiSignalLab?.ModuleSearch) {
-            moduleSearchIndex = window.OkamiSignalLab.ModuleSearch.buildModuleSearchIndex();
-        }
-        return moduleSearchIndex || [];
-    }
-
-    function updateSearchStatus(query, matchCount) {
-        const el = getElements().moduleSearchStatus;
-        if (!el) {
-            return;
-        }
-
-        const normalized = window.OkamiSignalLab?.ModuleSearch?.normalizeForSearch(query) || query.trim().toLowerCase();
-        if (!normalized) {
-            el.hidden = true;
-            el.textContent = '';
-            return;
-        }
-
-        el.hidden = false;
-        if (matchCount === 0) {
-            el.textContent = `No tools match “${query.trim()}”.`;
-        } else {
-            el.textContent = `${matchCount} tool${matchCount === 1 ? '' : 's'} match “${query.trim()}”.`;
-        }
-    }
-
-    function getVisibleModuleOptions(query = '') {
-        const labelById = Object.fromEntries(
-            SIDEBAR_MODULE_OPTIONS.map((entry) => [
-                entry.isOutput ? OUTPUT_SETTINGS_ID : entry.id,
-                entry.label
-            ])
-        );
-
-        const trimmed = query.trim();
-        if (!trimmed) {
-            return SIDEBAR_MODULE_OPTIONS.map((entry) => ({
-                moduleId: entry.isOutput ? OUTPUT_SETTINGS_ID : entry.id,
-                label: entry.label,
-                statePatch: null
-            }));
-        }
-
-        const normalized = window.OkamiSignalLab?.ModuleSearch?.normalizeForSearch(trimmed) || '';
-        const matches = window.OkamiSignalLab?.ModuleSearch?.filterModules(trimmed, getSearchIndex()) || [];
-        const options = matches.map((entry) => ({
-            moduleId: entry.moduleId,
-            label: labelById[entry.moduleId] || entry.label,
-            matchLabel: entry.matchLabel,
-            statePatch: entry.statePatch
+    function getVisibleModuleOptions() {
+        return SIDEBAR_MODULE_OPTIONS.map((entry) => ({
+            moduleId: entry.id,
+            label: entry.label,
+            statePatch: null
         }));
-
-        const outputTerms = ['output', 'popout', 'pop out', 'fullscreen', 'resolution', 'scale'];
-        if (outputTerms.some((term) => normalized.includes(term))
-            && !options.some((entry) => entry.moduleId === OUTPUT_SETTINGS_ID)) {
-            options.push({
-                moduleId: OUTPUT_SETTINGS_ID,
-                label: labelById[OUTPUT_SETTINGS_ID],
-                matchLabel: null,
-                statePatch: null
-            });
-        }
-
-        return options;
     }
 
     function syncModuleDropdownValue(value) {
@@ -1012,39 +900,24 @@
         }
     }
 
-    function renderModuleDropdown(query = '') {
+    function renderModuleDropdown() {
         const select = getElements().moduleSelect;
         if (!select) {
             return;
         }
 
-        currentSearchQuery = query;
-        const visible = getVisibleModuleOptions(query);
-        updateSearchStatus(query, visible.length);
-
-        const selectedValue = sidebarView === 'output'
-            ? OUTPUT_SETTINGS_ID
-            : activeModuleId;
+        const visible = getVisibleModuleOptions();
 
         select.innerHTML = visible.map((entry) => {
             const patchAttr = entry.statePatch
                 ? ` data-state-patch="${encodeURIComponent(JSON.stringify(entry.statePatch))}"`
                 : '';
-            const label = entry.matchLabel
-                ? `${entry.label} — ${entry.matchLabel}`
-                : entry.label;
-            return `<option value="${entry.moduleId}"${patchAttr}>${label}</option>`;
+            return `<option value="${entry.moduleId}"${patchAttr}>${entry.label}</option>`;
         }).join('');
 
-        if (visible.length === 0) {
-            select.innerHTML = '<option value="">No matches</option>';
-            select.disabled = true;
-            return;
-        }
-
         select.disabled = false;
-        if (visible.some((entry) => entry.moduleId === selectedValue)) {
-            select.value = selectedValue;
+        if (visible.some((entry) => entry.moduleId === activeModuleId)) {
+            select.value = activeModuleId;
         } else if (visible.length > 0) {
             select.selectedIndex = 0;
         }
@@ -1066,16 +939,7 @@
             }
         }
 
-        if (select.value === OUTPUT_SETTINGS_ID) {
-            selectOutputSettings();
-            return;
-        }
-
         selectModule(select.value, searchPatch);
-    }
-
-    function filterModuleList() {
-        renderModuleDropdown(getElements().moduleSearch?.value || '');
     }
 
     function openPopoutFullscreen() {
@@ -1209,18 +1073,6 @@
             handlePopoutClosed();
             setStatus('Pop-out closed.');
         });
-        els.moduleSearch?.addEventListener('input', () => filterModuleList());
-        els.moduleSearch?.addEventListener('keydown', (event) => {
-            if (event.key !== 'Enter') {
-                return;
-            }
-            event.preventDefault();
-            const select = getElements().moduleSelect;
-            if (!select || select.disabled || !select.value) {
-                return;
-            }
-            applyModuleSelectionFromDropdown();
-        });
         els.moduleSelect?.addEventListener('change', () => applyModuleSelectionFromDropdown());
 
         document.addEventListener('fullscreenchange', () => {
@@ -1240,12 +1092,9 @@
             engine = null;
         }
 
-        moduleSearchIndex = null;
-        currentSearchQuery = getElements().moduleSearch?.value || '';
-
         window.OkamiSiteLayout?.init?.();
         refreshPreviewLayout();
-        renderModuleDropdown(currentSearchQuery);
+        renderModuleDropdown();
         initEngine();
 
         if (!initialized) {

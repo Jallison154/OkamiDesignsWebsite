@@ -14,7 +14,6 @@
     const EXPORTABLE_MODULES = [
         'video-patterns',
         'motion-patterns',
-        'welcome',
         'sync-tools',
         'branding',
         'display-info',
@@ -57,9 +56,6 @@
         }
         if (sourceState.mode) {
             return sourceState.mode;
-        }
-        if (sourceModuleId === 'welcome') {
-            return 'signal-check';
         }
         if (sourceModuleId === 'branding') {
             return 'branding-overlay';

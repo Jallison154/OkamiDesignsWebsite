@@ -10,7 +10,9 @@
     "test:api": "node scripts/api-integration-tests.mjs",
     "test:commercial": "node scripts/commercial-staging-tests.mjs",
     "test:license-upstream": "node scripts/license-upstream-tests.mjs",
-    "test:gate": "node scripts/led-wall-golden-tests.mjs && node scripts/api-integration-tests.mjs && node scripts/license-upstream-tests.mjs && node scripts/phase-0-acceptance.mjs"
+    "test:project-io": "node scripts/project-io-tests.mjs",
+    "test:signal-lab-paths": "node scripts/validate-signal-lab-paths.mjs",
+    "test:gate": "node scripts/led-wall-golden-tests.mjs && node scripts/api-integration-tests.mjs && node scripts/license-upstream-tests.mjs && node scripts/project-io-tests.mjs && node scripts/phase-0-acceptance.mjs && node scripts/validate-signal-lab-paths.mjs"
   },
   "dependencies": {
     "express": "^4.18.2",

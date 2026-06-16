@@ -7,13 +7,6 @@
      */
     const MODULE_CATALOG = [
         {
-            id: 'welcome',
-            label: 'Signal Check',
-            category: 'foundation',
-            status: 'active',
-            description: 'Foundation test pattern and engine verification.'
-        },
-        {
             id: 'video-patterns',
             label: 'Video Patterns',
             category: 'video',

@@ -15,6 +15,7 @@
         { id: 'yellow', label: 'Yellow' },
         { id: 'gray-50', label: '50% Gray' },
         { id: 'smpte-bars', label: 'SMPTE Color Bars' },
+        { id: 'bars-tone', label: 'Bars + Tone Pattern' },
         { id: 'grayscale-ramp', label: 'Grayscale Ramp' },
         { id: 'crosshair', label: 'Crosshair' },
         { id: 'grid', label: 'Grid' },
@@ -197,6 +198,89 @@
         ctx.fillText('OKAMI SIGNAL LAB', 12, h - 14);
     }
 
+    function drawBarsTonePattern(ctx, w, h, frame) {
+        const barsH = Math.round(h * 0.58);
+        const rampH = Math.max(8, Math.round(h * 0.08));
+        const bottomY = barsH + rampH;
+        const bottomH = Math.max(1, h - bottomY);
+
+        drawSmpteBars(ctx, w, barsH);
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(0, barsH, w, rampH);
+        ctx.clip();
+        ctx.translate(0, barsH);
+        drawGrayscaleRamp(ctx, w, rampH);
+        ctx.restore();
+
+        ctx.fillStyle = '#101010';
+        ctx.fillRect(0, bottomY, w, bottomH);
+
+        const cx = w / 2;
+        const cy = bottomY + bottomH / 2;
+        const lineThickness = Math.max(1, Math.min(w, bottomH) / 400);
+        ctx.strokeStyle = ACCENT;
+        ctx.lineWidth = lineThickness;
+        ctx.beginPath();
+        ctx.moveTo(cx, bottomY);
+        ctx.lineTo(cx, bottomY + bottomH);
+        ctx.moveTo(0, cy);
+        ctx.lineTo(w, cy);
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+        ctx.beginPath();
+        ctx.arc(cx, cy, Math.min(w, bottomH) * 0.12, 0, Math.PI * 2);
+        ctx.stroke();
+
+        const levelDb = Number(frame?.state?.toneLevelDbfs);
+        const toneLevelDbfs = Number.isFinite(levelDb) ? levelDb : -20;
+        const toneLabel = `1 kHz Tone ${toneLevelDbfs} dBFS`;
+        const resLabel = `${Math.round(w)} × ${Math.round(h)} px`;
+
+        const fontBase = Math.max(11, Math.min(w, h) * 0.028);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `700 ${fontBase * 1.35}px Montserrat, sans-serif`;
+        ctx.fillText(resLabel, cx, bottomY + bottomH * 0.38);
+
+        const toneOn = Boolean(frame?.state?.toneEnabled);
+        ctx.fillStyle = toneOn ? ACCENT : 'rgba(255,255,255,0.45)';
+        ctx.font = `600 ${fontBase}px Montserrat, sans-serif`;
+        ctx.fillText(toneLabel, cx, bottomY + bottomH * 0.62);
+    }
+
+    let barsToneEngine = null;
+
+    function getBarsToneEngine() {
+        if (!barsToneEngine && global.OkamiSignalLab?.AudioEngine) {
+            barsToneEngine = new global.OkamiSignalLab.AudioEngine();
+        }
+        return barsToneEngine;
+    }
+
+    function applyBarsToneAudio(state) {
+        const engine = getBarsToneEngine();
+        if (!engine) {
+            return;
+        }
+
+        const patternId = state?.patternId;
+        if (patternId !== 'bars-tone' || !state?.toneEnabled) {
+            engine.stop();
+            return;
+        }
+
+        const levelDb = Number(state.toneLevelDbfs);
+        const toneLevelDbfs = Number.isFinite(levelDb) ? levelDb : -20;
+        const gain = Math.pow(10, toneLevelDbfs / 20);
+        engine.setVolume(gain);
+        engine.setChannelMode('stereo');
+        engine.start('tone-1khz');
+    }
+
     const SOLID_COLORS = {
         white: '#ffffff',
         black: '#000000',
@@ -234,6 +318,7 @@
         'border-frame': drawBorderFrame,
         'circle-alignment': drawCircleAlignment,
         resolution: drawResolutionPattern,
+        'bars-tone': drawBarsTonePattern,
         'okami-calibration': (ctx, w, h, frame) => {
             const draw = global.OkamiSignalLab?.drawOkamiCalibrationPattern;
             if (typeof draw === 'function') {
@@ -252,7 +337,9 @@
             patternId: 'okami-calibration',
             motionPlaying: true,
             lineThickness: 2,
-            gridSize: 64
+            gridSize: 64,
+            toneEnabled: false,
+            toneLevelDbfs: -20
         },
 
         shouldAnimate(state) {
@@ -263,9 +350,18 @@
             if (!engine.state.patternId) {
                 engine.setState({ patternId: this.defaultState.patternId });
             }
+            applyBarsToneAudio(engine.state);
         },
 
-        onDetach() {},
+        onDetach() {
+            getBarsToneEngine()?.stop();
+        },
+
+        onStateChange(engine, state, key) {
+            if (key === 'patternId' || key === 'toneEnabled' || key === 'toneLevelDbfs') {
+                applyBarsToneAudio(state);
+            }
+        },
 
         getControlSchema(state = {}) {
             const patternId = state.patternId || this.defaultState.patternId;
@@ -313,6 +409,13 @@
                     step: 1,
                     unit: 'px',
                     enabledWhen: () => usesGrid
+                },
+                {
+                    section: 'audio',
+                    type: 'checkbox',
+                    key: 'toneEnabled',
+                    label: '1 kHz Tone -20 dBFS',
+                    enabledWhen: (s) => (s.patternId || patternId) === 'bars-tone'
                 }
             ];
         },

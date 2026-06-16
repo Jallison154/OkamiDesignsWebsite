@@ -87,6 +87,9 @@
                     if (pattern.id === 'smpte-bars') {
                         itemTerms.push('smpte colorbars color bars');
                     }
+                    if (pattern.id === 'bars-tone') {
+                        itemTerms.push('bars tone test pattern smpte grayscale crosshair 1khz audio');
+                    }
                     if (pattern.id.includes('grid')) {
                         itemTerms.push('grid');
                     }
@@ -159,10 +162,6 @@
 
             if (entry.id === 'display-info') {
                 appendTerms(terms, 'display information screen viewport refresh rate pixel ratio fullscreen');
-            }
-
-            if (entry.id === 'welcome') {
-                appendTerms(terms, 'signal check welcome test foundation smpte');
             }
 
             index.push({

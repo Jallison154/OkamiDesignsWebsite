@@ -9,7 +9,6 @@
         { value: 'active', label: 'Current Module' },
         { value: 'video-patterns', label: 'Video Patterns' },
         { value: 'motion-patterns', label: 'Motion Engine' },
-        { value: 'welcome', label: 'Signal Check' },
         { value: 'sync-tools', label: 'AV Sync Tools' },
         { value: 'branding', label: 'Branding Overlay' },
         { value: 'display-info', label: 'Display Information' },
