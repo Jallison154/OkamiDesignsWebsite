@@ -1,29 +1,23 @@
 (function() {
     'use strict';
 
-    const MM_PER_FOOT = 304.8;
+    const Calc = window.OkamiLedWallCalculator;
+    const {
+        Constants,
+        clampPanelCount,
+        clampPortFillThreshold,
+        calculateCabinetResolution,
+        calculateContentOverlay,
+        calculateCabinetArtworkType,
+        computeWallProject
+    } = Calc;
 
-    const DEFAULTS = {
-        cabinetPreset: '500x500',
-        pitchPreset: '2.6',
-        displayType: 'standard',
-        cabinetWidthMM: 500,
-        cabinetHeightMM: 500,
-        pixelPitchMM: 2.6,
-        meshPitchHorizontalMM: 3.9,
-        meshPitchVerticalMM: 7.8,
-        panelsWide: 10,
-        panelsTall: 6,
-        pixelWidth: 192,
-        pixelHeight: 192,
-        autoCalculateResolution: true,
-        overlayFormat: '16:9',
-        portCapacity: 650000,
-        portFillThreshold: 90,
-        customFormatWidth: 32,
-        customFormatHeight: 9,
-        showCabinetNumbers: false
-    };
+    const {
+        DEFAULTS,
+        PITCH_PRESETS,
+        CABINET_PRESETS,
+        EXTENDED_PITCHES
+    } = Constants;
 
     const LABEL_TIER = {
         LARGE: 'large',
@@ -32,61 +26,13 @@
         TINY: 'tiny'
     };
 
-    const COMMON_PITCHES = [1.9, 2.6, 2.9, 3.9, 5.9];
-    const EXTENDED_PITCHES = [1.2, 1.5, 1.8, 2.0, 2.5, 4.8];
-    const PITCH_PRESETS = [...COMMON_PITCHES, ...EXTENDED_PITCHES];
-
-    const CABINET_PRESETS = {
-        '500x500': { width: 500, height: 500, label: '500mm × 500mm' },
-        '500x1000': { width: 500, height: 1000, label: '500mm × 1000mm' }
-    };
-
-    const RESOLUTION_PRESETS = {
-        '500x500': {
-            1.9: { pixelWidth: 263, pixelHeight: 263 },
-            2.6: { pixelWidth: 192, pixelHeight: 192 },
-            2.9: { pixelWidth: 168, pixelHeight: 168 },
-            3.9: { pixelWidth: 128, pixelHeight: 128 },
-            4.8: { pixelWidth: 104, pixelHeight: 104 },
-            5.9: { pixelWidth: 84, pixelHeight: 84 }
-        },
-        '500x1000': {
-            1.9: { pixelWidth: 263, pixelHeight: 526 },
-            2.6: { pixelWidth: 192, pixelHeight: 384 },
-            2.9: { pixelWidth: 168, pixelHeight: 336 },
-            3.9: { pixelWidth: 128, pixelHeight: 256 },
-            4.8: { pixelWidth: 104, pixelHeight: 208 },
-            5.9: { pixelWidth: 84, pixelHeight: 168 }
-        }
-    };
-
     const ADV_TO_HIDDEN_FIELDS = {
         'custom-cabinet-width-mm': 'cabinet-width-mm',
         'custom-cabinet-height-mm': 'cabinet-height-mm',
         'custom-pixel-pitch-mm': 'pixel-pitch-mm'
     };
 
-    const STANDARD_RATIOS = [
-        { label: '16:9', value: 16 / 9 },
-        { label: '21:9', value: 21 / 9 },
-        { label: '4:3', value: 4 / 3 },
-        { label: '1:1', value: 1 },
-        { label: '2.35:1', value: 2.35 },
-        { label: '3:1', value: 3 }
-    ];
-
-    const OVERLAY_FORMAT_RATIOS = {
-        '16:9': 16 / 9,
-        '4:3': 4 / 3,
-        '1:1': 1,
-        '21:9': 21 / 9,
-        '2.35:1': 2.35,
-        '3:1': 3
-    };
-
     const ADV_FIELD_IDS = Object.keys(ADV_TO_HIDDEN_FIELDS);
-    const MIN_PANEL_COUNT = 1;
-    const MAX_PANEL_COUNT = 500;
     const PANEL_COUNT_IDS = ['panels-wide', 'panels-tall'];
 
     const OVERLAY_DEBUG = new URLSearchParams(window.location.search).has('debug');
@@ -203,18 +149,7 @@
     }
 
     function getCabinetArtType(state) {
-        const width = state.cabinetWidthMM;
-        const height = state.cabinetHeightMM;
-
-        if (width === height) {
-            return 'square';
-        }
-
-        if (height === width * 2) {
-            return 'tall';
-        }
-
-        return null;
+        return calculateCabinetArtworkType(state);
     }
 
     function refreshCabinetArtPreview() {
@@ -399,13 +334,6 @@
         return id === 'panels-wide' ? DEFAULTS.panelsWide : DEFAULTS.panelsTall;
     }
 
-    function clampPanelCount(value) {
-        if (!Number.isFinite(value)) {
-            return MIN_PANEL_COUNT;
-        }
-        return Math.min(MAX_PANEL_COUNT, Math.max(MIN_PANEL_COUNT, Math.round(value)));
-    }
-
     function setPanelCount(id, value) {
         const next = clampPanelCount(value);
         setInputValue(id, next);
@@ -462,10 +390,6 @@
 
     function findMatchingPitch(pixelPitchMM) {
         return PITCH_PRESETS.find((pitch) => Math.abs(pitch - pixelPitchMM) < 0.01) ?? null;
-    }
-
-    function isMmCabinetPreset(presetKey) {
-        return presetKey === '500x500' || presetKey === '500x1000';
     }
 
     function getDisplayType() {
@@ -553,50 +477,12 @@
         setText('auto-calc-state', autoEnabled ? 'On' : 'Off');
     }
 
-    function calculatePixelsFromPitch(cabinetWidthMM, cabinetHeightMM, pixelPitchMM) {
-        if (isTransparentDisplay()) {
-            const horizontalPitch = readNumber('mesh-pitch-horizontal-mm', DEFAULTS.meshPitchHorizontalMM);
-            const verticalPitch = readNumber('mesh-pitch-vertical-mm', DEFAULTS.meshPitchVerticalMM);
-            return {
-                pixelWidth: Math.round(cabinetWidthMM / horizontalPitch),
-                pixelHeight: Math.round(cabinetHeightMM / verticalPitch)
-            };
-        }
-
-        const cabinetPreset = getCabinetPreset();
-        const pitchPreset = document.getElementById('pitch-preset')?.value || 'custom';
-
-        if (isMmCabinetPreset(cabinetPreset) && pitchPreset !== 'custom') {
-            const pitch = parseFloat(pitchPreset);
-            const presetResolution = RESOLUTION_PRESETS[cabinetPreset]?.[pitch];
-            if (presetResolution) {
-                return {
-                    pixelWidth: presetResolution.pixelWidth,
-                    pixelHeight: presetResolution.pixelHeight
-                };
-            }
-        }
-
-        return {
-            pixelWidth: Math.round(cabinetWidthMM / pixelPitchMM),
-            pixelHeight: Math.round(cabinetHeightMM / pixelPitchMM)
-        };
-    }
-
     function syncAutoPixelResolution() {
         if (!isAutoCalculateEnabled()) {
             return;
         }
 
-        const cabinetWidthMM = readNumber('cabinet-width-mm', DEFAULTS.cabinetWidthMM);
-        const cabinetHeightMM = readNumber('cabinet-height-mm', DEFAULTS.cabinetHeightMM);
-        const pixelPitchMM = readNumber('pixel-pitch-mm', DEFAULTS.pixelPitchMM);
-        const { pixelWidth, pixelHeight } = calculatePixelsFromPitch(
-            cabinetWidthMM,
-            cabinetHeightMM,
-            pixelPitchMM
-        );
-
+        const { pixelWidth, pixelHeight } = calculateCabinetResolution(gatherInputs());
         setInputValue('pixel-width', pixelWidth);
         setInputValue('pixel-height', pixelHeight);
     }
@@ -613,35 +499,12 @@
         return document.getElementById('overlay-format')?.value || 'none';
     }
 
-    function isOverlayActive() {
-        const format = getOverlayFormat();
-        if (format === 'none') {
-            return false;
-        }
-        if (format === 'custom') {
-            const width = readInt('custom-format-width', 0);
-            const height = readInt('custom-format-height', 0);
-            return width > 0 && height > 0;
-        }
-        return true;
-    }
-
-    function getTargetRatio(format) {
-        if (format === 'custom') {
-            const width = readInt('custom-format-width', DEFAULTS.customFormatWidth);
-            const height = readInt('custom-format-height', DEFAULTS.customFormatHeight);
-            return width / height;
-        }
-        return OVERLAY_FORMAT_RATIOS[format] ?? null;
-    }
-
-    function getFormatLabel(format) {
-        if (format === 'custom') {
-            const width = readInt('custom-format-width', DEFAULTS.customFormatWidth);
-            const height = readInt('custom-format-height', DEFAULTS.customFormatHeight);
-            return `${width}:${height}`;
-        }
-        return format;
+    function overlayInputsFromDom() {
+        return {
+            overlayFormat: getOverlayFormat(),
+            customFormatWidth: readInt('custom-format-width', DEFAULTS.customFormatWidth),
+            customFormatHeight: readInt('custom-format-height', DEFAULTS.customFormatHeight)
+        };
     }
 
     function setOverlayFormat(format) {
@@ -738,132 +601,39 @@
 
     function readPortFillThreshold() {
         const value = parseInt(document.getElementById('port-fill-threshold')?.value, 10);
-        if (!Number.isFinite(value)) {
-            return DEFAULTS.portFillThreshold;
-        }
-        return Math.min(100, Math.max(50, Math.round(value)));
+        return clampPortFillThreshold(value);
+    }
+
+    function gatherInputs() {
+        return {
+            displayType: getDisplayType(),
+            cabinetPreset: getCabinetPreset(),
+            pitchPreset: document.getElementById('pitch-preset')?.value || 'custom',
+            cabinetWidthMM: readNumber('cabinet-width-mm', DEFAULTS.cabinetWidthMM),
+            cabinetHeightMM: readNumber('cabinet-height-mm', DEFAULTS.cabinetHeightMM),
+            pixelPitchMM: readNumber('pixel-pitch-mm', DEFAULTS.pixelPitchMM),
+            meshPitchHorizontalMM: readNumber('mesh-pitch-horizontal-mm', DEFAULTS.meshPitchHorizontalMM),
+            meshPitchVerticalMM: readNumber('mesh-pitch-vertical-mm', DEFAULTS.meshPitchVerticalMM),
+            panelsWide: readInt('panels-wide', DEFAULTS.panelsWide),
+            panelsTall: readInt('panels-tall', DEFAULTS.panelsTall),
+            pixelWidth: readInt('pixel-width', DEFAULTS.pixelWidth),
+            pixelHeight: readInt('pixel-height', DEFAULTS.pixelHeight),
+            autoCalculateResolution: isAutoCalculateEnabled(),
+            portCapacity: readInt('port-capacity', DEFAULTS.portCapacity),
+            portFillThreshold: readPortFillThreshold(),
+            ...overlayInputsFromDom()
+        };
     }
 
     function getState() {
-        const cabinetWidthMM = readNumber('cabinet-width-mm', DEFAULTS.cabinetWidthMM);
-        const cabinetHeightMM = readNumber('cabinet-height-mm', DEFAULTS.cabinetHeightMM);
-        const pixelPitchMM = readNumber('pixel-pitch-mm', DEFAULTS.pixelPitchMM);
-        const panelsWide = readInt('panels-wide', DEFAULTS.panelsWide);
-        const panelsTall = readInt('panels-tall', DEFAULTS.panelsTall);
-        const pixelWidth = readInt('pixel-width', DEFAULTS.pixelWidth);
-        const pixelHeight = readInt('pixel-height', DEFAULTS.pixelHeight);
-        const portCapacity = readInt('port-capacity', DEFAULTS.portCapacity);
-        const portFillThreshold = readPortFillThreshold();
-        const overlayFormat = getOverlayFormat();
-        const displayType = getDisplayType();
-
-        const totalPanels = panelsWide * panelsTall;
-        const physicalWidthFt = (cabinetWidthMM * panelsWide) / MM_PER_FOOT;
-        const physicalHeightFt = (cabinetHeightMM * panelsTall) / MM_PER_FOOT;
-        const totalPixelWidth = pixelWidth * panelsWide;
-        const totalPixelHeight = pixelHeight * panelsTall;
-        const totalPixels = totalPixelWidth * totalPixelHeight;
-        const usablePixelsPerPort = Math.floor(portCapacity * (portFillThreshold / 100));
-        const portsRequired = usablePixelsPerPort > 0
-            ? Math.ceil(totalPixels / usablePixelsPerPort)
-            : 0;
-        const aspectRatio = totalPixelWidth / totalPixelHeight;
-        const closestRatio = getClosestStandardRatio(aspectRatio);
-        const targetRatio = isOverlayActive() ? getTargetRatio(overlayFormat) : null;
-        const overlay = targetRatio
-            ? calculateOverlay(totalPixelWidth, totalPixelHeight, targetRatio)
-            : null;
-
-        return {
-            cabinetWidthMM,
-            cabinetHeightMM,
-            pixelPitchMM,
-            displayType,
-            panelsWide,
-            panelsTall,
-            pixelWidth,
-            pixelHeight,
-            totalPanels,
-            physicalWidthFt,
-            physicalHeightFt,
-            totalPixelWidth,
-            totalPixelHeight,
-            totalPixels,
-            portCapacity,
-            portFillThreshold,
-            usablePixelsPerPort,
-            portsRequired,
-            aspectRatio,
-            closestRatio,
-            overlayFormat,
-            overlayFormatLabel: getFormatLabel(overlayFormat),
-            overlay
-        };
-    }
-
-    function getClosestStandardRatio(aspectRatio) {
-        let closest = STANDARD_RATIOS[0];
-        let smallestDiff = Math.abs(aspectRatio - closest.value);
-
-        STANDARD_RATIOS.forEach((ratio) => {
-            const diff = Math.abs(aspectRatio - ratio.value);
-            if (diff < smallestDiff) {
-                smallestDiff = diff;
-                closest = ratio;
-            }
-        });
-
-        return closest;
-    }
-
-    function calculateOverlay(totalPixelWidth, totalPixelHeight, targetRatio) {
-        const wallRatio = totalPixelWidth / totalPixelHeight;
-        let overlayPixelWidth;
-        let overlayPixelHeight;
-
-        if (wallRatio > targetRatio) {
-            overlayPixelHeight = totalPixelHeight;
-            overlayPixelWidth = Math.round(overlayPixelHeight * targetRatio);
-        } else {
-            overlayPixelWidth = totalPixelWidth;
-            overlayPixelHeight = Math.round(overlayPixelWidth / targetRatio);
-        }
-
-        overlayPixelWidth = Math.min(overlayPixelWidth, totalPixelWidth);
-        overlayPixelHeight = Math.min(overlayPixelHeight, totalPixelHeight);
-
-        const unusedHorizontal = totalPixelWidth - overlayPixelWidth;
-        const unusedVertical = totalPixelHeight - overlayPixelHeight;
-        const overlayLeftPx = unusedHorizontal / 2;
-        const overlayTopPx = unusedVertical / 2;
-        const usedPercentage = ((overlayPixelWidth * overlayPixelHeight) / (totalPixelWidth * totalPixelHeight)) * 100;
-        const overlayAspectRatio = overlayPixelWidth / overlayPixelHeight;
-
-        const leftPercent = (overlayLeftPx / totalPixelWidth) * 100;
-        const topPercent = (overlayTopPx / totalPixelHeight) * 100;
-        const widthPercent = (overlayPixelWidth / totalPixelWidth) * 100;
-        const heightPercent = (overlayPixelHeight / totalPixelHeight) * 100;
-
-        return {
-            overlayPixelWidth,
-            overlayPixelHeight,
-            overlayAspectRatio,
-            unusedHorizontal,
-            unusedVertical,
-            overlayLeftPx,
-            overlayTopPx,
-            usedPercentage,
-            leftPercent,
-            topPercent,
-            widthPercent,
-            heightPercent
-        };
+        return computeWallProject(gatherInputs());
     }
 
     function getWallPhysicalAspect(state) {
-        const physicalWidthMM = state.cabinetWidthMM * state.panelsWide;
-        const physicalHeightMM = state.cabinetHeightMM * state.panelsTall;
-        return physicalWidthMM / physicalHeightMM;
+        if (state.physicalWidthMM && state.physicalHeightMM) {
+            return state.physicalWidthMM / state.physicalHeightMM;
+        }
+        return Calc.calculatePhysicalSize(state).aspectRatio;
     }
 
     function formatQuickCabinetLabel(cabinetPreset) {
@@ -1455,7 +1225,11 @@
 
         let passed = 0;
         tests.forEach((test) => {
-            const overlay = calculateOverlay(test.wallWidth, test.wallHeight, targetRatio);
+            const overlay = calculateContentOverlay({
+                totalPixelWidth: test.wallWidth,
+                totalPixelHeight: test.wallHeight,
+                targetRatio
+            });
             const expectLeftPercent = ((test.wallWidth - test.expectWidth) / 2 / test.wallWidth) * 100;
             const ok = overlay.overlayPixelWidth === test.expectWidth
                 && overlay.overlayPixelHeight === test.expectHeight

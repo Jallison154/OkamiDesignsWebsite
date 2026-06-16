@@ -184,6 +184,7 @@
     global.OkamiSignalLab = global.OkamiSignalLab || {};
     global.OkamiSignalLab.OutputState = {
         MSG,
+        preloadBrandingAssets,
         buildOutputState,
         applyOutputState,
         createApplyTracker,

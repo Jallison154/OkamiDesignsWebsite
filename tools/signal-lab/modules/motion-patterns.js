@@ -278,6 +278,7 @@
         getControlSchema() {
             return [
                 {
+                    section: 'pattern',
                     type: 'select',
                     key: 'patternId',
                     label: 'Motion Pattern',
@@ -287,11 +288,13 @@
                     }))
                 },
                 {
+                    section: 'motion',
                     type: 'transport',
                     key: 'playing',
                     label: 'Transport'
                 },
                 {
+                    section: 'motion',
                     type: 'range',
                     key: 'speed',
                     label: 'Motion Speed',
@@ -301,11 +304,13 @@
                     unit: '×'
                 },
                 {
+                    section: 'motion',
                     type: 'checkbox',
                     key: 'reverse',
                     label: 'Reverse Direction'
                 },
                 {
+                    section: 'motion',
                     type: 'range',
                     key: 'motionSize',
                     label: 'Motion Size',

@@ -5,7 +5,9 @@
 
     function shouldAnimateOutput(outputState) {
         const registry = global.OkamiSignalLab?.ModuleRegistry;
-        if (!registry || !outputState) {
+        const shouldAnimate = global.OkamiSignalLab?.ModuleAnimation?.shouldAnimateModule;
+
+        if (!registry || !outputState || !shouldAnimate) {
             return false;
         }
 
@@ -20,20 +22,7 @@
         ) || state;
 
         const renderer = registry.getRenderer(activeModuleId);
-        if (!renderer) {
-            return false;
-        }
-
-        if (typeof renderer.shouldAnimate === 'function') {
-            return renderer.shouldAnimate(state);
-        }
-        if (renderer.needsAnimationLoop === false) {
-            return false;
-        }
-        if (state.playing === false || state.active === false) {
-            return false;
-        }
-        return Boolean(renderer.needsAnimationLoop);
+        return shouldAnimate(renderer, state);
     }
 
     /**

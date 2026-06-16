@@ -133,6 +133,7 @@
         getControlSchema() {
             return [
                 {
+                    section: 'resolution',
                     type: 'display-metrics',
                     key: 'metrics',
                     label: 'Display Information'

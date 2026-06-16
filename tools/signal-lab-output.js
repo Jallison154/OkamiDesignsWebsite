@@ -36,11 +36,10 @@
     }
 
     function applyReceivedState(state) {
-        if (!state || !engine || !window.OkamiSignalLab?.renderSignalLabCanvas) {
+        if (!state?.activeModuleId || !engine || !window.OkamiSignalLab?.renderSignalLabCanvas) {
+            showWaiting(true);
             return;
         }
-
-        console.log('Received popout state', state);
 
         outputState = state;
         showWaiting(false);
@@ -185,8 +184,7 @@
 
         engine = new window.OkamiSignalLab.RenderEngine(canvas, {
             container: document.getElementById('output-canvas-wrap') || canvas.parentElement,
-            backgroundColor: '#000000',
-            isPopout: true
+            backgroundColor: '#000000'
         });
 
         bindOutputInteractions();

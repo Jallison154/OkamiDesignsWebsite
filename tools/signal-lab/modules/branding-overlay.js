@@ -121,79 +121,95 @@
             }
         },
 
-        getControlSchema() {
+        getControlSchema(state = {}) {
+            const logoOn = Boolean(state.logoEnabled && state.logoDataUrl);
+            const textOn = state.textEnabled !== false;
+
             return [
-                { type: 'section', label: 'Logo' },
                 {
+                    section: 'branding',
                     type: 'file-upload',
                     key: 'logoDataUrl',
                     label: 'Upload Logo',
                     accept: 'image/*'
                 },
                 {
+                    section: 'branding',
                     type: 'checkbox',
                     key: 'logoEnabled',
                     label: 'Show Logo'
                 },
                 {
+                    section: 'branding',
                     type: 'range',
                     key: 'logoSize',
                     label: 'Logo Size',
                     min: 5,
                     max: 50,
                     step: 1,
-                    unit: '%'
+                    unit: '%',
+                    disabledWhen: () => !logoOn
                 },
                 {
+                    section: 'branding',
                     type: 'range',
                     key: 'logoOpacity',
                     label: 'Logo Opacity',
                     min: 0,
                     max: 1,
                     step: 0.05,
-                    unit: ''
+                    disabledWhen: () => !logoOn
                 },
                 {
+                    section: 'branding',
                     type: 'select',
                     key: 'logoPosition',
                     label: 'Logo Position',
-                    options: POSITION_OPTIONS
+                    options: POSITION_OPTIONS,
+                    disabledWhen: () => !logoOn
                 },
-                { type: 'section', label: 'Custom Text' },
                 {
+                    section: 'branding',
                     type: 'text',
                     key: 'customText',
                     label: 'Text',
-                    placeholder: 'Okami Signal Lab'
+                    placeholder: 'Okami Signal Lab',
+                    disabledWhen: () => !textOn
                 },
                 {
+                    section: 'branding',
                     type: 'checkbox',
                     key: 'textEnabled',
                     label: 'Show Text'
                 },
                 {
+                    section: 'branding',
                     type: 'range',
                     key: 'textSize',
                     label: 'Text Size',
                     min: 12,
                     max: 120,
                     step: 1,
-                    unit: ' px'
+                    unit: 'px',
+                    disabledWhen: () => !textOn
                 },
                 {
+                    section: 'branding',
                     type: 'range',
                     key: 'textOpacity',
                     label: 'Text Opacity',
                     min: 0,
                     max: 1,
                     step: 0.05,
-                    unit: ''
+                    disabledWhen: () => !textOn
                 },
                 {
+                    section: 'branding',
                     type: 'select',
                     key: 'textPosition',
                     label: 'Text Position',
-                    options: POSITION_OPTIONS
+                    options: POSITION_OPTIONS,
+                    disabledWhen: () => !textOn
                 }
             ];
         },

@@ -351,9 +351,11 @@
             }
         },
 
-        getControlSchema() {
+        getControlSchema(state = {}) {
+            const flashModes = ['flash-click', 'sync-ball', 'frame-counter'].includes(state.mode || 'flash-click');
             return [
                 {
+                    section: 'pattern',
                     type: 'select',
                     key: 'mode',
                     label: 'Sync Mode',
@@ -363,6 +365,7 @@
                     }))
                 },
                 {
+                    section: 'motion',
                     type: 'transport',
                     key: 'active',
                     label: 'Transport',
@@ -370,29 +373,33 @@
                     stopLabel: 'Stop'
                 },
                 {
+                    section: 'motion',
                     type: 'range',
                     key: 'intervalMs',
                     label: 'Interval',
                     min: 250,
                     max: 5000,
                     step: 50,
-                    unit: ' ms'
+                    unit: 'ms'
                 },
                 {
+                    section: 'motion',
                     type: 'range',
                     key: 'clickVolume',
                     label: 'Click Volume',
                     min: 0,
                     max: 1,
-                    step: 0.05,
-                    unit: ''
+                    step: 0.05
                 },
                 {
+                    section: 'motion',
                     type: 'checkbox',
                     key: 'flashEnabled',
-                    label: 'Visual Flash'
+                    label: 'Visual Flash',
+                    enabledWhen: () => flashModes
                 },
                 {
+                    section: 'motion',
                     type: 'checkbox',
                     key: 'clickEnabled',
                     label: 'Audio Click'

@@ -41,21 +41,11 @@
         return clampNumber(displayValue, control.min, control.max, control.step);
     }
 
-    function formatRangeLabel(value, control) {
-        if (isPercentRangeControl(control)) {
-            return `${Math.round(value * 100)}%`;
-        }
-        const unit = control.unit || '';
-        const display = rangeToDisplay(value, control);
-        return `${display}${unit}`;
-    }
-
     global.OkamiSignalLab = global.OkamiSignalLab || {};
     global.OkamiSignalLab.ControlUtils = {
         clampNumber,
         isPercentRangeControl,
         rangeToDisplay,
-        displayToRange,
-        formatRangeLabel
+        displayToRange
     };
 })(typeof window !== 'undefined' ? window : globalThis);

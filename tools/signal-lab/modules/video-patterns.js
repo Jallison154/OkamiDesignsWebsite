@@ -269,8 +269,12 @@
 
         getControlSchema(state = {}) {
             const patternId = state.patternId || this.defaultState.patternId;
-            const schema = [
+            const usesLine = ['crosshair', 'grid', 'pixel-grid'].includes(patternId);
+            const usesGrid = ['grid', 'pixel-grid', 'resolution'].includes(patternId);
+
+            return [
                 {
+                    section: 'pattern',
                     type: 'select',
                     key: 'patternId',
                     label: 'Pattern',
@@ -278,41 +282,39 @@
                         value: entry.id,
                         label: entry.label
                     }))
-                }
-            ];
-
-            if (patternId === 'okami-calibration') {
-                schema.push({
+                },
+                {
+                    section: 'motion',
                     type: 'transport',
                     key: 'motionPlaying',
                     label: 'Motion Test',
                     startLabel: 'Play',
-                    stopLabel: 'Pause'
-                });
-                return schema;
-            }
-
-            schema.push(
+                    stopLabel: 'Pause',
+                    enabledWhen: (s) => (s.patternId || patternId) === 'okami-calibration'
+                },
                 {
+                    section: 'pattern',
                     type: 'range',
                     key: 'lineThickness',
                     label: 'Line Thickness',
                     min: 1,
                     max: 20,
                     step: 1,
-                    unit: ' px'
+                    unit: 'px',
+                    enabledWhen: () => usesLine
                 },
                 {
+                    section: 'pattern',
                     type: 'range',
                     key: 'gridSize',
                     label: 'Grid Size',
                     min: 8,
                     max: 256,
                     step: 1,
-                    unit: ' px'
+                    unit: 'px',
+                    enabledWhen: () => usesGrid
                 }
-            );
-            return schema;
+            ];
         },
 
         render(ctx, frame) {

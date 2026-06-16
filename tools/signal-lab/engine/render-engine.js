@@ -3,7 +3,7 @@
 
     /**
      * HiDPI canvas rendering engine for Okami Signal Lab.
-     * Renders modules at pattern resolution, scales to preview container.
+     * Renders at pattern resolution; CSS display size scales to fit the wrapper.
      */
     class RenderEngine {
         constructor(canvas, options = {}) {
@@ -23,22 +23,21 @@
             this.onResize = options.onResize || null;
             this.onPatternMismatch = options.onPatternMismatch || null;
             this.lastTimestamp = 0;
+            this.wrapperWidth = 0;
+            this.wrapperHeight = 0;
             this.displayWidth = 0;
             this.displayHeight = 0;
-            this.bufferWidth = 0;
-            this.bufferHeight = 0;
+            this.scaleFactor = 1;
+            this.scaleMode = 'fit';
             this.patternWidth = 0;
             this.patternHeight = 0;
-            this._layoutWidth = 0;
-            this._layoutHeight = 0;
-            this._layoutDpr = 0;
+            this._layoutKey = '';
             this._patternBufferWidth = 0;
             this._patternBufferHeight = 0;
             this._resizeDebounceMs = options.resizeDebounceMs ?? 50;
             this._resizeTimer = null;
             this._resizeScheduled = false;
             this._pendingZeroSizeRetry = false;
-            this._isPopout = Boolean(options.isPopout);
 
             this.patternCanvas = document.createElement('canvas');
             this.patternCtx = this.patternCanvas.getContext('2d', { alpha: false });
@@ -59,6 +58,7 @@
 
         setOutputSettings(settings) {
             this.outputSettings = { ...this.outputSettings, ...settings };
+            this._layoutKey = '';
             this._handleResize();
         }
 
@@ -130,17 +130,57 @@
             this.patternCtx = null;
         }
 
-        _resolvePatternDimensions() {
+        _resolvePatternDimensions(wrapperWidth, wrapperHeight) {
             const resolver = global.OkamiSignalLab?.PatternResolution?.resolvePatternResolution;
             if (typeof resolver === 'function') {
-                return resolver(this.outputSettings, this.displayWidth, this.displayHeight);
+                return resolver(this.outputSettings, wrapperWidth, wrapperHeight);
             }
             return {
-                width: this.displayWidth,
-                height: this.displayHeight,
+                width: wrapperWidth,
+                height: wrapperHeight,
                 preset: 'auto',
                 matchesOutput: true
             };
+        }
+
+        _computeCssDisplaySize(wrapperWidth, wrapperHeight, patternWidth, patternHeight) {
+            const scaleMode = this.outputSettings.scaleMode === 'stretch' ? 'stretch' : 'fit';
+
+            if (scaleMode === 'stretch') {
+                return {
+                    width: wrapperWidth,
+                    height: wrapperHeight
+                };
+            }
+
+            const fit = global.OkamiSignalLab?.CanvasLayout?.computeScaleToFit(
+                wrapperWidth,
+                wrapperHeight,
+                patternWidth,
+                patternHeight
+            );
+
+            return {
+                width: Math.max(1, Math.floor(fit?.drawW || wrapperWidth)),
+                height: Math.max(1, Math.floor(fit?.drawH || wrapperHeight))
+            };
+        }
+
+        _buildLayoutKey(wrapperWidth, wrapperHeight, patternWidth, patternHeight, cssWidth, cssHeight, dpr) {
+            const settings = this.outputSettings;
+            return [
+                wrapperWidth,
+                wrapperHeight,
+                patternWidth,
+                patternHeight,
+                cssWidth,
+                cssHeight,
+                dpr,
+                settings.patternResolution,
+                settings.patternWidth,
+                settings.patternHeight,
+                settings.scaleMode
+            ].join('|');
         }
 
         _ensurePatternBuffer(patternWidth, patternHeight) {
@@ -158,11 +198,11 @@
         }
 
         renderFrame(timestamp) {
-            if (!this.ctx || !this.displayWidth || !this.displayHeight) {
+            if (!this.ctx || !this.patternWidth || !this.patternHeight) {
                 return;
             }
 
-            const resolved = this._resolvePatternDimensions();
+            const resolved = this._resolvePatternDimensions(this.wrapperWidth, this.wrapperHeight);
             this.patternWidth = resolved.width;
             this.patternHeight = resolved.height;
             this._ensurePatternBuffer(this.patternWidth, this.patternHeight);
@@ -187,39 +227,33 @@
             }
 
             const ctx = this.ctx;
+            const bufferWidth = Math.floor(this.patternWidth * this.dpr);
+            const bufferHeight = Math.floor(this.patternHeight * this.dpr);
+
+            if (this.canvas.width !== bufferWidth || this.canvas.height !== bufferHeight) {
+                this.canvas.width = bufferWidth;
+                this.canvas.height = bufferHeight;
+            }
+
             ctx.save();
             ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
             ctx.fillStyle = this.backgroundColor;
-            ctx.fillRect(0, 0, this.displayWidth, this.displayHeight);
-
-            const scale = Math.min(
-                this.displayWidth / this.patternWidth,
-                this.displayHeight / this.patternHeight
-            );
-            const drawW = this.patternWidth * scale;
-            const drawH = this.patternHeight * scale;
-            const drawX = (this.displayWidth - drawW) / 2;
-            const drawY = (this.displayHeight - drawH) / 2;
-
+            ctx.fillRect(0, 0, this.patternWidth, this.patternHeight);
             ctx.imageSmoothingEnabled = true;
             ctx.drawImage(
                 this.patternCanvas,
                 0,
                 0,
                 this.patternWidth,
-                this.patternHeight,
-                drawX,
-                drawY,
-                drawW,
-                drawH
+                this.patternHeight
             );
             ctx.restore();
 
             if (typeof this.onPatternMismatch === 'function') {
                 const warning = global.OkamiSignalLab?.PatternResolution?.getMismatchWarning(
                     resolved,
-                    this.displayWidth,
-                    this.displayHeight
+                    this.wrapperWidth,
+                    this.wrapperHeight
                 );
                 this.onPatternMismatch(warning, resolved);
             }
@@ -229,8 +263,12 @@
                     timestamp,
                     width: this.displayWidth,
                     height: this.displayHeight,
+                    wrapperWidth: this.wrapperWidth,
+                    wrapperHeight: this.wrapperHeight,
                     patternWidth: this.patternWidth,
-                    patternHeight: this.patternHeight
+                    patternHeight: this.patternHeight,
+                    scaleFactor: this.scaleFactor,
+                    scaleMode: this.scaleMode
                 });
             }
         }
@@ -278,39 +316,62 @@
                 return;
             }
 
-            const displayWidth = Math.max(1, Math.floor(rawWidth));
-            const displayHeight = Math.max(1, Math.floor(rawHeight));
+            const wrapperWidth = Math.max(1, Math.floor(rawWidth));
+            const wrapperHeight = Math.max(1, Math.floor(rawHeight));
             const dpr = Math.min(window.devicePixelRatio || 1, this.maxDpr);
+            const resolved = this._resolvePatternDimensions(wrapperWidth, wrapperHeight);
+            const patternWidth = resolved.width;
+            const patternHeight = resolved.height;
+            const cssSize = this._computeCssDisplaySize(
+                wrapperWidth,
+                wrapperHeight,
+                patternWidth,
+                patternHeight
+            );
+            const scaleMode = this.outputSettings.scaleMode === 'stretch' ? 'stretch' : 'fit';
+            const scaleFactor = scaleMode === 'stretch'
+                ? Math.max(cssSize.width / patternWidth, cssSize.height / patternHeight)
+                : Math.min(wrapperWidth / patternWidth, wrapperHeight / patternHeight);
+            const layoutKey = this._buildLayoutKey(
+                wrapperWidth,
+                wrapperHeight,
+                patternWidth,
+                patternHeight,
+                cssSize.width,
+                cssSize.height,
+                dpr
+            );
 
-            if (
-                displayWidth === this._layoutWidth
-                && displayHeight === this._layoutHeight
-                && dpr === this._layoutDpr
-            ) {
+            if (layoutKey === this._layoutKey) {
                 return;
             }
 
-            this._layoutWidth = displayWidth;
-            this._layoutHeight = displayHeight;
-            this._layoutDpr = dpr;
-
+            this._layoutKey = layoutKey;
+            this.wrapperWidth = wrapperWidth;
+            this.wrapperHeight = wrapperHeight;
+            this.patternWidth = patternWidth;
+            this.patternHeight = patternHeight;
             this.dpr = dpr;
-            this.displayWidth = displayWidth;
-            this.displayHeight = displayHeight;
-            this.bufferWidth = Math.floor(displayWidth * dpr);
-            this.bufferHeight = Math.floor(displayHeight * dpr);
+            this.displayWidth = cssSize.width;
+            this.displayHeight = cssSize.height;
+            this.scaleFactor = scaleFactor;
+            this.scaleMode = scaleMode;
 
-            canvas.width = this.bufferWidth;
-            canvas.height = this.bufferHeight;
-            canvas.style.width = `${displayWidth}px`;
-            canvas.style.height = `${displayHeight}px`;
+            canvas.width = Math.floor(patternWidth * dpr);
+            canvas.height = Math.floor(patternHeight * dpr);
+            canvas.style.width = `${cssSize.width}px`;
+            canvas.style.height = `${cssSize.height}px`;
 
             this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
             if (typeof this.onResize === 'function') {
                 this.onResize({
-                    width: displayWidth,
-                    height: displayHeight,
+                    width: cssSize.width,
+                    height: cssSize.height,
+                    wrapperWidth,
+                    wrapperHeight,
+                    patternWidth,
+                    patternHeight,
                     dpr
                 });
             }

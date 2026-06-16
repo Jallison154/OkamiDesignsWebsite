@@ -57,16 +57,16 @@
         const drawW = canvasW - sidePad * 2;
         const drawH = canvasH - topBar - bottomPad;
 
-        const wallAspect = wall.totalWidth / wall.totalHeight;
-        let gridW = drawW;
-        let gridH = gridW / wallAspect;
-        if (gridH > drawH) {
-            gridH = drawH;
-            gridW = gridH * wallAspect;
-        }
-
-        const gridX = (canvasW - gridW) / 2;
-        const gridY = topBar + (drawH - gridH) / 2;
+        const fit = global.OkamiSignalLab?.CanvasLayout?.computeScaleToFit(
+            drawW,
+            drawH,
+            wall.totalWidth,
+            wall.totalHeight
+        ) || { drawW, drawH, drawX: 0, drawY: 0 };
+        const gridW = fit.drawW;
+        const gridH = fit.drawH;
+        const gridX = sidePad + fit.drawX;
+        const gridY = topBar + fit.drawY;
         const cellW = gridW / wall.panelsWide;
         const cellH = gridH / wall.panelsTall;
 
@@ -172,26 +172,28 @@
 
         getControlSchema() {
             return [
-                { type: 'section', label: 'Panel Inputs' },
                 {
+                    section: 'resolution',
                     type: 'number',
                     key: 'panelWidthPx',
-                    label: 'Panel Width Pixels',
+                    label: 'Panel Width',
                     min: 1,
                     max: 4096,
                     step: 1,
-                    unit: ' px'
+                    unit: 'px'
                 },
                 {
+                    section: 'resolution',
                     type: 'number',
                     key: 'panelHeightPx',
-                    label: 'Panel Height Pixels',
+                    label: 'Panel Height',
                     min: 1,
                     max: 4096,
                     step: 1,
-                    unit: ' px'
+                    unit: 'px'
                 },
                 {
+                    section: 'resolution',
                     type: 'number',
                     key: 'panelsWide',
                     label: 'Panels Wide',
@@ -200,6 +202,7 @@
                     step: 1
                 },
                 {
+                    section: 'resolution',
                     type: 'number',
                     key: 'panelsTall',
                     label: 'Panels Tall',
@@ -208,6 +211,7 @@
                     step: 1
                 },
                 {
+                    section: 'resolution',
                     type: 'led-wall-metrics',
                     key: 'wallMetrics',
                     label: 'Wall Calculations'

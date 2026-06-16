@@ -157,15 +157,21 @@
             this._previewContext = context;
         },
 
-        getControlSchema() {
+        getControlSchema(state = {}) {
+            const customRes = (state.resolutionPreset || this.defaultState.resolutionPreset) === 'custom';
+            const textWm = Boolean(state.textWatermarkEnabled);
+            const logoWm = Boolean(state.logoWatermarkEnabled && state.logoWatermarkDataUrl);
+
             return [
                 {
+                    section: 'export',
                     type: 'select',
                     key: 'sourceModuleId',
                     label: 'Export Source',
                     options: SOURCE_OPTIONS
                 },
                 {
+                    section: 'export',
                     type: 'select',
                     key: 'format',
                     label: 'Format',
@@ -175,83 +181,97 @@
                     ]
                 },
                 {
+                    section: 'resolution',
                     type: 'select',
                     key: 'resolutionPreset',
-                    label: 'Resolution',
+                    label: 'Resolution Preset',
                     options: RESOLUTION_PRESETS.map((entry) => ({
                         value: entry.id,
                         label: entry.label
                     }))
                 },
                 {
+                    section: 'resolution',
                     type: 'number',
                     key: 'customWidth',
                     label: 'Custom Width',
                     min: 64,
                     max: 16384,
                     step: 1,
-                    unit: ' px'
+                    unit: 'px',
+                    disabledWhen: () => !customRes
                 },
                 {
+                    section: 'resolution',
                     type: 'number',
                     key: 'customHeight',
                     label: 'Custom Height',
                     min: 64,
                     max: 16384,
                     step: 1,
-                    unit: ' px'
+                    unit: 'px',
+                    disabledWhen: () => !customRes
                 },
-                { type: 'section', label: 'Watermarks' },
                 {
+                    section: 'branding',
                     type: 'checkbox',
                     key: 'textWatermarkEnabled',
                     label: 'Text Watermark'
                 },
                 {
+                    section: 'branding',
                     type: 'text',
                     key: 'textWatermarkText',
                     label: 'Watermark Text',
-                    placeholder: 'Okami Signal Lab'
+                    placeholder: 'Okami Signal Lab',
+                    disabledWhen: () => !textWm
                 },
                 {
+                    section: 'branding',
                     type: 'range',
                     key: 'textWatermarkOpacity',
                     label: 'Text Opacity',
                     min: 0,
                     max: 1,
                     step: 0.05,
-                    unit: ''
+                    disabledWhen: () => !textWm
                 },
                 {
+                    section: 'branding',
                     type: 'checkbox',
                     key: 'logoWatermarkEnabled',
                     label: 'Logo Watermark'
                 },
                 {
+                    section: 'branding',
                     type: 'file-upload',
                     key: 'logoWatermarkDataUrl',
                     label: 'Watermark Logo',
                     accept: 'image/*'
                 },
                 {
+                    section: 'branding',
                     type: 'range',
                     key: 'logoWatermarkOpacity',
                     label: 'Logo Opacity',
                     min: 0,
                     max: 1,
                     step: 0.05,
-                    unit: ''
+                    disabledWhen: () => !logoWm
                 },
                 {
+                    section: 'branding',
                     type: 'range',
                     key: 'logoWatermarkSize',
                     label: 'Logo Size',
                     min: 5,
                     max: 30,
                     step: 1,
-                    unit: '%'
+                    unit: '%',
+                    disabledWhen: () => !logoWm
                 },
                 {
+                    section: 'export',
                     type: 'action',
                     key: 'downloadExport',
                     label: 'Export',

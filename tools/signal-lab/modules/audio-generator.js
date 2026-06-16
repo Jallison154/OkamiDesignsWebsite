@@ -161,6 +161,7 @@
         getControlSchema() {
             return [
                 {
+                    section: 'output',
                     type: 'select',
                     key: 'sourceId',
                     label: 'Audio Source',
@@ -170,6 +171,7 @@
                     }))
                 },
                 {
+                    section: 'output',
                     type: 'transport',
                     key: 'active',
                     label: 'Transport',
@@ -177,23 +179,25 @@
                     stopLabel: 'Stop'
                 },
                 {
+                    section: 'output',
                     type: 'range',
                     key: 'volume',
                     label: 'Audio Level',
                     min: 0,
                     max: 1,
-                    step: 0.01,
-                    unit: ''
+                    step: 0.01
                 },
                 {
+                    section: 'output',
                     type: 'peak-meter',
                     key: 'peakMeter',
                     label: 'Peak Meter'
                 },
                 {
+                    section: 'output',
                     type: 'radio',
                     key: 'channelMode',
-                    label: 'Output',
+                    label: 'Channel Output',
                     options: [
                         { value: 'stereo', label: 'Stereo' },
                         { value: 'left', label: 'Left Only' },

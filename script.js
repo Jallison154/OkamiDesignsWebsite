@@ -8,7 +8,11 @@ let terminalTimeoutId = null;
 let codeRainInitialized = false;
 
 document.addEventListener('DOMContentLoaded', function() {
-    
+
+    if (window.OkamiSiteLayout && typeof window.OkamiSiteLayout.init === 'function') {
+        window.OkamiSiteLayout.init();
+    }
+
     // Initialize page transition
     initPageTransitions();
     
