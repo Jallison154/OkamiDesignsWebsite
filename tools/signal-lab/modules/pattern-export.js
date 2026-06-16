@@ -15,11 +15,16 @@
         { value: 'led-utilities', label: 'LED Wall Utilities' }
     ];
 
-    function drawExportPreview(ctx, w, h, state, summary) {
-        ctx.fillStyle = '#0a0a0a';
-        ctx.fillRect(0, 0, w, h);
+    function drawExportPreview(ctx, w, h, state, summary, frame) {
+        const techBg = global.OkamiSignalLab?.TechnicalBackground;
+        if (techBg?.draw && frame?.outputSettings) {
+            techBg.draw(ctx, w, h, frame.outputSettings, null);
+        } else {
+            ctx.fillStyle = '#0a0a0a';
+            ctx.fillRect(0, 0, w, h);
+        }
 
-        ctx.strokeStyle = 'rgba(255, 106, 45, 0.2)';
+        ctx.strokeStyle = 'rgba(255, 106, 45, 0.12)';
         ctx.lineWidth = 1;
         const grid = Math.max(20, Math.min(w, h) / 24);
         ctx.beginPath();
@@ -115,6 +120,7 @@
                 { label: 'Format', value: format },
                 { label: 'Text Watermark', value: state.textWatermarkEnabled ? 'On' : 'Off' },
                 { label: 'Logo Watermark', value: state.logoWatermarkEnabled ? 'On' : 'Off' },
+                { label: 'Background', value: state.exportIncludeBackground !== false ? 'Included' : 'Excluded' },
                 { label: 'Filename', value: filename }
             ]
         };
@@ -136,7 +142,8 @@
             logoWatermarkEnabled: false,
             logoWatermarkDataUrl: '',
             logoWatermarkOpacity: 0.55,
-            logoWatermarkSize: 12
+            logoWatermarkSize: 12,
+            exportIncludeBackground: true
         },
 
         _previewContext: null,
@@ -271,6 +278,12 @@
                 },
                 {
                     section: 'export',
+                    type: 'checkbox',
+                    key: 'exportIncludeBackground',
+                    label: 'Include Background'
+                },
+                {
+                    section: 'export',
                     type: 'action',
                     key: 'downloadExport',
                     label: 'Export',
@@ -303,7 +316,8 @@
                     exportState: state,
                     allModuleState: context.getModuleState(),
                     displaySize: context.getDisplaySize(),
-                    activeModuleId: context.activeModuleId
+                    activeModuleId: context.activeModuleId,
+                    outputSettings: context.getOutputSettings?.() || {}
                 });
 
                 context?.setStatus?.(`Exported ${result.filename}`);
@@ -315,7 +329,7 @@
 
         render(ctx, frame) {
             const summary = buildSummary(frame.state || {}, this._previewContext);
-            drawExportPreview(ctx, frame.displayWidth, frame.displayHeight, frame.state || {}, summary);
+            drawExportPreview(ctx, frame.displayWidth, frame.displayHeight, frame.state || {}, summary, frame);
         }
     };
 

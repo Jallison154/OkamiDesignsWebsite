@@ -47,9 +47,9 @@
         }
     }
 
-    function drawWallPattern(ctx, canvasW, canvasH, wall) {
-        ctx.fillStyle = '#080808';
-        ctx.fillRect(0, 0, canvasW, canvasH);
+    function drawWallPattern(ctx, canvasW, canvasH, wall, frame) {
+        global.OkamiSignalLab?.TechnicalBackground?.fillModuleBase?.(ctx, canvasW, canvasH, frame)
+            ?? (ctx.fillStyle = '#080808', ctx.fillRect(0, 0, canvasW, canvasH));
 
         const topBar = Math.max(28, canvasH * 0.08);
         const bottomPad = Math.max(16, canvasH * 0.04);
@@ -227,7 +227,7 @@
                 wallGridLabel: `${wall.panelsWide} × ${wall.panelsTall}`
             };
 
-            drawWallPattern(ctx, frame.displayWidth, frame.displayHeight, wall);
+            drawWallPattern(ctx, frame.displayWidth, frame.displayHeight, wall, frame);
             updateLedWallMetricsDom(metrics, wall.warnings);
         }
     };

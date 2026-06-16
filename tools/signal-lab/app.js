@@ -61,28 +61,112 @@
     let popoutWindow = null;
     let popoutChannel = null;
     const POPOUT_SYNC_CHANNEL = 'okami-signal-lab-sync';
-    let activeModuleId = 'video-patterns';
+    const DEFAULT_MODULE_ID = 'video-patterns';
+    let activeModuleId = DEFAULT_MODULE_ID;
+    /** Canonical render state — main preview and pop-out both mirror this. */
+    let outputState = null;
+    let previewTracker = null;
     let initialized = false;
     let refreshEstimator = null;
     let popoutDisconnectTimer = null;
     let hadPopoutWindow = false;
 
-    /** Sidebar module dropdown — output controls stay in the sidebar. */
-    const SIDEBAR_MODULE_OPTIONS = [
-        { id: 'video-patterns', label: 'Video Patterns' },
-        { id: 'motion-patterns', label: 'Motion Engine' },
-        { id: 'audio-tools', label: 'Audio Generator' },
-        { id: 'sync-tools', label: 'AV Sync' },
-        { id: 'branding', label: 'Branding' },
-        { id: 'export', label: 'Export' },
-        { id: 'led-utilities', label: 'LED Wall Tools' }
-    ];
+    function getRegistry() {
+        return window.OkamiSignalLab?.ModuleRegistry;
+    }
+
+    function resolveModuleId(moduleId) {
+        return getRegistry()?.resolveRendererId?.(moduleId) || moduleId || DEFAULT_MODULE_ID;
+    }
+
+    function getBoundary() {
+        return window.OkamiSignalLab?.ModuleErrorBoundary;
+    }
+
+    function getModuleLabel(moduleId) {
+        return getBoundary()?.getModuleLabel?.(moduleId) || moduleId || 'Module';
+    }
+
+    function formatModuleLoadError(moduleId) {
+        return getBoundary()?.formatLoadError?.(moduleId)
+            || `This module failed to load. ${getModuleLabel(moduleId)}`;
+    }
+
+    function showModuleError(message) {
+        const el = document.getElementById('signal-lab-module-error');
+        if (!el) {
+            return;
+        }
+        el.hidden = false;
+        el.textContent = message;
+    }
+
+    function clearModuleError() {
+        const el = document.getElementById('signal-lab-module-error');
+        if (el) {
+            el.hidden = true;
+            el.textContent = '';
+        }
+    }
+
+    function showModulePanelError(moduleId) {
+        const container = getElements().controlDeck;
+        const boundary = getBoundary();
+        if (!container || !boundary) {
+            return;
+        }
+
+        container.hidden = false;
+        container.innerHTML = `<div class="signal-lab-card-grid">${boundary.buildPanelErrorHtml(moduleId)}</div>`;
+    }
+
+    function initModuleErrorReporting() {
+        window.OkamiSignalLab = window.OkamiSignalLab || {};
+        window.OkamiSignalLab.onModuleError = (payload) => {
+            const moduleId = payload?.moduleId || activeModuleId;
+            showModuleError(payload?.message || formatModuleLoadError(moduleId));
+            if (moduleId === activeModuleId) {
+                showModulePanelError(moduleId);
+            }
+        };
+    }
+
+    function attachModuleToEngine(moduleId) {
+        if (!engine) {
+            return false;
+        }
+
+        const registry = getRegistry();
+        const rendererId = resolveModuleId(moduleId);
+        const renderer = registry?.getRenderer(rendererId);
+
+        if (!renderer) {
+            return false;
+        }
+
+        const state = getModuleState(rendererId) || renderer.defaultState || {};
+
+        try {
+            engine.setOutputSettings({ ...outputSettings });
+            engine.setState({ ...state });
+            engine.setModule(renderer);
+            return true;
+        } catch (error) {
+            getBoundary()?.reportError?.(rendererId, 'attach', error);
+            return false;
+        }
+    }
+
     const outputSettings = {
         patternResolution: 'auto',
         patternWidth: 1920,
         patternHeight: 1080,
         selectedScreenId: '',
-        scaleMode: 'fit'
+        scaleMode: 'fit',
+        backgroundEnabled: true,
+        backgroundType: 'technical-grid',
+        backgroundOpacity: 100,
+        gridIntensity: 100
     };
     const moduleState = {
         'video-patterns': {
@@ -98,7 +182,44 @@
             playing: true,
             speed: 1,
             reverse: false,
-            motionSize: 1
+            motionSize: 1,
+            objectColor: '#FF6A2D',
+            motionBackgroundEnabled: true,
+            trailLength: 40,
+            trailOpacity: 70,
+            motionShape: 'ball',
+            colorMode: 'cycle-bounce',
+            dvdColor: '#FF6A2D',
+            trail: 'short',
+            edgeFlash: true,
+            dvdText: 'OKAMI',
+            dvdLogoDataUrl: '',
+            wrapMode: 'bounce',
+            orbitRadius: 0.32,
+            figure8Width: 0.28,
+            figure8Height: 0.28,
+            lineThickness: 2,
+            lineSpacing: 28,
+            lineColor: '#FF6A2D',
+            gridSize: 32,
+            gridLineThickness: 1,
+            gridDirection: 'both',
+            rotationSpeed: 0.8,
+            crawlText: 'OKAMI SIGNAL LAB',
+            crawlTextSize: 48,
+            crawlDirection: 'left',
+            randomMotionType: 'random-bounce',
+            randomPreset: 'custom',
+            objectCount: 1,
+            randomnessAmount: 55,
+            directionChangeFreq: 2,
+            randomColorMode: 'brand',
+            waypointPauseMs: 400,
+            boundaryBounce: true,
+            wrapEdges: false,
+            smoothMotion: true,
+            randomRotation: false,
+            randomScaleChanges: false
         },
         'audio-tools': {
             sourceId: 'tone-1khz',
@@ -139,7 +260,8 @@
             logoWatermarkEnabled: false,
             logoWatermarkDataUrl: '',
             logoWatermarkOpacity: 0.55,
-            logoWatermarkSize: 12
+            logoWatermarkSize: 12,
+            exportIncludeBackground: true
         },
         'led-utilities': {
             panelWidthPx: 192,
@@ -152,12 +274,15 @@
     function getElements() {
         return {
             app: document.getElementById('signal-lab-app'),
+            layout: document.getElementById('signal-lab-layout'),
             canvas: document.getElementById('signal-lab-canvas'),
             canvasWrap: document.getElementById('signal-lab-canvas-wrap'),
             stage: document.getElementById('signal-lab-stage'),
             moduleSelect: document.getElementById('signal-lab-module-select'),
-            moduleOptions: document.getElementById('signal-lab-module-options'),
-            settingsBar: document.getElementById('signal-lab-settings-bar'),
+            controlDeck: document.getElementById('signal-lab-control-deck'),
+            sidebar: document.getElementById('signal-lab-sidebar'),
+            sidebarToggle: document.getElementById('signal-lab-sidebar-toggle'),
+            sidebarPanel: document.getElementById('signal-lab-sidebar-panel'),
             status: document.getElementById('signal-lab-status'),
             resolutionWarning: document.getElementById('signal-lab-resolution-warning'),
             patternResolution: document.getElementById('signal-lab-pattern-resolution'),
@@ -197,18 +322,10 @@
     }
 
     function commitModulePatch(moduleId, patch, options = {}) {
-        updateModuleState(moduleId, patch);
-        applyEngineState(moduleId);
-
-        const renderer = window.OkamiSignalLab?.ModuleRegistry?.getRenderer(moduleId);
-        if (engine && typeof renderer?.onStateChange === 'function' && options.notifyKey) {
-            renderer.onStateChange(engine, moduleState[moduleId], options.notifyKey);
-        }
-
-        refreshOutput();
+        updateOutputState({ moduleId, modulePatch: patch });
 
         if (options.rebuildControls) {
-            buildModuleOptions(moduleId);
+            buildControlDeck(moduleId);
         }
 
         if (options.statusMessage) {
@@ -334,6 +451,10 @@
         badge.textContent = labels[state] || 'Preview';
     }
 
+    function popoutDebug() {
+        return window.OkamiSignalLab?.PopoutDebug;
+    }
+
     function notifyPopoutDisconnected() {
         if (popoutDisconnectTimer) {
             clearTimeout(popoutDisconnectTimer);
@@ -352,6 +473,10 @@
         hadPopoutWindow = false;
         getElements().closePopoutBtn?.setAttribute('hidden', '');
         getElements().updatePopoutBtn?.setAttribute('disabled', '');
+        popoutDebug()?.setConnectionStatus(
+            popoutDebug()?.STATUS.NOT_OPENED,
+            wasOpen ? 'Pop-out window closed' : null
+        );
 
         if (wasOpen) {
             notifyPopoutDisconnected();
@@ -378,7 +503,63 @@
         return popoutChannel || null;
     }
 
-    function buildPopoutOutputState(requestFullscreen = false) {
+    function getPreviewTracker() {
+        if (!previewTracker && window.OkamiSignalLab?.OutputState) {
+            previewTracker = window.OkamiSignalLab.OutputState.createApplyTracker();
+        }
+        return previewTracker;
+    }
+
+    function getCentralOutputState() {
+        return {
+            activeModuleId,
+            moduleState,
+            outputSettings
+        };
+    }
+
+    function getModuleState(moduleId) {
+        return moduleState[moduleId] || {};
+    }
+
+    function syncRuntimeModuleStateFromEngine() {
+        const capture = window.OkamiSignalLab?.OutputState?.captureRuntimeModuleState;
+        if (!capture || !engine?.state || !activeModuleId) {
+            return;
+        }
+
+        moduleState[activeModuleId] = capture(engine.state, moduleState[activeModuleId] || {});
+    }
+
+    /**
+     * Single write path for toolbar, sidebar, and module controls.
+     * Rebuilds outputState, redraws preview, and syncs pop-out.
+     */
+    function updateOutputState(patch = {}, options = {}) {
+        if (patch.outputSettings) {
+            Object.assign(outputSettings, patch.outputSettings);
+        }
+
+        if (patch.moduleId && patch.modulePatch) {
+            moduleState[patch.moduleId] = {
+                ...(moduleState[patch.moduleId] || {}),
+                ...patch.modulePatch
+            };
+        }
+
+        if (patch.activeModulePatch) {
+            moduleState[activeModuleId] = {
+                ...(moduleState[activeModuleId] || {}),
+                ...patch.activeModulePatch
+            };
+        }
+
+        if (!options.skipCommit) {
+            commitOutputState(options);
+        }
+    }
+
+    function rebuildOutputState(requestFullscreen = false) {
         const outputStateApi = window.OkamiSignalLab?.OutputState;
         if (!outputStateApi?.buildOutputState) {
             return null;
@@ -392,39 +573,70 @@
         });
     }
 
-    function sendStateToPopout(requestFullscreen = false) {
-        const outputStateApi = window.OkamiSignalLab?.OutputState;
-        if (!outputStateApi?.MSG) {
-            return false;
-        }
-
-        refreshOutput();
-
-        const state = buildPopoutOutputState(requestFullscreen);
-        if (!state) {
-            return false;
-        }
-
-        const payload = { type: outputStateApi.MSG.STATE, state };
-        let delivered = false;
-
-        if (popoutWindow && !popoutWindow.closed) {
-            try {
-                popoutWindow.postMessage(payload, window.location.origin);
-                delivered = true;
-            } catch {
-                /* ignore */
-            }
+    /**
+     * Single commit path: rebuild outputState, redraw main preview, sync pop-out.
+     */
+    function commitOutputState(options = {}) {
+        if (!engine) {
+            return;
         }
 
         try {
-            getPopoutChannel()?.postMessage(payload);
-            delivered = true;
-        } catch {
-            /* ignore */
-        }
+            syncRuntimeModuleStateFromEngine();
 
-        return delivered;
+            outputState = rebuildOutputState(Boolean(options.requestFullscreen));
+            if (!outputState) {
+                engine.renderFrame(performance.now());
+                return;
+            }
+
+            const renderFn = window.OkamiSignalLab?.renderSignalLabCanvas;
+            if (renderFn) {
+                const animate = renderFn(
+                    engine,
+                    outputState,
+                    performance.now(),
+                    getPreviewTracker()
+                );
+                if (animate) {
+                    engine.start();
+                } else {
+                    engine.stop();
+                }
+            } else {
+                attachModuleToEngine(activeModuleId);
+                engine.renderFrame(performance.now());
+                if (shouldRunAnimation(activeModuleId)) {
+                    engine.start();
+                } else {
+                    engine.stop();
+                }
+            }
+
+            window.OkamiSignalLab?.OutputState?.syncPopout?.(outputState);
+        } catch (error) {
+            console.error('[Okami Signal Lab] Output commit failed:', error);
+            getBoundary()?.reportError?.(activeModuleId, 'render', error);
+            try {
+                attachModuleToEngine(DEFAULT_MODULE_ID);
+                engine.renderFrame(performance.now());
+            } catch {
+                /* last resort */
+            }
+        }
+    }
+
+    function refreshOutput() {
+        updateOutputState();
+    }
+
+    function applyOutputSettingsToEngine() {
+        updateOutputState();
+    }
+
+    function sendStateToPopout(requestFullscreen = false) {
+        commitOutputState({ requestFullscreen });
+        return isPopoutOpen();
     }
 
     function handlePopoutMessage(data) {
@@ -434,6 +646,8 @@
         }
 
         if (data.type === MSG.READY) {
+            popoutDebug()?.logReady({ role: 'parent', received: true });
+            popoutDebug()?.setConnectionStatus(popoutDebug()?.STATUS.CONNECTED, 'Ready handshake received');
             sendStateToPopout();
             hadPopoutWindow = true;
             getElements().closePopoutBtn?.removeAttribute('hidden');
@@ -456,14 +670,22 @@
     function openPopout(requestFullscreen = false) {
         const run = async () => {
             if (!engine) {
+                popoutDebug()?.setConnectionStatus(
+                    popoutDebug()?.STATUS.FAILED,
+                    'Preview engine not ready'
+                );
                 setStatus('Preview not ready yet.');
                 return;
             }
 
-            const gate = global.OkamiCommercialGate;
+            const gate = window.OkamiCommercialGate;
             if (gate?.checkPopoutAllowed) {
                 const check = await gate.checkPopoutAllowed();
                 if (!check.allowed) {
+                    popoutDebug()?.setConnectionStatus(
+                        popoutDebug()?.STATUS.FAILED,
+                        check.reason || 'License required'
+                    );
                     gate.showUpgradeNotice?.('Live pop-out sync requires a Professional license.');
                     setStatus('Premium feature — license required.');
                     return;
@@ -494,9 +716,15 @@
             );
 
             if (!popoutWindow) {
+                popoutDebug()?.setConnectionStatus(
+                    popoutDebug()?.STATUS.FAILED,
+                    'Pop-up blocked by browser'
+                );
                 setStatus('Pop-up blocked. Allow pop-ups for this site.');
                 return;
             }
+
+            popoutDebug()?.logWindowOpened({ url: url.href, requestFullscreen: Boolean(requestFullscreen) });
 
             hadPopoutWindow = true;
             getElements().closePopoutBtn?.removeAttribute('hidden');
@@ -509,7 +737,7 @@
 
     function updatePopout() {
         const run = async () => {
-            const gate = global.OkamiCommercialGate;
+            const gate = window.OkamiCommercialGate;
             if (gate?.checkPopoutAllowed) {
                 const check = await gate.checkPopoutAllowed();
                 if (!check.allowed) {
@@ -534,30 +762,10 @@
         void run();
     }
 
-    function applyOutputSettingsToEngine() {
-        if (engine) {
-            engine.setOutputSettings({ ...outputSettings });
-        }
-    }
-
     function shouldRunAnimation(moduleId) {
         const renderer = window.OkamiSignalLab?.ModuleRegistry?.getRenderer(moduleId);
         const shouldAnimate = window.OkamiSignalLab?.ModuleAnimation?.shouldAnimateModule;
         return shouldAnimate ? shouldAnimate(renderer, moduleState[moduleId] || {}) : false;
-    }
-
-    function refreshOutput() {
-        if (!engine) {
-            return;
-        }
-
-        engine.renderFrame(performance.now());
-
-        if (shouldRunAnimation(activeModuleId)) {
-            engine.start();
-        } else {
-            engine.stop();
-        }
     }
 
     function syncRangePair(rangeInput, numberInput, control, moduleId, commitOnly) {
@@ -603,25 +811,17 @@
         }
     }
 
-    function applyEngineState(moduleId) {
-        if (!engine) {
-            return;
-        }
-        const saved = moduleState[moduleId];
-        if (saved && Object.keys(saved).length) {
-            engine.setState({ ...saved });
-        }
-    }
-
     function updateModuleState(moduleId, patch) {
         moduleState[moduleId] = { ...(moduleState[moduleId] || {}), ...patch };
     }
 
     function getExportContext() {
+        const central = getCentralOutputState();
         return {
-            getModuleState: () => ({ ...moduleState }),
+            getModuleState: () => ({ ...central.moduleState }),
             getDisplaySize: () => engine?.getDisplaySize?.() ?? { width: 1920, height: 1080 },
-            activeModuleId,
+            getOutputSettings: () => ({ ...central.outputSettings }),
+            activeModuleId: central.activeModuleId,
             setStatus
         };
     }
@@ -638,40 +838,54 @@
 
     function handleControlChange(moduleId, key, value, control) {
         const registry = window.OkamiSignalLab?.ModuleRegistry;
-        updateModuleState(moduleId, { [key]: value });
-        applyEngineState(moduleId);
 
-        const renderer = registry?.getRenderer(moduleId);
-        if (key === 'patternId' && renderer && engine) {
-            if (typeof renderer.onAttach === 'function') {
-                renderer.onAttach(engine);
+        try {
+            if (moduleId === '__background__') {
+                const patch = { [key]: value };
+                if (key === 'backgroundType' && value === 'none') {
+                    patch.backgroundEnabled = false;
+                }
+                if (key === 'backgroundEnabled' && value && (outputSettings.backgroundType === 'none' || !outputSettings.backgroundType)) {
+                    patch.backgroundType = 'technical-grid';
+                }
+                updateOutputState({ outputSettings: patch });
+                if (key === 'backgroundEnabled' || key === 'backgroundType') {
+                    buildControlDeck(activeModuleId);
+                }
+                return;
             }
+
+            updateOutputState({ moduleId, modulePatch: { [key]: value } });
+            updateExportPreviewContext(moduleId);
+            updatePreviewPatternName();
+
+            if (key === 'patternId' || key === 'mode' || key === 'sourceId'
+                || key === 'backgroundEnabled' || key === 'backgroundType'
+                || key === 'randomPreset' || key === 'randomMotionType' || key === 'randomColorMode'
+                || window.OkamiSignalLab?.ControlUI?.shouldRebuildOptions(key)) {
+                buildControlDeck(moduleId);
+            }
+
+            if (control?.type === 'transport') {
+                setStatus(value ? (control.startLabel || 'Playing') : (control.stopLabel || 'Paused'));
+                return;
+            }
+
+            const label = control?.label || key;
+            setStatus(`${registry?.getModuleById(moduleId)?.label || moduleId}: ${label} updated`);
+        } catch (error) {
+            getBoundary()?.reportError?.(moduleId, 'state', error);
         }
-
-        if (engine && typeof renderer?.onStateChange === 'function') {
-            renderer.onStateChange(engine, moduleState[moduleId], key);
-        }
-
-        updateExportPreviewContext(moduleId);
-        refreshOutput();
-        updatePreviewPatternName();
-
-        if (key === 'patternId' || key === 'mode' || key === 'sourceId'
-            || window.OkamiSignalLab?.ControlUI?.shouldRebuildOptions(key)) {
-            buildModuleOptions(moduleId);
-        }
-
-        if (control?.type === 'transport') {
-            setStatus(value ? (control.startLabel || 'Playing') : (control.stopLabel || 'Paused'));
-            return;
-        }
-
-        const label = control?.label || key;
-        setStatus(`${registry?.getModuleById(moduleId)?.label || moduleId}: ${label} updated`);
     }
 
     function bindModuleControlEvents(container, schema, moduleId) {
+        const schemaKeys = new Set(schema.map((control) => control.key));
+        const belongsToSchema = (element) => schemaKeys.has(element.dataset.controlKey);
+
         container.querySelectorAll('[data-control-type="select"]').forEach((input) => {
+            if (!belongsToSchema(input)) {
+                return;
+            }
             input.addEventListener('change', () => {
                 const control = schema.find((c) => c.key === input.dataset.controlKey);
                 handleControlChange(moduleId, input.dataset.controlKey, input.value, control);
@@ -679,6 +893,9 @@
         });
 
         container.querySelectorAll('[data-control-type="range"]').forEach((input) => {
+            if (!belongsToSchema(input)) {
+                return;
+            }
             const control = schema.find((c) => c.key === input.dataset.controlKey);
             const numberInput = container.querySelector(`#sl-ctrl-num-${input.dataset.controlKey}`);
             if (numberInput && control) {
@@ -687,6 +904,9 @@
         });
 
         container.querySelectorAll('[data-control-type="text"]').forEach((input) => {
+            if (!belongsToSchema(input)) {
+                return;
+            }
             input.addEventListener('input', () => {
                 const control = schema.find((c) => c.key === input.dataset.controlKey);
                 handleControlChange(moduleId, input.dataset.controlKey, input.value, control);
@@ -694,6 +914,9 @@
         });
 
         container.querySelectorAll('[data-control-type="file-upload"]').forEach((input) => {
+            if (!belongsToSchema(input)) {
+                return;
+            }
             input.addEventListener('change', () => {
                 const file = input.files?.[0];
                 if (!file) {
@@ -725,6 +948,9 @@
         });
 
         container.querySelectorAll('[data-clear-upload]').forEach((btn) => {
+            if (!belongsToSchema(btn)) {
+                return;
+            }
             btn.addEventListener('click', () => {
                 const key = btn.dataset.controlKey;
                 const patch = { [key]: '' };
@@ -743,6 +969,9 @@
         });
 
         container.querySelectorAll('[data-control-type="number"]').forEach((input) => {
+            if (!belongsToSchema(input)) {
+                return;
+            }
             const applyNumber = () => {
                 const control = schema.find((c) => c.key === input.dataset.controlKey);
                 const utils = getControlUtils();
@@ -761,6 +990,9 @@
         });
 
         container.querySelectorAll('[data-control-type="action"]').forEach((btn) => {
+            if (!belongsToSchema(btn)) {
+                return;
+            }
             btn.addEventListener('click', async () => {
                 const control = schema.find((c) => c.key === btn.dataset.controlKey);
                 const renderer = window.OkamiSignalLab?.ModuleRegistry?.getRenderer(moduleId);
@@ -770,9 +1002,9 @@
 
                 btn.disabled = true;
                 try {
-                    await renderer.handleAction(btn.dataset.controlKey, getExportContext(), moduleState[moduleId]);
-                } catch {
-                    // Status message handled in module.
+                    await renderer.handleAction(btn.dataset.controlKey, getExportContext(), getModuleState(moduleId));
+                } catch (error) {
+                    getBoundary()?.reportError?.(moduleId, 'action', error);
                 } finally {
                     btn.disabled = false;
                     updateExportPreviewContext(moduleId);
@@ -782,6 +1014,9 @@
         });
 
         container.querySelectorAll('[data-control-type="checkbox"]').forEach((input) => {
+            if (!belongsToSchema(input)) {
+                return;
+            }
             input.addEventListener('change', () => {
                 const control = schema.find((c) => c.key === input.dataset.controlKey);
                 handleControlChange(moduleId, input.dataset.controlKey, input.checked, control);
@@ -789,12 +1024,15 @@
         });
 
         container.querySelectorAll('.signal-lab-transport-btn').forEach((btn) => {
+            const transportKey = btn.dataset.controlKey || 'playing';
+            if (!schemaKeys.has(transportKey)) {
+                return;
+            }
             btn.addEventListener('click', () => {
                 if (btn.disabled) {
                     return;
                 }
                 const value = btn.dataset.controlValue === 'true';
-                const transportKey = btn.dataset.controlKey || 'playing';
                 const control = schema.find((c) => c.key === transportKey);
                 handleControlChange(moduleId, transportKey, value, control);
 
@@ -807,6 +1045,9 @@
         });
 
         container.querySelectorAll('[data-control-type="radio"]').forEach((input) => {
+            if (!belongsToSchema(input)) {
+                return;
+            }
             input.addEventListener('change', () => {
                 const control = schema.find((c) => c.key === input.dataset.controlKey);
                 handleControlChange(moduleId, input.dataset.controlKey, input.value, control);
@@ -814,89 +1055,330 @@
         });
     }
 
-    function buildModuleOptions(moduleId) {
-        const container = getElements().moduleOptions;
-        const registry = window.OkamiSignalLab?.ModuleRegistry;
+    function renderPatternCardStatic() {
+        return `
+            <div class="signal-lab-card-field signal-lab-card-field--select">
+                <label class="signal-lab-label" for="signal-lab-module-select">Module</label>
+                <div class="signal-lab-card-field__body">
+                    <select id="signal-lab-module-select" class="signal-lab-select signal-lab-field signal-lab-module-select"
+                        aria-label="Signal Lab module"></select>
+                </div>
+            </div>
+        `;
+    }
+
+    function renderDisplayCardStatic() {
+        return `
+            <div class="signal-lab-card-field signal-lab-card-field--select">
+                <label class="signal-lab-label" for="signal-lab-pattern-resolution">Pattern Resolution</label>
+                <div class="signal-lab-card-field__body">
+                    <select id="signal-lab-pattern-resolution" class="signal-lab-select signal-lab-field"
+                        aria-label="Pattern resolution"></select>
+                </div>
+            </div>
+            <div id="signal-lab-pattern-custom" class="signal-lab-pattern-custom" hidden>
+                <div class="signal-lab-card-field signal-lab-card-field--number">
+                    <label class="signal-lab-label" for="signal-lab-pattern-width">Pattern Width</label>
+                    <div class="signal-lab-card-field__body">
+                        <div class="signal-lab-value-field">
+                            <input type="number" id="signal-lab-pattern-width" class="signal-lab-number-input signal-lab-field"
+                                min="64" max="16384" step="1" value="1920" aria-label="Pattern width">
+                            <span class="signal-lab-field-unit">px</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="signal-lab-card-field signal-lab-card-field--number">
+                    <label class="signal-lab-label" for="signal-lab-pattern-height">Pattern Height</label>
+                    <div class="signal-lab-card-field__body">
+                        <div class="signal-lab-value-field">
+                            <input type="number" id="signal-lab-pattern-height" class="signal-lab-number-input signal-lab-field"
+                                min="64" max="16384" step="1" value="1080" aria-label="Pattern height">
+                            <span class="signal-lab-field-unit">px</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <p id="signal-lab-resolution-warning" class="signal-lab-resolution-warning" hidden></p>
+            <div class="signal-lab-card-field signal-lab-card-field--select">
+                <label class="signal-lab-label" for="signal-lab-scale-mode">Scale Mode</label>
+                <div class="signal-lab-card-field__body">
+                    <select id="signal-lab-scale-mode" class="signal-lab-select signal-lab-field" aria-label="Scale mode">
+                        <option value="fit">Fit (letterbox)</option>
+                        <option value="stretch">Stretch</option>
+                    </select>
+                </div>
+            </div>
+        `;
+    }
+
+    function renderOutputCardStatic() {
+        return '';
+    }
+
+    function getStaticDeckFragments() {
+        return {
+            pattern: renderPatternCardStatic(),
+            display: renderDisplayCardStatic(),
+            output: renderOutputCardStatic()
+        };
+    }
+
+    const MOBILE_DECK_MQ = window.matchMedia('(max-width: 767px)');
+    const TABLET_DECK_MQ = window.matchMedia('(max-width: 1199px)');
+
+    function bindMobileDeckAccordion(container) {
+        if (!container) {
+            return;
+        }
+
+        container.querySelectorAll('.signal-lab-card').forEach((card) => {
+            if (!card.dataset.accordionBound) {
+                card.dataset.accordionBound = 'true';
+                card.addEventListener('toggle', () => {
+                    if (!MOBILE_DECK_MQ.matches || !card.open) {
+                        return;
+                    }
+                    container.querySelectorAll('.signal-lab-card').forEach((other) => {
+                        if (other !== card) {
+                            other.removeAttribute('open');
+                        }
+                    });
+                });
+            }
+        });
+    }
+
+    function applyDeckOpenState(container) {
+        if (!container) {
+            return;
+        }
+
+        container.querySelectorAll('.signal-lab-card').forEach((card) => {
+            if (MOBILE_DECK_MQ.matches) {
+                if (!card.dataset.mobileTouched) {
+                    card.dataset.mobileTouched = 'true';
+                    if (card.dataset.card === 'pattern') {
+                        card.setAttribute('open', '');
+                    } else {
+                        card.removeAttribute('open');
+                    }
+                }
+            } else if (card.dataset.mobileTouched) {
+                delete card.dataset.mobileTouched;
+            }
+        });
+    }
+
+    function initResponsiveLayout() {
+        const els = getElements();
+        if (!els.layout || els.layout.dataset.responsiveBound === 'true') {
+            return;
+        }
+
+        els.layout.dataset.responsiveBound = 'true';
+
+        const applySidebarMode = () => {
+            const sidebar = els.sidebar;
+            const toggle = els.sidebarToggle;
+            if (!sidebar || !toggle) {
+                return;
+            }
+
+            if (TABLET_DECK_MQ.matches) {
+                sidebar.classList.add('is-collapsible');
+                const open = toggle.getAttribute('aria-expanded') === 'true';
+                sidebar.classList.toggle('is-open', open);
+            } else {
+                sidebar.classList.remove('is-collapsible', 'is-open');
+                toggle.setAttribute('aria-expanded', 'true');
+            }
+        };
+
+        els.sidebarToggle?.addEventListener('click', () => {
+            const toggle = els.sidebarToggle;
+            const sidebar = els.sidebar;
+            if (!toggle || !sidebar) {
+                return;
+            }
+            const open = toggle.getAttribute('aria-expanded') !== 'true';
+            toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+            sidebar.classList.toggle('is-open', open);
+        });
+
+        const onViewportChange = () => {
+            applySidebarMode();
+            applyDeckOpenState(els.controlDeck);
+            refreshPreviewLayout();
+        };
+
+        TABLET_DECK_MQ.addEventListener('change', onViewportChange);
+        MOBILE_DECK_MQ.addEventListener('change', onViewportChange);
+        applySidebarMode();
+    }
+
+    function syncStaticDeckFields() {
+        const els = getElements();
+        const presets = window.OkamiSignalLab?.PatternResolution?.PRESETS || [];
+
+        if (els.patternResolution) {
+            const current = els.patternResolution.value;
+            els.patternResolution.innerHTML = presets.map((preset) => `
+                <option value="${preset.id}"${outputSettings.patternResolution === preset.id ? ' selected' : ''}>${preset.label}</option>
+            `).join('');
+            if (current && Array.from(els.patternResolution.options).some((opt) => opt.value === current)) {
+                els.patternResolution.value = current;
+            }
+        }
+
+        if (els.scaleMode) {
+            els.scaleMode.value = outputSettings.scaleMode || 'fit';
+        }
+
+        if (els.patternCustomWrap) {
+            els.patternCustomWrap.hidden = outputSettings.patternResolution !== 'custom';
+        }
+
+        [els.patternWidth, els.patternHeight].forEach((input) => {
+            if (!input) {
+                return;
+            }
+            const key = input.id.includes('width') ? 'patternWidth' : 'patternHeight';
+            input.value = outputSettings[key] ?? input.value;
+        });
+    }
+
+    function buildControlDeck(moduleId = activeModuleId) {
+        const container = getElements().controlDeck;
         const controlUI = window.OkamiSignalLab?.ControlUI;
-        const renderer = registry?.getRenderer(moduleId);
-        const state = moduleState[moduleId] || {};
+        const registry = window.OkamiSignalLab?.ModuleRegistry;
+        const boundary = getBoundary();
 
         if (!container || !controlUI) {
             return;
         }
 
-        const rawSchema = renderer?.getControlSchema?.(state)
-            || renderer?.getControlSchema?.()
-            || [];
+        const backgroundSchema = window.OkamiSignalLab?.BackgroundControls?.getBackgroundControlSchema?.() || [];
+        const renderer = registry?.getRenderer(moduleId);
+        const state = getModuleState(moduleId);
 
-        if (!rawSchema.length) {
-            container.innerHTML = '';
-            container.hidden = true;
-            return;
+        try {
+            let moduleSchema = [];
+            if (renderer) {
+                moduleSchema = renderer.getControlSchema?.(state)
+                    || renderer.getControlSchema?.()
+                    || [];
+            }
+
+            const layers = [
+                { schema: backgroundSchema, state: outputSettings, moduleId: '__background__' },
+                { schema: moduleSchema, state, moduleId }
+            ];
+
+            container.innerHTML = controlUI.buildControlDeckHtml(layers, getStaticDeckFragments());
+
+            if (!container.innerHTML.trim()) {
+                container.hidden = true;
+                return;
+            }
+
+            container.hidden = false;
+
+            const deckLayers = layers.filter((layer) => layer.schema.length);
+            deckLayers.forEach((layer) => {
+                const flat = controlUI.flattenDeckLayers([layer]).map((entry) => entry.control);
+                bindModuleControlEvents(container, flat, layer.moduleId);
+            });
+
+            renderModuleDropdown();
+            syncModuleDropdownValue(moduleId);
+            syncStaticDeckFields();
+
+            if (moduleId === activeModuleId) {
+                clearModuleError();
+            }
+
+            bindMobileDeckAccordion(container);
+            applyDeckOpenState(container);
+        } catch (error) {
+            boundary?.reportError?.(moduleId, 'controls', error);
         }
+    }
 
-        container.hidden = false;
-        container.innerHTML = controlUI.buildToolbarHtml(rawSchema, state, moduleId);
+    function buildBackgroundToolbar() {
+        buildControlDeck(activeModuleId);
+    }
 
-        const schema = controlUI.flattenSchema(rawSchema, state, moduleId);
-        bindModuleControlEvents(container, schema, moduleId);
+    function buildModuleOptions(moduleId) {
+        buildControlDeck(moduleId);
     }
 
     function selectModule(moduleId, searchPatch = null) {
-        const registry = window.OkamiSignalLab?.ModuleRegistry;
-        const meta = registry?.getModuleById(moduleId);
+        const registry = getRegistry();
+        let rendererId = resolveModuleId(moduleId);
+        let meta = registry?.getModuleById(rendererId);
+
         if (!meta || meta.status !== 'active') {
+            rendererId = DEFAULT_MODULE_ID;
+            meta = registry?.getModuleById(rendererId);
+        }
+
+        if (!meta || meta.status !== 'active') {
+            showModuleError('No active modules are registered. Check script loading.');
             return;
         }
 
-        activeModuleId = moduleId;
-        const renderer = registry.getRenderer(moduleId);
+        activeModuleId = rendererId;
+        previewTracker = null;
 
-        if (renderer?.defaultState && !moduleState[moduleId]) {
-            moduleState[moduleId] = { ...renderer.defaultState };
+        const renderer = registry.getRenderer(rendererId);
+        if (renderer?.defaultState && !moduleState[rendererId]) {
+            moduleState[rendererId] = { ...renderer.defaultState };
         }
 
         if (searchPatch && typeof searchPatch === 'object') {
-            updateModuleState(moduleId, searchPatch);
+            updateOutputState({ moduleId: rendererId, modulePatch: searchPatch }, { skipCommit: true });
         }
 
-        if (engine) {
-            applyEngineState(moduleId);
-            engine.setModule(renderer);
-            if (searchPatch && typeof renderer?.onStateChange === 'function') {
-                Object.keys(searchPatch).forEach((key) => {
-                    renderer.onStateChange(engine, moduleState[moduleId], key);
-                });
+        if (!attachModuleToEngine(rendererId)) {
+            showModuleError(formatModuleLoadError(rendererId));
+            showModulePanelError(rendererId);
+            if (rendererId !== DEFAULT_MODULE_ID) {
+                selectModule(DEFAULT_MODULE_ID);
             }
+            return;
         }
 
-        syncModuleDropdownValue(moduleId);
-        buildModuleOptions(moduleId);
-        updateExportPreviewContext(moduleId);
+        clearModuleError();
+        syncModuleDropdownValue(rendererId);
+        buildModuleOptions(rendererId);
+        updateExportPreviewContext(rendererId);
         updatePreviewPatternName();
         updateOutputBadge();
-        refreshOutput();
+        commitOutputState();
         setStatus(searchPatch
             ? `Active: ${meta.label} (search match applied)`
             : `Active: ${meta.label}`);
     }
 
     function getVisibleModuleOptions() {
-        return SIDEBAR_MODULE_OPTIONS.map((entry) => ({
+        const sidebar = getRegistry()?.getSidebarModules?.() || [];
+        return sidebar.map((entry) => ({
             moduleId: entry.id,
+            rendererId: entry.rendererId,
             label: entry.label,
             statePatch: null
         }));
     }
 
-    function syncModuleDropdownValue(value) {
+    function syncModuleDropdownValue(rendererId) {
         const select = getElements().moduleSelect;
-        if (!select || !value) {
+        if (!select || !rendererId) {
             return;
         }
-        const hasOption = Array.from(select.options).some((opt) => opt.value === value);
+        const publicId = getRegistry()?.getPublicModuleId?.(rendererId) || rendererId;
+        const hasOption = Array.from(select.options).some((opt) => opt.value === publicId);
         if (hasOption) {
-            select.value = value;
+            select.value = publicId;
         }
     }
 
@@ -912,14 +1394,21 @@
             const patchAttr = entry.statePatch
                 ? ` data-state-patch="${encodeURIComponent(JSON.stringify(entry.statePatch))}"`
                 : '';
-            return `<option value="${entry.moduleId}"${patchAttr}>${entry.label}</option>`;
+            return `<option value="${entry.moduleId}" data-renderer-id="${entry.rendererId}"${patchAttr}>${entry.label}</option>`;
         }).join('');
 
-        select.disabled = false;
-        if (visible.some((entry) => entry.moduleId === activeModuleId)) {
-            select.value = activeModuleId;
-        } else if (visible.length > 0) {
+        select.disabled = visible.length === 0;
+        if (visible.length === 0) {
+            showModuleError('Module list is empty. Registry did not load.');
+            return;
+        }
+
+        const publicId = getRegistry()?.getPublicModuleId?.(activeModuleId) || visible[0].moduleId;
+        if (visible.some((entry) => entry.moduleId === publicId)) {
+            select.value = publicId;
+        } else {
             select.selectedIndex = 0;
+            activeModuleId = visible[0].rendererId;
         }
     }
 
@@ -942,12 +1431,31 @@
         selectModule(select.value, searchPatch);
     }
 
+    function ensureDefaultModule() {
+        const registry = getRegistry();
+        if (!registry?.getRenderer?.(DEFAULT_MODULE_ID)) {
+            showModuleError('Video Patterns module is not registered. Reload the page.');
+            return;
+        }
+        if (!registry.getRenderer(activeModuleId)) {
+            activeModuleId = DEFAULT_MODULE_ID;
+        }
+    }
+
     function openPopoutFullscreen() {
         openPopout(true);
     }
 
     function bindPopoutSync() {
         getPopoutChannel();
+
+        window.OkamiSignalLab?.OutputState?.configurePopoutSync?.({
+            isOpen: isPopoutOpen,
+            getOrigin: () => window.location.origin,
+            getPopoutWindow: () => popoutWindow,
+            getBroadcastChannel: getPopoutChannel,
+            debug: popoutDebug
+        });
 
         window.addEventListener('message', (event) => {
             if (event.origin !== window.location.origin) {
@@ -973,64 +1481,78 @@
     }
 
     function initOutputSettingsUI() {
-        const els = getElements();
-        const presets = window.OkamiSignalLab?.PatternResolution?.PRESETS || [];
-
-        if (els.patternResolution) {
-            els.patternResolution.innerHTML = presets.map((preset) => `
-                <option value="${preset.id}"${outputSettings.patternResolution === preset.id ? ' selected' : ''}>${preset.label}</option>
-            `).join('');
-
-            els.patternResolution.addEventListener('change', () => {
-                outputSettings.patternResolution = els.patternResolution.value;
-                if (els.patternCustomWrap) {
-                    els.patternCustomWrap.hidden = outputSettings.patternResolution !== 'custom';
-                }
-                applyOutputSettingsToEngine();
-                refreshOutput();
-            });
+        const deck = getElements().controlDeck;
+        if (!deck || deck.dataset.staticBound === 'true') {
+            syncStaticDeckFields();
+            return;
         }
 
-        if (els.scaleMode) {
-            els.scaleMode.value = outputSettings.scaleMode || 'fit';
-            els.scaleMode.addEventListener('change', () => {
-                outputSettings.scaleMode = els.scaleMode.value === 'stretch' ? 'stretch' : 'fit';
-                applyOutputSettingsToEngine();
-                refreshOutput();
-            });
-        }
-
-        if (els.patternCustomWrap) {
-            els.patternCustomWrap.hidden = outputSettings.patternResolution !== 'custom';
-        }
+        deck.dataset.staticBound = 'true';
 
         const applyCustomPatternSize = () => {
+            const els = getElements();
             const utils = getControlUtils();
-            outputSettings.patternWidth = utils
+            const patternWidth = utils
                 ? utils.clampNumber(els.patternWidth?.value, 64, 16384, 1)
                 : parseInt(els.patternWidth?.value, 10) || 1920;
-            outputSettings.patternHeight = utils
+            const patternHeight = utils
                 ? utils.clampNumber(els.patternHeight?.value, 64, 16384, 1)
                 : parseInt(els.patternHeight?.value, 10) || 1080;
+
+            updateOutputState({
+                outputSettings: { patternWidth, patternHeight }
+            });
+
             if (els.patternWidth) {
                 els.patternWidth.value = outputSettings.patternWidth;
             }
             if (els.patternHeight) {
                 els.patternHeight.value = outputSettings.patternHeight;
             }
-            applyOutputSettingsToEngine();
-            refreshOutput();
         };
 
-        [els.patternWidth, els.patternHeight].forEach((input) => {
-            if (!input) {
+        deck.addEventListener('change', (event) => {
+            const target = event.target;
+            const els = getElements();
+
+            if (target.id === 'signal-lab-pattern-resolution') {
+                updateOutputState({
+                    outputSettings: { patternResolution: target.value }
+                });
+                if (els.patternCustomWrap) {
+                    els.patternCustomWrap.hidden = outputSettings.patternResolution !== 'custom';
+                }
                 return;
             }
-            input.value = outputSettings[input.id.includes('width') ? 'patternWidth' : 'patternHeight']
-                ?? input.value;
-            bindEnterToBlur(input);
-            input.addEventListener('blur', applyCustomPatternSize);
+
+            if (target.id === 'signal-lab-scale-mode') {
+                updateOutputState({
+                    outputSettings: {
+                        scaleMode: target.value === 'stretch' ? 'stretch' : 'fit'
+                    }
+                });
+            }
         });
+
+        deck.addEventListener('blur', (event) => {
+            const target = event.target;
+            if (target.id === 'signal-lab-pattern-width' || target.id === 'signal-lab-pattern-height') {
+                applyCustomPatternSize();
+            }
+        }, true);
+
+        deck.addEventListener('keydown', (event) => {
+            const target = event.target;
+            if (event.key !== 'Enter') {
+                return;
+            }
+            if (target.id === 'signal-lab-pattern-width' || target.id === 'signal-lab-pattern-height') {
+                event.preventDefault();
+                target.blur();
+            }
+        });
+
+        syncStaticDeckFields();
     }
 
     function initEngine() {
@@ -1062,18 +1584,48 @@
 
     function bindEvents() {
         const els = getElements();
-        els.fullscreenBtn?.addEventListener('click', toggleFullscreen);
-        els.popoutBtn?.addEventListener('click', () => openPopout(false));
-        els.updatePopoutBtn?.addEventListener('click', updatePopout);
-        els.popoutFullscreenBtn?.addEventListener('click', openPopoutFullscreen);
-        els.closePopoutBtn?.addEventListener('click', () => {
-            if (isPopoutOpen()) {
-                popoutWindow.close();
+        const root = els.app || els.layout || document;
+
+        root.addEventListener('click', (event) => {
+            const button = event.target.closest('button');
+            if (!button?.id) {
+                return;
             }
-            handlePopoutClosed();
-            setStatus('Pop-out closed.');
+
+            switch (button.id) {
+                case 'signal-lab-fullscreen':
+                    toggleFullscreen();
+                    break;
+                case 'signal-lab-popout':
+                    popoutDebug()?.logButtonClicked({ action: 'pop-out' });
+                    openPopout(false);
+                    break;
+                case 'signal-lab-update-popout':
+                    popoutDebug()?.logButtonClicked({ action: 'update-pop-out' });
+                    updatePopout();
+                    break;
+                case 'signal-lab-popout-fullscreen':
+                    popoutDebug()?.logButtonClicked({ action: 'pop-out-fullscreen' });
+                    openPopoutFullscreen();
+                    break;
+                case 'signal-lab-close-popout':
+                    if (isPopoutOpen()) {
+                        popoutWindow.close();
+                    }
+                    handlePopoutClosed();
+                    setStatus('Pop-out closed.');
+                    break;
+                default:
+                    break;
+            }
         });
-        els.moduleSelect?.addEventListener('change', () => applyModuleSelectionFromDropdown());
+
+        const deck = els.controlDeck;
+        deck?.addEventListener('change', (event) => {
+            if (event.target.id === 'signal-lab-module-select') {
+                applyModuleSelectionFromDropdown();
+            }
+        });
 
         document.addEventListener('fullscreenchange', () => {
             els.stage?.classList.toggle('is-fullscreen', Boolean(document.fullscreenElement));
@@ -1091,10 +1643,14 @@
             engine.destroy();
             engine = null;
         }
+        previewTracker = null;
+        outputState = null;
 
         window.OkamiSiteLayout?.init?.();
         refreshPreviewLayout();
-        renderModuleDropdown();
+        initModuleErrorReporting();
+        initResponsiveLayout();
+        ensureDefaultModule();
         initEngine();
 
         if (!initialized) {
@@ -1103,6 +1659,7 @@
             bindEvents();
             initialized = true;
         } else {
+            initOutputSettingsUI();
             refreshPreviewLayout();
         }
 
@@ -1110,9 +1667,10 @@
         initPreviewScaleDebug();
         updatePreviewPatternName();
         updateOutputBadge();
+        popoutDebug()?.setConnectionStatus(popoutDebug()?.STATUS.NOT_OPENED);
 
-        void global.OkamiCommercialGate?.initForProduct?.('okami-signal-lab');
-        void global.OkamiDesktopShell?.initDesktopShell?.({ productId: 'okami-signal-lab' });
+        void window.OkamiCommercialGate?.initForProduct?.('okami-signal-lab');
+        void window.OkamiDesktopShell?.initDesktopShell?.({ productId: 'okami-signal-lab' });
     }
 
     window.initSignalLab = initSignalLab;

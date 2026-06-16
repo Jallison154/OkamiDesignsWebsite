@@ -11,7 +11,7 @@
     <meta property="og:description" content="AV signal testing, calibration patterns, and production utilities.">
     <meta name="author" content="Jonathan Allison, Founder">
     <link rel="icon" href="../images/Okami_Designs_HeadWhite.png?v=20260615" type="image/png">
-    <link rel="stylesheet" href="../styles.css?v=20260616">
+    <link rel="stylesheet" href="../styles.css?v=20260626">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -66,7 +66,8 @@
     </header>
 
     <main class="main signal-lab-main full-height-tool tool-page">
-        <div id="signal-lab-app" class="signal-lab-app">
+            <div id="signal-lab-app" class="signal-lab-app">
+            <div id="signal-lab-module-error" class="signal-lab-module-error" role="alert" hidden></div>
             <header class="signal-lab-header signal-lab-heading">
                 <div class="signal-lab-header-copy">
                     <h1 class="tool-title">Okami Signal Lab</h1>
@@ -77,124 +78,73 @@
                 </div>
             </header>
 
-            <div class="signal-lab-layout">
-                <aside class="signal-lab-controls signal-lab-sidebar led-panel" aria-label="Signal Lab output controls">
-                    <h2 class="led-panel-title">Output</h2>
-
-                    <div class="signal-lab-sidebar-stack">
-                        <div class="signal-lab-control-row signal-lab-control-row--stacked">
-                            <div class="signal-lab-control-row__label">
-                                <label class="signal-lab-label" for="signal-lab-module-select">Module</label>
+            <div class="signal-lab-layout" id="signal-lab-layout">
+                <aside class="signal-lab-sidebar led-panel" id="signal-lab-sidebar" aria-label="Signal Lab output">
+                    <button type="button" id="signal-lab-sidebar-toggle" class="signal-lab-sidebar-toggle"
+                        aria-expanded="false" aria-controls="signal-lab-sidebar-panel">
+                        <span class="signal-lab-sidebar-toggle-label">Output Panel</span>
+                        <span class="signal-lab-sidebar-toggle-icon" aria-hidden="true"></span>
+                    </button>
+                    <div id="signal-lab-sidebar-panel" class="signal-lab-sidebar-panel">
+                        <h2 class="led-panel-title signal-lab-sidebar-title">Output</h2>
+                        <div class="signal-lab-sidebar-stack">
+                            <div class="signal-lab-actions-row">
+                                <button type="button" id="signal-lab-fullscreen" class="signal-lab-btn signal-lab-btn--secondary">Fullscreen</button>
+                                <button type="button" id="signal-lab-popout" class="signal-lab-btn signal-lab-btn--secondary">Pop Out</button>
                             </div>
-                            <div class="signal-lab-control-body">
-                                <select id="signal-lab-module-select" class="signal-lab-select signal-lab-field signal-lab-module-select"
-                                    aria-label="Signal Lab module"></select>
+                            <div class="signal-lab-actions-row">
+                                <button type="button" id="signal-lab-update-popout" class="signal-lab-btn signal-lab-btn--secondary" disabled>Update Pop-Out</button>
+                                <button type="button" id="signal-lab-popout-fullscreen" class="signal-lab-btn signal-lab-btn--secondary">Pop Out Fullscreen</button>
                             </div>
+                            <button type="button" id="signal-lab-close-popout" class="signal-lab-btn signal-lab-btn--text" hidden>Close Pop-out</button>
+                            <p id="signal-lab-popout-connection" class="signal-lab-popout-connection" data-status="not-opened" aria-live="polite">Pop-out: Not Opened</p>
+                            <p id="signal-lab-popout-note" class="signal-lab-screen-note">Pop-out mirrors live output automatically. Use Update Pop-Out if sync looks stale.</p>
                         </div>
-
-                        <div class="signal-lab-control-row signal-lab-control-row--stacked">
-                            <div class="signal-lab-control-row__label">
-                                <label class="signal-lab-label" for="signal-lab-pattern-resolution">Pattern Resolution</label>
-                            </div>
-                            <div class="signal-lab-control-body">
-                                <select id="signal-lab-pattern-resolution" class="signal-lab-select signal-lab-field"></select>
-                            </div>
-                        </div>
-
-                        <div id="signal-lab-pattern-custom" class="signal-lab-pattern-custom" hidden>
-                            <div class="signal-lab-control-row signal-lab-control-row--stacked">
-                                <div class="signal-lab-control-row__label">
-                                    <label class="signal-lab-label" for="signal-lab-pattern-width">Pattern Width</label>
-                                </div>
-                                <div class="signal-lab-control-body">
-                                    <div class="signal-lab-value-field">
-                                        <input type="number" id="signal-lab-pattern-width" class="signal-lab-number-input signal-lab-field" min="64" max="16384" step="1" value="1920" aria-label="Pattern width">
-                                        <span class="signal-lab-field-unit">px</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="signal-lab-control-row signal-lab-control-row--stacked">
-                                <div class="signal-lab-control-row__label">
-                                    <label class="signal-lab-label" for="signal-lab-pattern-height">Pattern Height</label>
-                                </div>
-                                <div class="signal-lab-control-body">
-                                    <div class="signal-lab-value-field">
-                                        <input type="number" id="signal-lab-pattern-height" class="signal-lab-number-input signal-lab-field" min="64" max="16384" step="1" value="1080" aria-label="Pattern height">
-                                        <span class="signal-lab-field-unit">px</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <p id="signal-lab-resolution-warning" class="signal-lab-resolution-warning" hidden></p>
-
-                        <div class="signal-lab-control-row signal-lab-control-row--stacked">
-                            <div class="signal-lab-control-row__label">
-                                <label class="signal-lab-label" for="signal-lab-scale-mode">Scale Mode</label>
-                            </div>
-                            <div class="signal-lab-control-body">
-                                <select id="signal-lab-scale-mode" class="signal-lab-select signal-lab-field">
-                                    <option value="fit">Fit (letterbox)</option>
-                                    <option value="stretch">Stretch</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="signal-lab-actions-row">
-                            <button type="button" id="signal-lab-fullscreen" class="signal-lab-btn signal-lab-btn--secondary">Fullscreen</button>
-                            <button type="button" id="signal-lab-popout" class="signal-lab-btn signal-lab-btn--secondary">Pop Out</button>
-                        </div>
-                        <div class="signal-lab-actions-row">
-                            <button type="button" id="signal-lab-update-popout" class="signal-lab-btn signal-lab-btn--secondary" disabled>Update Pop-Out</button>
-                            <button type="button" id="signal-lab-popout-fullscreen" class="signal-lab-btn signal-lab-btn--secondary">Pop Out Fullscreen</button>
-                        </div>
-                        <button type="button" id="signal-lab-close-popout" class="signal-lab-btn signal-lab-btn--text" hidden>Close Pop-out</button>
-                        <p id="signal-lab-popout-note" class="signal-lab-screen-note">Pop-out shows output only. Use Update Pop-Out after changing controls.</p>
                     </div>
                 </aside>
 
-                <section class="signal-lab-preview signal-lab-output led-panel" aria-label="Live preview">
-                    <header class="signal-lab-preview-header signal-lab-preview-header--compact">
-                        <div class="signal-lab-preview-header-top">
-                            <div class="signal-lab-preview-header-copy">
-                                <p class="signal-lab-preview-eyebrow">Live Output</p>
-                                <h2 id="signal-lab-preview-pattern" class="signal-lab-preview-title">—</h2>
+                <div class="signal-lab-workspace">
+                    <section class="signal-lab-preview signal-lab-output led-panel" aria-label="Live preview">
+                        <header class="signal-lab-preview-header signal-lab-preview-header--compact">
+                            <div class="signal-lab-preview-header-top">
+                                <div class="signal-lab-preview-header-copy">
+                                    <p class="signal-lab-preview-eyebrow">Live Output</p>
+                                    <h2 id="signal-lab-preview-pattern" class="signal-lab-preview-title">—</h2>
+                                </div>
+                                <span id="signal-lab-output-badge" class="signal-lab-output-badge" data-state="preview">Preview</span>
                             </div>
-                            <span id="signal-lab-output-badge" class="signal-lab-output-badge" data-state="preview">Preview</span>
-                        </div>
-                        <dl class="signal-lab-preview-stats signal-lab-preview-stats--inline">
-                            <div class="signal-lab-preview-stat">
-                                <dt>Pattern</dt>
-                                <dd id="signal-lab-preview-pattern-res">—</dd>
-                            </div>
-                            <div class="signal-lab-preview-stat">
-                                <dt>Output</dt>
-                                <dd id="signal-lab-preview-output-res">—</dd>
-                            </div>
-                            <div class="signal-lab-preview-stat">
-                                <dt>Display</dt>
-                                <dd id="signal-lab-preview-display-res">—</dd>
-                            </div>
-                            <div class="signal-lab-preview-stat">
-                                <dt>Refresh</dt>
-                                <dd id="signal-lab-preview-refresh">Measuring…</dd>
-                            </div>
-                        </dl>
-                    </header>
+                            <dl class="signal-lab-preview-stats signal-lab-preview-stats--inline">
+                                <div class="signal-lab-preview-stat">
+                                    <dt>Pattern</dt>
+                                    <dd id="signal-lab-preview-pattern-res">—</dd>
+                                </div>
+                                <div class="signal-lab-preview-stat">
+                                    <dt>Output</dt>
+                                    <dd id="signal-lab-preview-output-res">—</dd>
+                                </div>
+                                <div class="signal-lab-preview-stat">
+                                    <dt>Display</dt>
+                                    <dd id="signal-lab-preview-display-res">—</dd>
+                                </div>
+                                <div class="signal-lab-preview-stat">
+                                    <dt>Refresh</dt>
+                                    <dd id="signal-lab-preview-refresh">Measuring…</dd>
+                                </div>
+                            </dl>
+                        </header>
 
-                    <div class="signal-lab-settings-bar" id="signal-lab-settings-bar" aria-label="Module settings">
-                        <div id="signal-lab-module-options" class="signal-lab-module-options" hidden></div>
-                    </div>
-
-                    <div class="signal-lab-preview-frame preview-card">
-                        <div class="signal-lab-stage" id="signal-lab-stage">
-                            <div class="signal-lab-canvas-wrap preview-canvas-wrap" id="signal-lab-canvas-wrap">
-                                <canvas id="signal-lab-canvas" aria-label="Signal Lab live output canvas"></canvas>
-                                <pre id="signal-lab-scale-debug" class="signal-lab-scale-debug" hidden aria-hidden="true"></pre>
+                        <div class="signal-lab-preview-frame preview-card">
+                            <div class="signal-lab-stage" id="signal-lab-stage">
+                                <div class="signal-lab-canvas-wrap preview-canvas-wrap" id="signal-lab-canvas-wrap">
+                                    <canvas id="signal-lab-canvas" aria-label="Signal Lab live output canvas"></canvas>
+                                    <pre id="signal-lab-scale-debug" class="signal-lab-scale-debug" hidden aria-hidden="true"></pre>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </section>
+                    </section>
+
+                    <div id="signal-lab-control-deck" class="signal-lab-control-deck" aria-label="Signal Lab controls"></div>
+                </div>
             </div>
         </div>
     </main>
@@ -211,11 +161,14 @@
     <script src="../script.js?v=20260615"></script>
     <script src="signal-lab/engine/control-utils.js?v=20260615"></script>
     <script src="signal-lab/engine/control-components.js?v=20260616"></script>
-    <script src="signal-lab/engine/control-ui.js?v=20260616"></script>
+    <script src="signal-lab/engine/control-ui.js?v=20260626"></script>
     <script src="signal-lab/engine/module-animation.js?v=20260615"></script>
     <script src="signal-lab/engine/canvas-layout.js?v=20260615"></script>
     <script src="signal-lab/engine/pattern-resolution.js?v=20260615"></script>
-    <script src="signal-lab/engine/output-state.js?v=20260615"></script>
+    <script src="signal-lab/engine/background-controls.js?v=20260623"></script>
+    <script src="signal-lab/engine/technical-background.js?v=20260623"></script>
+    <script src="signal-lab/engine/output-state.js?v=20260624"></script>
+    <script src="signal-lab/engine/popout-debug.js?v=20260616"></script>
     <script src="signal-lab/engine/overlay-renderer.js?v=20260615"></script>
     <script src="signal-lab/engine/display-metrics.js?v=20260615"></script>
     <script src="signal-lab/engine/sync-audio.js?v=20260615"></script>
@@ -226,11 +179,14 @@
     <script src="led-wall-calculator/calculations.js?v=20260615"></script>
     <script src="led-wall-calculator/metrics.js?v=20260615"></script>
     <script src="signal-lab/engine/led-wall-calculator.js?v=20260615"></script>
-    <script src="signal-lab/engine/render-engine.js?v=20260615"></script>
+    <script src="signal-lab/engine/module-error-boundary.js?v=20260621"></script>
+    <script src="signal-lab/engine/render-engine.js?v=20260621"></script>
+    <script src="signal-lab/engine/signal-lab-renderer.js?v=20260621"></script>
     <script src="signal-lab/engine/okami-calibration-pattern.js?v=20260615"></script>
-    <script src="signal-lab/modules/registry.js?v=20260615"></script>
+    <script src="signal-lab/modules/registry.js?v=20260621"></script>
     <script src="signal-lab/modules/video-patterns.js?v=20260615"></script>
-    <script src="signal-lab/modules/motion-patterns.js?v=20260615"></script>
+    <script src="signal-lab/modules/random-motion.js?v=20260624"></script>
+    <script src="signal-lab/modules/motion-patterns.js?v=20260624"></script>
     <script src="signal-lab/modules/audio-generator.js?v=20260615"></script>
     <script src="signal-lab/modules/av-sync-tools.js?v=20260615"></script>
     <script src="signal-lab/modules/display-info.js?v=20260615"></script>
@@ -246,6 +202,6 @@
     <script src="../client/desktop/shell-bridge.js?v=20260615"></script>
     <script src="signal-lab/modules/pattern-export.js?v=20260615"></script>
     <script src="signal-lab/modules/led-wall-utilities.js?v=20260615"></script>
-    <script src="signal-lab/app.js?v=20260615"></script>
+    <script src="signal-lab/app.js?v=20260626"></script>
 </body>
 </html>

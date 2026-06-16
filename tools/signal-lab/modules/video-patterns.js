@@ -31,6 +31,16 @@
         ctx.fillRect(0, 0, w, h);
     }
 
+    function fillCanvasBase(ctx, w, h, frame) {
+        const tb = global.OkamiSignalLab?.TechnicalBackground;
+        if (tb?.fillModuleBase) {
+            tb.fillModuleBase(ctx, w, h, frame);
+            return;
+        }
+        ctx.fillStyle = '#0a0a0a';
+        ctx.fillRect(0, 0, w, h);
+    }
+
     function drawSmpteBars(ctx, w, h) {
         const topH = h * 0.75;
         const midH = h * 0.065;
@@ -72,7 +82,7 @@
     }
 
     function drawCrosshair(ctx, w, h, frame) {
-        fillSolid(ctx, w, h, '#101010');
+        fillCanvasBase(ctx, w, h, frame);
         const cx = w / 2;
         const cy = h / 2;
         const lineThickness = Math.max(1, Number(frame?.state?.lineThickness) || Math.max(1, Math.min(w, h) / 400));
@@ -92,7 +102,7 @@
     }
 
     function drawGrid(ctx, w, h, cellSize, frame) {
-        fillSolid(ctx, w, h, '#0a0a0a');
+        fillCanvasBase(ctx, w, h, frame);
         const size = Math.max(4, Number(cellSize) || 32);
         const lineThickness = Math.max(1, Number(frame?.state?.lineThickness) || 1);
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
@@ -109,8 +119,8 @@
         ctx.stroke();
     }
 
-    function drawSafeArea(ctx, w, h) {
-        fillSolid(ctx, w, h, '#141414');
+    function drawSafeArea(ctx, w, h, frame) {
+        fillCanvasBase(ctx, w, h, frame);
         const cx = w / 2;
         const cy = h / 2;
 
@@ -133,8 +143,8 @@
         drawRect(0.8, 'rgba(255, 106, 45, 0.85)', 'Action Safe 80%');
     }
 
-    function drawBorderFrame(ctx, w, h) {
-        fillSolid(ctx, w, h, '#1a1a1a');
+    function drawBorderFrame(ctx, w, h, frame) {
+        fillCanvasBase(ctx, w, h, frame);
         const inset = Math.max(8, Math.min(w, h) * 0.04);
         ctx.strokeStyle = ACCENT;
         ctx.lineWidth = Math.max(2, Math.min(w, h) / 200);
@@ -145,8 +155,8 @@
         ctx.strokeRect(inset * 2, inset * 2, w - inset * 4, h - inset * 4);
     }
 
-    function drawCircleAlignment(ctx, w, h) {
-        fillSolid(ctx, w, h, '#0d0d0d');
+    function drawCircleAlignment(ctx, w, h, frame) {
+        fillCanvasBase(ctx, w, h, frame);
         const cx = w / 2;
         const cy = h / 2;
         const maxR = Math.min(w, h) * 0.46;
@@ -314,9 +324,9 @@
             const size = Math.max(4, Math.round((Number(frame?.state?.gridSize) || Math.min(w, h) / 48)));
             drawGrid(ctx, w, h, size, frame);
         },
-        'safe-area': drawSafeArea,
-        'border-frame': drawBorderFrame,
-        'circle-alignment': drawCircleAlignment,
+        'safe-area': (ctx, w, h, frame) => drawSafeArea(ctx, w, h, frame),
+        'border-frame': (ctx, w, h, frame) => drawBorderFrame(ctx, w, h, frame),
+        'circle-alignment': (ctx, w, h, frame) => drawCircleAlignment(ctx, w, h, frame),
         resolution: drawResolutionPattern,
         'bars-tone': drawBarsTonePattern,
         'okami-calibration': (ctx, w, h, frame) => {

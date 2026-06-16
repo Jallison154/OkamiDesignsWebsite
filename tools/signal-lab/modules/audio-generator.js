@@ -66,9 +66,9 @@
         }
     }
 
-    function drawMeter(ctx, w, h, levels, state) {
-        ctx.fillStyle = '#0a0a0a';
-        ctx.fillRect(0, 0, w, h);
+    function drawMeter(ctx, w, h, levels, state, frame) {
+        global.OkamiSignalLab?.TechnicalBackground?.fillModuleBase?.(ctx, w, h, frame)
+            ?? (ctx.fillStyle = '#0a0a0a', ctx.fillRect(0, 0, w, h));
 
         const meta = getSourceMeta(state.sourceId);
         const status = state.active ? 'OUTPUT ACTIVE' : 'STOPPED';
@@ -216,7 +216,7 @@
                 : { peak: 0, peakDb: -Infinity, left: 0, right: 0 };
 
             updatePeakMeterDom(levels);
-            drawMeter(ctx, w, h, levels, state);
+            drawMeter(ctx, w, h, levels, state, frame);
         }
     };
 

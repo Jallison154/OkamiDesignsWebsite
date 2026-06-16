@@ -12,9 +12,12 @@
 
     let attachedEngine = null;
 
-    function drawPreviewBackground(ctx, w, h) {
-        ctx.fillStyle = '#141414';
-        ctx.fillRect(0, 0, w, h);
+    function drawPreviewBackground(ctx, w, h, frame) {
+        global.OkamiSignalLab?.TechnicalBackground?.fillModuleBase?.(ctx, w, h, frame);
+        if (!global.OkamiSignalLab?.TechnicalBackground?.isActive?.(frame?.outputSettings)) {
+            ctx.fillStyle = '#141414';
+            ctx.fillRect(0, 0, w, h);
+        }
 
         const barH = h * 0.08;
         ctx.fillStyle = '#222';
@@ -220,7 +223,7 @@
             const state = frame.state || {};
             const padding = Math.max(16, Math.min(w, h) * 0.04);
 
-            drawPreviewBackground(ctx, w, h);
+            drawPreviewBackground(ctx, w, h, frame);
 
             if (state.logoEnabled && state.logoDataUrl) {
                 if (!logoCache.ready && logoCache.url !== state.logoDataUrl) {

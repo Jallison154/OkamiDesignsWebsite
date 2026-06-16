@@ -5014,12 +5014,21 @@ html.signal-lab-root body {
 }
 
 body.signal-lab-page {
-    --signal-lab-layout-gap: clamp(10px, 1.5vw, 16px);
-    --signal-lab-controls-width: clamp(260px, 22vw, 340px);
-    --signal-lab-preview-min-h: clamp(180px, 28vh, 360px);
+    --signal-lab-layout-gap: clamp(12px, 1.5vw, 20px);
+    --signal-lab-sidebar-width: clamp(220px, 16vw, 280px);
+    --signal-lab-preview-min-width: 600px;
+    --signal-lab-preview-min-h: clamp(220px, 42vh, 520px);
+    --signal-lab-deck-max-h: min(28dvh, 240px);
     --signal-lab-controls-stack-max-h: min(42dvh, 380px);
+    --sl-surface: rgba(12, 12, 12, 0.92);
+    --sl-divider: rgba(255, 255, 255, 0.06);
     overflow: hidden;
     max-height: 100dvh;
+    background: #080808;
+}
+
+body.signal-lab-page #particles-js {
+    display: none;
 }
 
 .signal-lab-page {
@@ -5031,7 +5040,7 @@ body.signal-lab-page {
     max-width: min(100%, 2200px);
     margin-left: auto;
     margin-right: auto;
-    padding: clamp(8px, 1.2vh, 14px) clamp(12px, 2.5vw, 24px) clamp(10px, 1.2vh, 14px);
+    padding: var(--sl-space-3) var(--sl-space-4);
     min-height: 0;
     min-width: 0;
     flex: 1 1 auto;
@@ -5041,25 +5050,55 @@ body.signal-lab-page {
 .signal-lab-app {
     --sl-space-1: 4px;
     --sl-space-2: 8px;
-    --sl-space-3: 12px;
-    --sl-space-4: 16px;
-    --sl-control-h: 36px;
-    --sl-label-size: 0.68rem;
+    --sl-space-3: 14px;
+    --sl-space-4: 20px;
+    --sl-space-5: 28px;
+    --sl-control-h: 34px;
+    --sl-label-size: 0.625rem;
     --sl-field-size: 0.8125rem;
-    --sl-btn-size: 0.8125rem;
-    --sl-radius: 8px;
-    --sl-border: 1px solid rgba(255, 255, 255, 0.12);
-    --sl-border-focus: rgba(255, 106, 45, 0.55);
-    --sl-bg-field: rgba(255, 255, 255, 0.04);
-    --sl-bg-btn: rgba(255, 255, 255, 0.06);
-    --sl-bg-btn-secondary: rgba(0, 0, 0, 0.28);
+    --sl-btn-size: 0.75rem;
+    --sl-radius: 4px;
+    --sl-border: 1px solid rgba(255, 255, 255, 0.08);
+    --sl-border-focus: rgba(255, 106, 45, 0.65);
+    --sl-bg-field: rgba(0, 0, 0, 0.45);
+    --sl-bg-btn: rgba(255, 255, 255, 0.04);
+    --sl-bg-btn-secondary: rgba(255, 255, 255, 0.03);
+    --sl-text-muted: rgba(255, 255, 255, 0.48);
+    --sl-accent-soft: rgba(255, 106, 45, 0.72);
     display: grid;
     grid-template-rows: auto 1fr;
-    gap: clamp(6px, 1vh, 12px);
+    gap: var(--sl-space-4);
     height: 100%;
     min-height: 0;
     min-width: 0;
     overflow: hidden;
+}
+
+.signal-lab-module-error {
+    margin: 0;
+    padding: var(--sl-space-2) var(--sl-space-3);
+    border-radius: var(--sl-radius);
+    border: 1px solid rgba(255, 107, 107, 0.45);
+    background: rgba(255, 107, 107, 0.12);
+    color: #ffb4b4;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.signal-lab-module-error[hidden] {
+    display: none !important;
+}
+
+.signal-lab-module-panel-error {
+    padding: var(--sl-space-3);
+    border-radius: var(--sl-radius);
+    border: 1px solid rgba(255, 107, 107, 0.45);
+    background: rgba(255, 107, 107, 0.12);
+    color: #ffb4b4;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.4;
 }
 
 /* ── Shared section header ── */
@@ -5070,10 +5109,10 @@ body.signal-lab-page {
     margin: 0;
     padding: 0;
     font-size: var(--sl-label-size);
-    font-weight: 800;
-    letter-spacing: 0.08em;
+    font-weight: 700;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: var(--accent-color);
+    color: var(--sl-accent-soft);
     line-height: 1.2;
     white-space: nowrap;
 }
@@ -5137,15 +5176,25 @@ body.signal-lab-page {
     width: 100%;
 }
 
+.signal-lab-control-body--stacked {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--sl-space-2);
+}
+
+.signal-lab-control-body--stacked .signal-lab-checkbox {
+    min-height: var(--sl-control-h);
+}
+
 /* ── Shared label (alias legacy control-label) ── */
 .signal-lab-label,
 .signal-lab-control-label {
     margin: 0;
     font-size: var(--sl-label-size);
-    font-weight: 700;
-    letter-spacing: 0.06em;
+    font-weight: 600;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--secondary-text);
+    color: var(--sl-text-muted);
     line-height: 1.2;
     white-space: nowrap;
 }
@@ -5173,12 +5222,12 @@ body.signal-lab-page {
 }
 
 .signal-lab-app select.signal-lab-select {
-    padding-right: 36px;
-    background-color: #111;
+    padding-right: 32px;
+    background-color: rgba(0, 0, 0, 0.55);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23FF6A2D' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
-    background-position: right 12px center;
-    background-size: 12px 8px;
+    background-position: right 10px center;
+    background-size: 10px 6px;
     appearance: none;
     -webkit-appearance: none;
     cursor: pointer;
@@ -5187,14 +5236,15 @@ body.signal-lab-page {
 
 .signal-lab-app .signal-lab-field:hover,
 .signal-lab-app .signal-lab-select:hover {
-    border-color: rgba(255, 106, 45, 0.35);
+    border-color: rgba(255, 255, 255, 0.14);
+    background-color: rgba(0, 0, 0, 0.6);
 }
 
 .signal-lab-app .signal-lab-field:focus,
 .signal-lab-app .signal-lab-select:focus {
     outline: none;
     border-color: var(--sl-border-focus);
-    box-shadow: 0 0 0 2px rgba(255, 106, 45, 0.12);
+    box-shadow: 0 0 0 1px rgba(255, 106, 45, 0.2);
     z-index: 5;
     position: relative;
 }
@@ -5221,32 +5271,37 @@ body.signal-lab-page {
     height: var(--sl-control-h);
     padding: 0 var(--sl-space-3);
     border-radius: var(--sl-radius);
-    border: var(--sl-border);
+    border: 1px solid transparent;
     background: var(--sl-bg-btn);
-    color: var(--primary-text);
+    color: rgba(255, 255, 255, 0.88);
     font-family: inherit;
     font-size: var(--sl-btn-size);
-    font-weight: 700;
-    letter-spacing: 0.02em;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
     line-height: 1.2;
     cursor: pointer;
-    transition: border-color 0.15s ease, background 0.15s ease;
+    transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
 }
 
 .signal-lab-app .signal-lab-btn--secondary {
     background: var(--sl-bg-btn-secondary);
+    border-color: rgba(255, 255, 255, 0.08);
 }
 
 .signal-lab-app .signal-lab-btn--text {
     background: transparent;
     border-color: transparent;
-    color: var(--secondary-text);
-    font-weight: 600;
+    color: var(--sl-text-muted);
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0.02em;
 }
 
 .signal-lab-app .signal-lab-btn:hover:not(:disabled) {
-    border-color: rgba(255, 106, 45, 0.45);
-    background: rgba(255, 106, 45, 0.1);
+    border-color: rgba(255, 106, 45, 0.35);
+    background: rgba(255, 106, 45, 0.08);
+    color: #fff;
 }
 
 .signal-lab-app .signal-lab-btn:disabled {
@@ -5274,12 +5329,16 @@ body.signal-lab-page {
 .signal-lab-sidebar-stack {
     display: flex;
     flex-direction: column;
-    gap: var(--sl-space-3);
+    gap: var(--sl-space-4);
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
-    padding-bottom: var(--sl-space-2);
+    padding-bottom: var(--sl-space-3);
+}
+
+.signal-lab-sidebar-stack .signal-lab-actions-row {
+    margin-top: var(--sl-space-1);
 }
 
 .signal-lab-sidebar-stack > .signal-lab-control-row--stacked {
@@ -5300,9 +5359,11 @@ body.signal-lab-page {
     flex-wrap: wrap;
     justify-content: space-between;
     align-items: flex-end;
-    gap: clamp(8px, 1.5vw, 12px) clamp(12px, 2vw, 20px);
+    gap: var(--sl-space-3) var(--sl-space-4);
     flex-shrink: 0;
     min-width: 0;
+    padding-bottom: var(--sl-space-3);
+    border-bottom: 1px solid var(--sl-divider);
 }
 
 .signal-lab-header-copy {
@@ -5311,21 +5372,25 @@ body.signal-lab-page {
 }
 
 .signal-lab-page .tool-title {
-    font-size: clamp(1.15rem, 2.2vw, 2rem);
-    margin-bottom: clamp(4px, 0.8vh, 10px);
+    font-size: clamp(1.05rem, 2vw, 1.65rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 4px;
 }
 
 .signal-lab-page .tool-subtitle {
-    font-size: clamp(0.78rem, 1.6vw, 1rem);
-    max-width: min(56rem, 100%);
-    line-height: 1.4;
+    font-size: clamp(0.72rem, 1.4vw, 0.875rem);
+    max-width: min(48rem, 100%);
+    line-height: 1.45;
+    color: var(--sl-text-muted);
+    font-weight: 500;
 }
 
 .signal-lab-header-meta {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: clamp(2px, 0.5vh, 4px);
+    gap: var(--sl-space-1);
     flex-shrink: 0;
     min-width: 0;
     max-width: 100%;
@@ -5333,10 +5398,12 @@ body.signal-lab-page {
 }
 
 .signal-lab-status {
-    font-size: clamp(11px, 1.1vw, 12px);
-    font-weight: 700;
-    letter-spacing: 0.4px;
-    color: #7dffb0;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    color: rgba(125, 255, 176, 0.75);
+    text-transform: uppercase;
 }
 
 .signal-lab-resolution {
@@ -5345,7 +5412,8 @@ body.signal-lab-page {
 
 .signal-lab-layout {
     display: grid;
-    grid-template-columns: minmax(0, var(--signal-lab-controls-width)) minmax(0, 1fr);
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
     gap: var(--signal-lab-layout-gap);
     align-items: stretch;
     height: 100%;
@@ -5354,25 +5422,115 @@ body.signal-lab-page {
     overflow: hidden;
 }
 
+.signal-lab-workspace {
+    display: grid;
+    grid-template-rows: 1fr auto;
+    gap: var(--sl-space-2);
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.signal-lab-workspace > .signal-lab-preview {
+    grid-row: 1;
+    min-height: 0;
+}
+
+.signal-lab-workspace > .signal-lab-control-deck {
+    grid-row: 2;
+}
+
 .signal-lab-layout > .led-panel {
     min-height: 0;
     min-width: 0;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    box-shadow: none;
+}
+
+.signal-lab-layout > .signal-lab-sidebar {
+    grid-row: 1;
+    padding: 0;
+    border: none;
+}
+
+.signal-lab-sidebar-toggle {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sl-space-2);
+    width: 100%;
+    min-height: var(--sl-control-h);
+    padding: 8px 12px;
+    border: 1px solid var(--sl-divider);
+    border-radius: var(--sl-radius);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--sl-accent-soft);
+    font-family: inherit;
+    font-size: var(--sl-btn-size);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.signal-lab-sidebar-toggle-icon::before {
+    content: '▾';
+    display: inline-block;
+    transition: transform 0.15s ease;
+}
+
+.signal-lab-sidebar.is-collapsible.is-open .signal-lab-sidebar-toggle-icon::before {
+    transform: rotate(180deg);
+}
+
+.signal-lab-sidebar.is-collapsible:not(.is-open) .signal-lab-sidebar-panel {
+    display: none;
+}
+
+.signal-lab-sidebar.is-collapsible .signal-lab-sidebar-toggle {
+    display: flex;
+}
+
+.signal-lab-sidebar.is-collapsible .signal-lab-sidebar-title {
+    display: none;
+}
+
+.signal-lab-sidebar-panel {
+    min-width: 0;
+}
+
+.signal-lab-sidebar-title {
+    margin-bottom: var(--sl-space-2);
 }
 
 .signal-lab-controls,
 .signal-lab-sidebar {
     display: flex;
     flex-direction: column;
-    gap: clamp(8px, 1.2vh, 12px);
-    width: clamp(260px, 22vw, 340px);
-    max-width: clamp(260px, 22vw, 340px);
-    height: 100%;
+    gap: var(--sl-space-2);
+    width: 100%;
+    max-width: 100%;
+    height: auto;
     min-height: 0;
     min-width: 0;
     overflow: hidden;
     position: relative;
     z-index: 2;
     pointer-events: auto;
+}
+
+.signal-lab-app .led-panel-title {
+    font-size: var(--sl-label-size);
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--sl-accent-soft);
+    margin: 0 0 var(--sl-space-3);
+    padding-bottom: var(--sl-space-2);
+    border-bottom: 1px solid var(--sl-divider);
 }
 
 .signal-lab-controls > .led-panel-title {
@@ -5395,8 +5553,8 @@ body.signal-lab-page {
 .signal-lab-sidebar-footer {
     flex-shrink: 0;
     margin-top: auto;
-    padding-top: clamp(6px, 1vh, 8px);
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    padding-top: var(--sl-space-2);
+    border-top: 1px solid var(--sl-divider);
 }
 
 .signal-lab-sidebar.is-output-view .signal-lab-controls-scroll {
@@ -5479,7 +5637,7 @@ body.signal-lab-page {
 .signal-lab-module-list {
     display: flex;
     flex-direction: column;
-    gap: clamp(6px, 1vh, 8px);
+    gap: 0;
     min-height: 0;
     flex-shrink: 0;
 }
@@ -5488,52 +5646,54 @@ body.signal-lab-page {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 4px;
+    gap: 2px;
     width: 100%;
-    padding: 12px 14px;
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(0, 0, 0, 0.22);
+    padding: var(--sl-space-2) var(--sl-space-3);
+    border-radius: var(--sl-radius);
+    border: none;
+    border-left: 2px solid transparent;
+    background: transparent;
     color: var(--primary-text);
     font-family: inherit;
     text-align: left;
     cursor: pointer;
-    transition: border-color 0.2s ease, background 0.2s ease;
+    transition: border-color 0.15s ease, background 0.15s ease;
 }
 
 .signal-lab-module-btn:hover:not(:disabled) {
-    border-color: rgba(255, 106, 45, 0.4);
-    background: rgba(255, 106, 45, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+    border-left-color: rgba(255, 106, 45, 0.4);
 }
 
 .signal-lab-module-btn.is-active {
-    border-color: rgba(255, 106, 45, 0.55);
-    background: rgba(255, 106, 45, 0.14);
+    background: rgba(255, 106, 45, 0.1);
+    border-left-color: var(--accent-color);
+}
+
+.signal-lab-module-btn-label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+
+.signal-lab-module-btn-meta {
+    font-size: var(--sl-label-size);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--sl-text-muted);
 }
 
 .signal-lab-module-btn.is-planned,
 .signal-lab-module-btn:disabled {
-    opacity: 0.55;
+    opacity: 0.45;
     cursor: not-allowed;
-}
-
-.signal-lab-module-btn-label {
-    font-size: clamp(0.82rem, 1.8vw, 0.88rem);
-    font-weight: 700;
-}
-
-.signal-lab-module-btn-meta {
-    font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 0.4px;
-    text-transform: uppercase;
-    color: var(--secondary-text);
 }
 
 .signal-lab-module-info {
     flex-shrink: 0;
 }
 
+.signal-lab-background-options,
 .signal-lab-module-options {
     display: block;
     min-width: min-content;
@@ -5546,20 +5706,13 @@ body.signal-lab-page {
 }
 
 .signal-lab-collapsible {
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    border-radius: clamp(8px, 1.2vw, 10px);
-    background: rgba(0, 0, 0, 0.18);
+    border: none;
+    border-radius: 0;
+    background: transparent;
     overflow: visible;
     position: relative;
     z-index: 1;
-}
-
-.signal-lab-collapsible:focus-within {
-    z-index: 4;
-}
-
-.signal-lab-collapsible--output {
-    margin-top: 0;
+    border-bottom: 1px solid var(--sl-divider);
 }
 
 .signal-lab-collapsible-summary.signal-lab-section-header {
@@ -5567,10 +5720,14 @@ body.signal-lab-page {
     justify-content: space-between;
     gap: var(--sl-space-2);
     width: 100%;
-    padding: var(--sl-space-2) var(--sl-space-3);
+    padding: var(--sl-space-2) 0;
     cursor: pointer;
     list-style: none;
     user-select: none;
+}
+
+.signal-lab-collapsible:focus-within {
+    z-index: 4;
 }
 
 .signal-lab-collapsible-summary::-webkit-details-marker {
@@ -5579,8 +5736,8 @@ body.signal-lab-page {
 
 .signal-lab-collapsible-summary::after {
     content: '▾';
-    font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.45);
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.35);
     transition: transform 0.15s ease;
 }
 
@@ -5592,8 +5749,8 @@ body.signal-lab-page {
     display: flex;
     flex-direction: column;
     gap: var(--sl-space-3);
-    padding: 0 var(--sl-space-3) var(--sl-space-3);
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 0 0 var(--sl-space-3);
+    border-top: none;
 }
 
 .signal-lab-collapsible-body .signal-lab-control-row--stacked {
@@ -5685,18 +5842,67 @@ body.signal-lab-page {
 .signal-lab-resolution-warning,
 .signal-lab-screen-note {
     margin: 0;
-    font-size: 0.74rem;
-    font-weight: 600;
-    line-height: 1.4;
-    color: #ffb347;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    line-height: 1.45;
+    color: var(--sl-text-muted);
 }
 
-.signal-lab-screen-note {
-    color: var(--secondary-text);
+.signal-lab-resolution-warning {
+    color: #ffb347;
+    font-weight: 600;
 }
 
 .signal-lab-screen-note[data-tone="ok"] {
     color: #7dcea0;
+}
+
+.signal-lab-popout-connection {
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    line-height: 1.4;
+    color: var(--sl-text-muted);
+}
+
+.signal-lab-popout-connection::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin-right: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.25);
+    vertical-align: middle;
+}
+
+.signal-lab-popout-connection[data-status="connecting"] {
+    color: #ffc978;
+}
+
+.signal-lab-popout-connection[data-status="connecting"]::before {
+    background: #ffc978;
+}
+
+.signal-lab-popout-connection[data-status="connected"] {
+    color: #9fdfb8;
+}
+
+.signal-lab-popout-connection[data-status="connected"]::before {
+    background: #9fdfb8;
+}
+
+.signal-lab-popout-connection[data-status="failed"] {
+    color: #ff9b9b;
+}
+
+.signal-lab-popout-connection[data-status="failed"]::before {
+    background: #ff9b9b;
 }
 
 .signal-lab-output-actions {
@@ -5705,7 +5911,7 @@ body.signal-lab-page {
     gap: var(--sl-space-2);
     margin-top: 0;
     padding-top: var(--sl-space-3);
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-top: 1px solid var(--sl-divider);
     flex-shrink: 0;
 }
 
@@ -5769,11 +5975,11 @@ body.signal-lab-page {
 }
 
 .signal-lab-peak-track {
-    height: 12px;
-    border-radius: 6px;
-    background: rgba(255, 255, 255, 0.08);
+    height: 10px;
+    border-radius: var(--sl-radius);
+    background: rgba(255, 255, 255, 0.06);
     overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: none;
 }
 
 .signal-lab-peak-fill {
@@ -5795,19 +6001,19 @@ body.signal-lab-page {
     display: flex;
     flex-direction: column;
     gap: 0;
-    border: 1px solid rgba(255, 106, 45, 0.25);
-    border-radius: 8px;
+    border: 1px solid var(--sl-divider);
+    border-radius: var(--sl-radius);
     overflow: hidden;
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(0, 0, 0, 0.35);
 }
 
 .signal-lab-display-metric {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
-    padding: 9px 12px;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    gap: var(--sl-space-3);
+    padding: var(--sl-space-2) var(--sl-space-3);
+    border-top: 1px solid var(--sl-divider);
 }
 
 .signal-lab-display-metric:first-child {
@@ -5815,17 +6021,18 @@ body.signal-lab-page {
 }
 
 .signal-lab-display-metric-label {
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-    color: var(--secondary-text);
+    font-size: var(--sl-label-size);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--sl-text-muted);
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
 .signal-lab-display-metric-value {
-    font-size: 0.78rem;
+    font-size: 0.75rem;
     font-weight: 600;
-    color: var(--primary-text);
+    color: rgba(255, 255, 255, 0.9);
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     text-align: right;
 }
@@ -5836,14 +6043,14 @@ body.signal-lab-page {
 }
 
 .signal-lab-control-section {
-    margin: 14px 0 6px;
-    padding-top: 12px;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    font-size: 0.72rem;
-    font-weight: 800;
-    letter-spacing: 0.08em;
+    margin: var(--sl-space-3) 0 var(--sl-space-2);
+    padding-top: var(--sl-space-3);
+    border-top: 1px solid var(--sl-divider);
+    font-size: var(--sl-label-size);
+    font-weight: 700;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: var(--accent-color);
+    color: var(--sl-accent-soft);
 }
 
 .signal-lab-control-section:first-child {
@@ -5893,16 +6100,16 @@ body.signal-lab-page {
     margin: 0;
     padding: 0;
     list-style: none;
-    border: 1px solid rgba(255, 106, 45, 0.25);
-    border-radius: 8px;
+    border: 1px solid var(--sl-divider);
+    border-radius: var(--sl-radius);
     overflow: hidden;
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(0, 0, 0, 0.35);
 }
 
 .signal-lab-led-warning {
-    padding: 9px 12px;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
-    font-size: 0.74rem;
+    padding: var(--sl-space-2) var(--sl-space-3);
+    border-top: 1px solid var(--sl-divider);
+    font-size: 0.75rem;
     font-weight: 600;
     line-height: 1.4;
     color: #ffb347;
@@ -5968,12 +6175,12 @@ body.signal-lab-page {
 }
 
 .signal-lab-actions-label {
-    margin: 0 0 10px;
-    font-size: 0.72rem;
-    font-weight: 800;
-    letter-spacing: 0.8px;
+    margin: 0 0 var(--sl-space-2);
+    font-size: var(--sl-label-size);
+    font-weight: 700;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: var(--accent-color);
+    color: var(--sl-accent-soft);
 }
 
 .signal-lab-actions-row {
@@ -5991,13 +6198,288 @@ body.signal-lab-page {
 .signal-lab-preview,
 .signal-lab-output {
     display: grid;
-    grid-template-rows: auto auto 1fr;
-    gap: clamp(6px, 1vh, 10px);
+    grid-template-rows: auto 1fr;
+    gap: var(--sl-space-2);
     height: 100%;
     min-height: 0;
     min-width: 0;
-    padding: clamp(8px, 1.4vw, 14px);
+    padding: 0;
     overflow: hidden;
+}
+
+.signal-lab-control-deck {
+    flex-shrink: 0;
+    min-width: 0;
+    max-width: 100%;
+    max-height: var(--signal-lab-deck-max-h);
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding: var(--sl-space-2) 0 0;
+    border-top: 1px solid var(--sl-divider);
+    scrollbar-width: thin;
+}
+
+.signal-lab-card-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sl-space-2);
+    align-items: start;
+}
+
+.signal-lab-card {
+    min-width: 0;
+    border: 1px solid var(--sl-divider);
+    border-radius: 6px;
+    background: rgba(8, 8, 8, 0.72);
+    overflow: hidden;
+}
+
+.signal-lab-card__header {
+    display: flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 6px 10px;
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--sl-accent-soft);
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+    border-bottom: 1px solid transparent;
+}
+
+.signal-lab-card__header::-webkit-details-marker {
+    display: none;
+}
+
+.signal-lab-card__header::before {
+    content: '▸';
+    display: inline-block;
+    width: 0.875rem;
+    margin-right: 4px;
+    font-size: 0.625rem;
+    color: var(--sl-text-muted);
+    transition: transform 0.15s ease;
+}
+
+.signal-lab-card[open] > .signal-lab-card__header::before {
+    transform: rotate(90deg);
+}
+
+.signal-lab-card[open] > .signal-lab-card__header {
+    border-bottom-color: var(--sl-divider);
+}
+
+.signal-lab-card__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sl-space-2);
+    padding: 8px 10px 10px;
+}
+
+.signal-lab-card-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.signal-lab-card-field.is-disabled {
+    opacity: 0.45;
+    pointer-events: none;
+}
+
+.signal-lab-card-field__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--sl-space-2);
+    min-width: 0;
+}
+
+.signal-lab-card-field__head .signal-lab-label {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+    font-size: var(--sl-label-size);
+    line-height: 1.2;
+    color: var(--sl-text-muted);
+}
+
+.signal-lab-card-field__value {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.signal-lab-card-field__value .signal-lab-range-input {
+    width: clamp(52px, 8vw, 72px);
+    min-height: var(--sl-control-h);
+    padding: 2px 6px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.signal-lab-card-field--range .signal-lab-range {
+    width: 100%;
+    min-height: 20px;
+    margin: 0;
+}
+
+.signal-lab-card-field__body .signal-lab-select,
+.signal-lab-card-field__body .signal-lab-field {
+    width: 100%;
+    min-height: var(--sl-control-h);
+}
+
+.signal-lab-card-field--checkbox .signal-lab-checkbox {
+    min-height: var(--sl-control-h);
+}
+
+.signal-lab-card-field--transport .signal-lab-transport {
+    width: 100%;
+}
+
+.signal-lab-card[open] > .signal-lab-card__body {
+    max-height: min(22dvh, 200px);
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.signal-lab-card-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sl-space-2);
+}
+
+.signal-lab-card-actions .signal-lab-actions-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sl-space-2);
+}
+
+.signal-lab-card-actions .signal-lab-btn--text {
+    width: 100%;
+}
+
+/* ── Signal Lab responsive breakpoints ── */
+
+/* Desktop: sidebar left, controls above preview, preview ≥600px */
+@media (min-width: 1200px) {
+    .signal-lab-layout {
+        grid-template-columns: var(--signal-lab-sidebar-width) minmax(var(--signal-lab-preview-min-width), 1fr);
+        grid-template-rows: 1fr;
+    }
+
+    .signal-lab-layout > .signal-lab-sidebar {
+        grid-row: 1;
+        grid-column: 1;
+        height: 100%;
+        padding-right: var(--sl-space-3);
+        border-right: 1px solid var(--sl-divider);
+    }
+
+    .signal-lab-workspace {
+        grid-column: 2;
+        grid-row: 1;
+        grid-template-rows: auto 1fr;
+        min-width: var(--signal-lab-preview-min-width);
+    }
+
+    .signal-lab-sidebar {
+        height: 100%;
+    }
+
+    .signal-lab-sidebar-panel {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+
+    .signal-lab-workspace > .signal-lab-control-deck {
+        grid-row: 1;
+        max-height: var(--signal-lab-deck-max-h);
+        border-top: none;
+        border-bottom: 1px solid var(--sl-divider);
+        padding-top: 0;
+        padding-bottom: var(--sl-space-2);
+    }
+
+    .signal-lab-workspace > .signal-lab-preview {
+        grid-row: 2;
+        min-height: var(--signal-lab-preview-min-h);
+    }
+
+    .signal-lab-card-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .signal-lab-sidebar-toggle {
+        display: none !important;
+    }
+
+    .signal-lab-sidebar.is-collapsible:not(.is-open) .signal-lab-sidebar-panel {
+        display: block;
+    }
+
+    .signal-lab-sidebar.is-collapsible .signal-lab-sidebar-title {
+        display: block;
+    }
+}
+
+/* Tablet: preview first, controls below, collapsible sidebar */
+@media (min-width: 768px) and (max-width: 1199px) {
+    body.signal-lab-page {
+        --signal-lab-deck-max-h: min(34dvh, 300px);
+    }
+
+    .signal-lab-layout {
+        grid-template-rows: auto 1fr;
+    }
+
+    .signal-lab-workspace {
+        grid-template-rows: 1fr auto;
+        min-height: 0;
+    }
+
+    .signal-lab-preview {
+        min-height: clamp(280px, 48vh, 560px);
+    }
+
+    .signal-lab-card-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+/* Mobile: single-column accordion controls */
+@media (max-width: 767px) {
+    body.signal-lab-page {
+        --signal-lab-deck-max-h: min(42dvh, 360px);
+    }
+
+    .signal-lab-card-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .signal-lab-preview-stats--inline {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .signal-lab-preview {
+        min-height: clamp(200px, 38dvh, 420px);
+    }
+
+    .signal-lab-card[open] > .signal-lab-card__body {
+        max-height: min(28dvh, 240px);
+    }
 }
 
 .signal-lab-settings-bar {
@@ -6008,16 +6490,12 @@ body.signal-lab-page {
     overflow-y: hidden;
     overscroll-behavior-x: contain;
     -webkit-overflow-scrolling: touch;
-    padding: clamp(6px, 1vh, 8px) clamp(4px, 0.8vw, 6px);
-    border-radius: clamp(8px, 1vw, 10px);
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    background: rgba(0, 0, 0, 0.2);
+    padding: var(--sl-space-2) 0 var(--sl-space-3);
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    border-bottom: 1px solid var(--sl-divider);
     scrollbar-width: thin;
-}
-
-.signal-lab-settings-bar:empty,
-.signal-lab-settings-bar:not(:has(.signal-lab-toolbar)) {
-    display: none;
 }
 
 .signal-lab-toolbar {
@@ -6026,6 +6504,19 @@ body.signal-lab-page {
     align-items: center;
     gap: var(--sl-space-3) var(--sl-space-4);
     min-width: min-content;
+}
+
+.signal-lab-toolbar .signal-lab-section-group + .signal-lab-section-group {
+    padding-left: var(--sl-space-4);
+    margin-left: var(--sl-space-2);
+    border-left: 1px solid var(--sl-divider);
+}
+
+.signal-lab-settings-bar:empty,
+.signal-lab-settings-bar:not(:has(.signal-lab-toolbar)) {
+    display: none;
+    padding: 0;
+    border: none;
 }
 
 .signal-lab-toolbar .signal-lab-section-group {
@@ -6052,26 +6543,6 @@ body.signal-lab-page {
     width: 100%;
 }
 
-/* Legacy toolbar aliases */
-.signal-lab-toolbar-group {
-    display: inline-flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--sl-space-2) var(--sl-space-3);
-}
-
-.signal-lab-toolbar-label {
-    display: inline-flex;
-    align-items: center;
-    min-height: var(--sl-control-h);
-    font-size: var(--sl-label-size);
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--accent-color);
-    white-space: nowrap;
-}
-
 .signal-lab-toolbar .signal-lab-control-row--inline .signal-lab-select {
     width: auto;
     min-width: clamp(120px, 14vw, 220px);
@@ -6084,7 +6555,20 @@ body.signal-lab-page {
 }
 
 .signal-lab-preview-header--compact {
-    gap: clamp(6px, 1vh, 8px);
+    gap: var(--sl-space-2);
+}
+
+.signal-lab-preview-header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sl-space-3);
+    min-width: 0;
+}
+
+.signal-lab-preview-header-copy {
+    flex: 1 1 auto;
+    min-width: 0;
 }
 
 .signal-lab-preview-stats--inline {
@@ -6095,90 +6579,77 @@ body.signal-lab-page {
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    gap: clamp(8px, 1.2vh, 10px);
+    gap: var(--sl-space-3);
     min-width: 0;
-}
-
-.signal-lab-preview-header-top {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: clamp(8px, 1.5vw, 12px);
-    min-width: 0;
-}
-
-.signal-lab-preview-header-copy {
-    flex: 1 1 auto;
-    min-width: 0;
+    padding-bottom: var(--sl-space-2);
 }
 
 .signal-lab-preview-eyebrow {
-    margin: 0 0 4px;
-    font-size: clamp(0.64rem, 1.2vw, 0.68rem);
-    font-weight: 800;
+    margin: 0 0 2px;
+    font-size: var(--sl-label-size);
+    font-weight: 600;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: var(--secondary-text);
+    color: var(--sl-text-muted);
 }
 
 .signal-lab-preview-title {
     margin: 0;
-    font-size: clamp(0.92rem, 1.8vw, 1.05rem);
-    font-weight: 700;
-    line-height: 1.25;
+    font-size: clamp(0.875rem, 1.6vw, 1rem);
+    font-weight: 600;
+    line-height: 1.3;
     color: var(--primary-text);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
 .signal-lab-output-badge {
     flex-shrink: 0;
     display: inline-flex;
     align-items: center;
-    min-height: 28px;
-    padding: 4px 10px;
-    border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    min-height: 24px;
+    padding: 2px 8px;
+    border-radius: var(--sl-radius);
+    border: none;
     background: rgba(255, 255, 255, 0.05);
-    font-size: clamp(0.64rem, 1.2vw, 0.68rem);
-    font-weight: 800;
-    letter-spacing: 0.06em;
+    font-size: var(--sl-label-size);
+    font-weight: 600;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.72);
+    color: var(--sl-text-muted);
     white-space: nowrap;
 }
 
 .signal-lab-output-badge[data-state="preview"] {
-    border-color: rgba(255, 255, 255, 0.12);
-    background: rgba(255, 255, 255, 0.06);
-    color: rgba(255, 255, 255, 0.78);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--sl-text-muted);
 }
 
 .signal-lab-output-badge[data-state="fullscreen"] {
-    border-color: rgba(255, 106, 45, 0.45);
-    background: rgba(255, 106, 45, 0.14);
+    background: rgba(255, 106, 45, 0.12);
     color: #ffb48a;
 }
 
 .signal-lab-output-badge[data-state="popout-connected"] {
-    border-color: rgba(125, 206, 160, 0.45);
-    background: rgba(125, 206, 160, 0.12);
+    background: rgba(125, 206, 160, 0.1);
     color: #9fdfb8;
 }
 
 .signal-lab-output-badge[data-state="popout-disconnected"] {
-    border-color: rgba(255, 179, 71, 0.4);
-    background: rgba(255, 179, 71, 0.1);
+    background: rgba(255, 179, 71, 0.08);
     color: #ffc978;
 }
 
 .signal-lab-preview-stats {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: clamp(6px, 1vw, 8px);
+    gap: 0;
     margin: 0;
     min-width: 0;
+    padding-top: var(--sl-space-2);
+    border-top: 1px solid var(--sl-divider);
 }
 
 .signal-lab-preview-stat {
@@ -6186,51 +6657,51 @@ body.signal-lab-page {
     flex-direction: column;
     gap: 2px;
     min-width: 0;
-    padding: clamp(6px, 1vh, 8px) clamp(8px, 1.2vw, 10px);
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    background: rgba(0, 0, 0, 0.22);
+    padding: 0 var(--sl-space-3);
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    border-left: 1px solid var(--sl-divider);
+}
+
+.signal-lab-preview-stat:first-child {
+    padding-left: 0;
+    border-left: none;
 }
 
 .signal-lab-preview-stat dt {
     margin: 0;
-    font-size: clamp(0.62rem, 1.1vw, 0.66rem);
-    font-weight: 800;
+    font-size: 0.6rem;
+    font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--secondary-text);
+    color: var(--sl-text-muted);
 }
 
 .signal-lab-preview-stat dd {
     margin: 0;
-    font-size: clamp(0.72rem, 1.4vw, 0.78rem);
-    font-weight: 700;
+    font-size: 0.75rem;
+    font-weight: 600;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    color: var(--primary-text);
+    color: rgba(255, 255, 255, 0.9);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
 .signal-lab-preview-frame,
-.preview-card {
+.signal-lab-app .preview-card {
     display: flex;
     flex-direction: column;
     height: 100%;
     min-height: 0;
     min-width: 0;
-    padding: clamp(6px, 1vw, 8px);
-    border-radius: clamp(10px, 1.2vw, 12px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(0, 0, 0, 0.28);
-    box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.04),
-        0 10px 28px rgba(0, 0, 0, 0.35);
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
     overflow: hidden;
-}
-
-.signal-lab-preview-bar {
-    display: none;
 }
 
 .signal-lab-stage {
@@ -6240,11 +6711,11 @@ body.signal-lab-page {
     flex-direction: column;
     min-height: 0;
     min-width: 0;
-    border-radius: clamp(8px, 1vw, 10px);
-    border: 1px solid rgba(255, 106, 45, 0.18);
+    border-radius: var(--sl-radius);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     background: #000;
     overflow: hidden;
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.6);
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.85);
 }
 
 .signal-lab-stage.is-fullscreen {
@@ -6285,15 +6756,15 @@ body.signal-lab-page:has(.signal-lab-stage:fullscreen) .signal-lab-preview-frame
 
 .signal-lab-scale-debug {
     position: absolute;
-    top: 8px;
-    left: 8px;
+    top: var(--sl-space-2);
+    left: var(--sl-space-2);
     z-index: 4;
     margin: 0;
-    padding: 6px 8px;
-    border-radius: 6px;
-    border: 1px solid rgba(255, 106, 45, 0.35);
-    background: rgba(0, 0, 0, 0.78);
-    color: #ffb48a;
+    padding: var(--sl-space-1) var(--sl-space-2);
+    border-radius: var(--sl-radius);
+    border: 1px solid var(--sl-divider);
+    background: rgba(0, 0, 0, 0.82);
+    color: var(--sl-accent-soft);
     font: 600 10px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     letter-spacing: 0.02em;
     white-space: pre;
@@ -6305,64 +6776,8 @@ body.signal-lab-page:has(.signal-lab-stage:fullscreen) .signal-lab-preview-frame
     display: none !important;
 }
 
-/* Stacked layout: tablet portrait and narrow viewports */
-@media (max-width: 991px) {
-    body.signal-lab-page {
-        --signal-lab-controls-stack-max-h: min(44dvh, 400px);
-    }
-
-    .signal-lab-layout {
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-        min-height: 0;
-        overflow: hidden;
-    }
-
-    .signal-lab-controls,
-    .signal-lab-sidebar {
-        flex: 0 1 auto;
-        width: 100%;
-        max-width: 100%;
-        height: auto;
-        max-height: none;
-        min-height: 0;
-    }
-
-    .signal-lab-controls-scroll {
-        max-height: var(--signal-lab-controls-stack-max-h);
-        flex: 1 1 auto;
-        min-height: 0;
-    }
-
-    .signal-lab-sidebar-footer {
-        flex-shrink: 0;
-    }
-
-    .signal-lab-preview,
-    .signal-lab-output {
-        flex: 1 1 auto;
-        height: auto;
-        min-height: 0;
-    }
-
-    .signal-lab-preview-stats {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .preview-card,
-    .signal-lab-stage {
-        min-height: 0;
-    }
-
-    .signal-lab-header-meta {
-        align-items: flex-start;
-        text-align: left;
-    }
-}
-
-/* Short laptop / 720p desktop (e.g. 1366×768): compact chrome, side-by-side preserved */
-@media (min-width: 992px) and (max-height: 820px) {
+/* Short laptop / 720p desktop (e.g. 1366×768): compact chrome, preview preserved */
+@media (min-width: 1200px) and (max-height: 820px) {
     .signal-lab-page .tool-title {
         font-size: clamp(1.05rem, 1.8vw, 1.3rem);
         margin-bottom: 4px;
@@ -6376,64 +6791,24 @@ body.signal-lab-page:has(.signal-lab-stage:fullscreen) .signal-lab-preview-frame
         gap: clamp(6px, 1vh, 10px);
     }
 
-    .signal-lab-controls {
-        gap: clamp(6px, 1vh, 8px);
+    body.signal-lab-page {
+        --signal-lab-deck-max-h: min(24dvh, 200px);
     }
 
-    .signal-lab-sidebar-top {
-        gap: 6px;
-    }
-
-    .signal-lab-controls-scroll {
-        gap: clamp(6px, 1vh, 8px);
-        padding-bottom: 12px;
-    }
-
-    .signal-lab-module-info-desc {
-        display: -webkit-box;
-        -webkit-box-orient: vertical;
-        -webkit-line-clamp: 2;
-        overflow: hidden;
-    }
-
-    .signal-lab-sidebar-footer .signal-lab-collapsible-summary {
-        padding-top: 8px;
-        padding-bottom: 8px;
-    }
-}
-
-/* Wide desktop: controls left, preview right */
-@media (min-width: 992px) {
-    .signal-lab-layout {
-        grid-template-columns: minmax(0, var(--signal-lab-controls-width)) minmax(0, 1fr);
-    }
-
-    .signal-lab-preview {
-        min-height: 0;
+    .signal-lab-header-meta {
+        align-items: flex-start;
+        text-align: left;
     }
 }
 
 /* Small phones */
 @media (max-width: 480px) {
-    body.signal-lab-page {
-        --signal-lab-preview-min-h: clamp(180px, 32vh, 280px);
-        --signal-lab-controls-stack-max-h: min(40dvh, 340px);
-    }
-
     .signal-lab-page .tool-subtitle {
         display: none;
     }
 
     .signal-lab-actions-row {
         grid-template-columns: 1fr;
-    }
-
-    .signal-lab-controls {
-        padding: clamp(10px, 2.5vw, 14px);
-    }
-
-    .signal-lab-preview {
-        padding: clamp(10px, 2.5vw, 14px);
     }
 }
 

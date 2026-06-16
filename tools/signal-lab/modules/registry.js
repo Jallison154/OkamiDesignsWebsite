@@ -64,14 +64,59 @@
         }
     ];
 
+    /** Public UI ids → internal renderer ids (stable registry for sidebar + state). */
+    const SIDEBAR_MODULES = [
+        { id: 'videoPatterns', rendererId: 'video-patterns', label: 'Video Patterns' },
+        { id: 'motionEngine', rendererId: 'motion-patterns', label: 'Motion Engine' },
+        { id: 'audioGenerator', rendererId: 'audio-tools', label: 'Audio Generator' },
+        { id: 'avSync', rendererId: 'sync-tools', label: 'AV Sync' },
+        { id: 'branding', rendererId: 'branding', label: 'Branding' },
+        { id: 'export', rendererId: 'export', label: 'Export' },
+        { id: 'ledWallTools', rendererId: 'led-utilities', label: 'LED Wall Tools' }
+    ];
+
+    const DEFAULT_RENDERER_ID = 'video-patterns';
+    const DEFAULT_PUBLIC_ID = 'videoPatterns';
+
     const renderers = new Map();
+
+    function resolveRendererId(moduleId) {
+        if (!moduleId) {
+            return DEFAULT_RENDERER_ID;
+        }
+        const sidebar = SIDEBAR_MODULES.find(
+            (entry) => entry.id === moduleId || entry.rendererId === moduleId
+        );
+        if (sidebar) {
+            return sidebar.rendererId;
+        }
+        if (getModuleById(moduleId)) {
+            return moduleId;
+        }
+        return DEFAULT_RENDERER_ID;
+    }
+
+    function getPublicModuleId(rendererId) {
+        const sidebar = SIDEBAR_MODULES.find((entry) => entry.rendererId === rendererId);
+        return sidebar?.id || DEFAULT_PUBLIC_ID;
+    }
+
+    function getSidebarModules() {
+        return SIDEBAR_MODULES.map((entry) => ({ ...entry }));
+    }
 
     function registerRenderer(moduleId, renderer) {
         renderers.set(moduleId, renderer);
     }
 
     function getRenderer(moduleId) {
-        return renderers.get(moduleId) || null;
+        const resolved = resolveRendererId(moduleId);
+        const renderer = renderers.get(resolved) || null;
+        if (!renderer) {
+            return null;
+        }
+        const guard = global.OkamiSignalLab?.ModuleErrorBoundary?.guardRenderer;
+        return guard ? guard(renderer, resolved) : renderer;
     }
 
     function getCatalog() {
@@ -89,6 +134,12 @@
     global.OkamiSignalLab = global.OkamiSignalLab || {};
     global.OkamiSignalLab.ModuleRegistry = {
         MODULE_CATALOG,
+        SIDEBAR_MODULES,
+        DEFAULT_RENDERER_ID,
+        DEFAULT_PUBLIC_ID,
+        resolveRendererId,
+        getPublicModuleId,
+        getSidebarModules,
         registerRenderer,
         getRenderer,
         getCatalog,

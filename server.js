@@ -118,6 +118,11 @@ async function siteVisibilityMiddleware(req, res, next) {
 
 app.use(siteVisibilityMiddleware);
 
+// Chrome DevTools probes this automatically; avoid 404 + strict CSP console noise.
+app.get('/.well-known/appspecific/com.chrome.devtools.json', (_req, res) => {
+    res.type('application/json').send('{}');
+});
+
 const STATIC_CACHE_PATTERN = /\.(?:css|js|png|jpe?g|gif|webp|svg|ico|woff2?)$/i;
 app.use(express.static('.', {
     setHeaders: (res, filePath) => {

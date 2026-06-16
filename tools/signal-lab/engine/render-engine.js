@@ -58,6 +58,7 @@
 
         setOutputSettings(settings) {
             this.outputSettings = { ...this.outputSettings, ...settings };
+            global.OkamiSignalLab?.TechnicalBackground?.invalidateCache?.(this);
             this._layoutKey = '';
             this._handleResize();
         }
@@ -209,11 +210,17 @@
 
             const patternCtx = this.patternCtx;
             patternCtx.setTransform(1, 0, 0, 1, 0, 0);
-            patternCtx.fillStyle = this.backgroundColor;
-            patternCtx.fillRect(0, 0, this.patternWidth, this.patternHeight);
+
+            const techBg = global.OkamiSignalLab?.TechnicalBackground;
+            if (techBg?.draw) {
+                techBg.draw(patternCtx, this.patternWidth, this.patternHeight, this.outputSettings, this);
+            } else {
+                patternCtx.fillStyle = this.backgroundColor;
+                patternCtx.fillRect(0, 0, this.patternWidth, this.patternHeight);
+            }
 
             if (this.module && typeof this.module.render === 'function') {
-                this.module.render(patternCtx, {
+                const frame = {
                     timestamp,
                     width: this.patternWidth,
                     height: this.patternHeight,
@@ -222,8 +229,23 @@
                     dpr: 1,
                     patternWidth: this.patternWidth,
                     patternHeight: this.patternHeight,
+                    outputSettings: this.outputSettings,
                     state: this.state
-                });
+                };
+
+                try {
+                    this.module.render(patternCtx, frame);
+                } catch (error) {
+                    const moduleId = this.module.id || 'module';
+                    const boundary = global.OkamiSignalLab?.ModuleErrorBoundary;
+                    boundary?.reportError?.(moduleId, 'render', error);
+                    boundary?.drawCanvasError?.(
+                        patternCtx,
+                        this.patternWidth,
+                        this.patternHeight,
+                        moduleId
+                    );
+                }
             }
 
             const ctx = this.ctx;

@@ -182,6 +182,7 @@
 
     function showUpgradeNotice(message, containerOverride) {
         const container = containerOverride
+            || document.getElementById('signal-lab-control-deck')
             || document.getElementById('signal-lab-module-options')
             || document.querySelector('.signal-lab-controls-scroll')
             || document.querySelector('.led-config-footer');

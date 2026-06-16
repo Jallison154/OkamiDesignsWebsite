@@ -1,11 +1,53 @@
 (function(global) {
     'use strict';
 
-    const SECTION_ORDER = ['pattern', 'motion', 'audio', 'sync', 'resolution', 'branding', 'output', 'export'];
+    const SECTION_ORDER = ['background', 'pattern', 'motion', 'motion-props', 'audio', 'sync', 'resolution', 'branding', 'output', 'export'];
 
-    const SECTION_LABELS = {
+    const CARD_ORDER = ['pattern', 'motion', 'display', 'output'];
+
+    const CARD_LABELS = {
         pattern: 'Pattern',
         motion: 'Motion',
+        display: 'Display',
+        output: 'Output'
+    };
+
+    const DEFAULT_OPEN_CARDS = new Set(['pattern']);
+
+    const MOTION_CARD_KEYS = new Set([
+        'playing', 'speed', 'motionBackgroundEnabled', 'reverse', 'active',
+        'mode', 'intervalMs', 'motionPlaying'
+    ]);
+
+    const OBJECT_CARD_KEYS = new Set([
+        'motionSize', 'objectColor', 'motionShape', 'colorMode', 'dvdColor', 'edgeFlash',
+        'dvdText', 'dvdLogoDataUrl', 'trailLength', 'trailOpacity', 'orbitRadius',
+        'figure8Width', 'figure8Height', 'lineThickness', 'lineSpacing', 'lineColor',
+        'gridSize', 'gridLineThickness', 'gridDirection', 'rotationSpeed',
+        'crawlText', 'crawlTextSize', 'crawlDirection', 'wrapMode',
+        'toneEnabled', 'toneLevelDbfs',
+        'logoEnabled', 'logoDataUrl', 'logoSize', 'logoOpacity', 'logoPosition',
+        'textEnabled', 'customText', 'textSize', 'textOpacity', 'textPosition',
+        'panelWidthPx', 'panelHeightPx', 'panelsWide', 'panelsTall',
+        'sourceModuleId', 'format', 'resolutionPreset', 'customWidth', 'customHeight'
+    ]);
+
+    const RANDOM_BEHAVIOR_KEYS = new Set([
+        'randomMotionType', 'randomPreset', 'objectCount', 'randomnessAmount',
+        'directionChangeFreq', 'randomColorMode', 'waypointPauseMs',
+        'boundaryBounce', 'wrapEdges', 'smoothMotion', 'randomRotation', 'randomScaleChanges'
+    ]);
+
+    const DISPLAY_CARD_KEYS = new Set([
+        'backgroundEnabled', 'backgroundType', 'backgroundOpacity', 'gridIntensity',
+        'patternResolution', 'scaleMode', 'patternWidth', 'patternHeight'
+    ]);
+
+    const SECTION_LABELS = {
+        background: 'Background',
+        pattern: 'Pattern',
+        motion: 'Motion',
+        'motion-props': 'Motion Properties',
         audio: 'Audio',
         sync: 'Sync',
         resolution: 'Resolution',
@@ -14,7 +56,58 @@
         export: 'Export'
     };
 
-    const DEFAULT_OPEN_SECTIONS = new Set(['pattern', 'motion', 'output']);
+    const DEFAULT_OPEN_SECTIONS = new Set(['background', 'pattern', 'motion', 'motion-props', 'output']);
+
+    function resolveCardId(sectionId, control) {
+        const key = control?.key;
+        if (sectionId === 'pattern' || key === 'patternId') {
+            return 'pattern';
+        }
+        if (DISPLAY_CARD_KEYS.has(key) || sectionId === 'background' || sectionId === 'resolution') {
+            return 'display';
+        }
+        if (sectionId === 'audio' || sectionId === 'sync' || sectionId === 'export' || sectionId === 'output') {
+            return 'output';
+        }
+        return 'motion';
+    }
+
+    function groupSchemaIntoCards(layers) {
+        const groups = new Map();
+        CARD_ORDER.forEach((id) => groups.set(id, []));
+
+        layers.forEach((layer) => {
+            const { schema, state, moduleId } = layer;
+            (schema || []).forEach((control) => {
+                if (control.type === 'section') {
+                    return;
+                }
+                const visibility = getControlVisibility(control, state);
+                if (visibility.hidden) {
+                    return;
+                }
+                const sectionId = normalizeSection(control, moduleId);
+                const cardId = resolveCardId(sectionId, control);
+                if (!groups.has(cardId)) {
+                    groups.set(cardId, []);
+                }
+                groups.get(cardId).push({
+                    control,
+                    disabled: visibility.disabled,
+                    state,
+                    moduleId
+                });
+            });
+        });
+
+        return CARD_ORDER
+            .filter((id) => groups.get(id)?.length)
+            .map((id) => ({
+                id,
+                label: CARD_LABELS[id] || id,
+                items: groups.get(id)
+            }));
+    }
 
     function getComponents() {
         return global.OkamiSignalLab?.ControlComponents;
@@ -175,11 +268,20 @@
         const CL = CC?.CLASSES || {};
         const current = state?.[control.key];
         const dis = disabledAttrs(disabled);
+        const isCard = layout === 'card';
         const isInline = layout === 'inline' || extraClass.includes('toolbar');
 
         if (control.type === 'select') {
             const id = `sl-ctrl-${control.key}`;
             const body = CC.renderSelect(id, control.key, control.options, current, disabled);
+            if (isCard) {
+                return `
+                    <div class="signal-lab-card-field signal-lab-card-field--select${disabled ? ' is-disabled' : ''}" data-control-key="${control.key}">
+                        ${CC.renderLabel(control.label, id)}
+                        <div class="signal-lab-card-field__body">${body}</div>
+                    </div>
+                `;
+            }
             return renderControlRowFromParts(
                 { labelHtml: CC.renderLabel(control.label, id), bodyHtml: body },
                 isInline ? 'inline' : 'stacked',
@@ -205,6 +307,21 @@
                 min="${numMin}" max="${numMax}" step="${numStep}" value="${displayVal}"
                 aria-label="${escapeHtml(control.label)} value"${dis}>`;
 
+            if (isCard) {
+                const unitHtml = unit ? `<span class="${CL.fieldUnit}">${escapeHtml(unit)}</span>` : '';
+                return `
+                    <div class="signal-lab-card-field signal-lab-card-field--range${disabled ? ' is-disabled' : ''}" data-control-key="${control.key}">
+                        <div class="signal-lab-card-field__head">
+                            ${CC.renderLabel(control.label, id)}
+                            <div class="signal-lab-card-field__value">${numberInput}${unitHtml}</div>
+                        </div>
+                        <input type="range" id="${id}" class="signal-lab-range"
+                            data-control-key="${control.key}" data-control-type="range"
+                            min="${control.min}" max="${control.max}" step="${control.step || 0.1}" value="${val}"${dis}>
+                    </div>
+                `;
+            }
+
             const body = `
                 ${CC.renderValueField(numberInput, unit)}
                 <input type="range" id="${id}" class="signal-lab-range"
@@ -229,6 +346,13 @@
                     <span>${escapeHtml(control.label)}</span>
                 </label>
             `;
+            if (isCard) {
+                return `
+                    <div class="signal-lab-card-field signal-lab-card-field--checkbox${disabled ? ' is-disabled' : ''}" data-control-key="${control.key}">
+                        ${body}
+                    </div>
+                `;
+            }
             return renderControlRowFromParts(
                 { labelHtml: '', bodyHtml: body },
                 'inline',
@@ -254,6 +378,15 @@
                         data-control-key="${transportKey}" data-control-value="false" aria-pressed="${!isOn ? 'true' : 'false'}"${dis}>${escapeHtml(stopLabel)}</button>
                 </div>
             `;
+
+            if (isCard) {
+                return `
+                    <div class="signal-lab-card-field signal-lab-card-field--transport${disabled ? ' is-disabled' : ''}" data-control-key="${transportKey}">
+                        ${CC.renderLabel(control.label)}
+                        ${body}
+                    </div>
+                `;
+            }
 
             return renderControlRowFromParts(
                 { labelHtml: CC.renderLabel(control.label), bodyHtml: body },
@@ -436,6 +569,60 @@
         return '';
     }
 
+    function renderCard(card, extraHtml = '') {
+        const open = DEFAULT_OPEN_CARDS.has(card.id) ? ' open' : '';
+        const controlsHtml = card.items
+            .map(({ control, disabled, state }) => renderControl(control, state, disabled, '', 'card'))
+            .join('');
+
+        if (!controlsHtml && !extraHtml) {
+            return '';
+        }
+
+        return `
+            <details class="signal-lab-card" data-card="${card.id}"${open}>
+                <summary class="signal-lab-card__header">${escapeHtml(card.label)}</summary>
+                <div class="signal-lab-card__body">
+                    ${extraHtml}
+                    ${controlsHtml}
+                </div>
+            </details>
+        `;
+    }
+
+    function buildControlDeckHtml(layers, staticCards = {}) {
+        const cards = groupSchemaIntoCards(layers);
+        const merged = CARD_ORDER.map((id) => {
+            const dynamic = cards.find((card) => card.id === id);
+            const extra = staticCards[id] || '';
+            const items = dynamic?.items || [];
+            if (!items.length && !extra) {
+                return null;
+            }
+            return {
+                id,
+                label: CARD_LABELS[id],
+                items,
+                extraHtml: extra
+            };
+        }).filter(Boolean);
+
+        if (!merged.length) {
+            return '';
+        }
+
+        return `<div class="signal-lab-card-grid">${merged.map((card) => renderCard(card, card.extraHtml)).join('')}</div>`;
+    }
+
+    function flattenDeckLayers(layers) {
+        return layers.flatMap((layer) => (
+            (layer.schema || [])
+                .filter((control) => control.type !== 'section')
+                .filter((control) => !getControlVisibility(control, layer.state).hidden)
+                .map((control) => ({ control, moduleId: layer.moduleId }))
+        ));
+    }
+
     function buildOptionsHtml(schema, state, moduleId) {
         const CC = getComponents();
         const sections = groupSchemaIntoSections(schema, state, moduleId);
@@ -464,27 +651,7 @@
     }
 
     function buildToolbarHtml(schema, state, moduleId) {
-        const CC = getComponents();
-        const sections = groupSchemaIntoSections(schema, state, moduleId);
-        if (!sections.length || !CC) {
-            return '';
-        }
-
-        const groups = sections.map((section) => {
-            const controlsHtml = section.items
-                .map(({ control, disabled }) => renderControl(
-                    control,
-                    state,
-                    disabled,
-                    'signal-lab-toolbar-control',
-                    'inline'
-                ))
-                .join('');
-
-            return CC.renderSectionGroup(section.id, section.label, controlsHtml);
-        }).join('');
-
-        return `<div class="${CC.CLASSES.toolbar}">${groups}</div>`;
+        return buildControlDeckHtml([{ schema, state, moduleId }]);
     }
 
     function flattenSchema(schema, state, moduleId) {
@@ -492,14 +659,30 @@
             .flatMap((section) => section.items.map((item) => item.control));
     }
 
+    function flattenSchemaFromLayers(layers) {
+        return flattenDeckLayers(layers).map((entry) => entry.control);
+    }
+
     const REBUILD_OPTION_KEYS = new Set([
         'patternId',
         'mode',
+        'motionShape',
+        'colorMode',
         'resolutionPreset',
         'logoEnabled',
         'textEnabled',
         'logoWatermarkEnabled',
-        'textWatermarkEnabled'
+        'textWatermarkEnabled',
+        'backgroundEnabled',
+        'backgroundType',
+        'randomPreset',
+        'randomMotionType',
+        'randomColorMode',
+        'wrapMode',
+        'motionShape',
+        'scrollDirection',
+        'gridDirection',
+        'crawlDirection'
     ]);
 
     function shouldRebuildOptions(key) {
@@ -510,11 +693,16 @@
     global.OkamiSignalLab.ControlUI = {
         SECTION_ORDER,
         SECTION_LABELS,
+        CARD_ORDER,
+        CARD_LABELS,
         getControlVisibility,
         groupSchemaIntoSections,
+        groupSchemaIntoCards,
         buildOptionsHtml,
         buildToolbarHtml,
+        buildControlDeckHtml,
         flattenSchema,
+        flattenDeckLayers,
         shouldRebuildOptions,
         renderControl
     };

@@ -44,9 +44,9 @@
         });
     }
 
-    function drawPanel(ctx, w, h, metrics) {
-        ctx.fillStyle = '#0a0a0a';
-        ctx.fillRect(0, 0, w, h);
+    function drawPanel(ctx, w, h, metrics, frame) {
+        global.OkamiSignalLab?.TechnicalBackground?.fillModuleBase?.(ctx, w, h, frame)
+            ?? (ctx.fillStyle = '#0a0a0a', ctx.fillRect(0, 0, w, h));
 
         const pad = Math.max(16, Math.min(w, h) * 0.04);
         const panelWidth = Math.min(w - pad * 2, 560);
@@ -147,7 +147,7 @@
             const metrics = gatherMetrics(frame.timestamp);
             lastMetrics = metrics;
 
-            drawPanel(ctx, w, h, metrics);
+            drawPanel(ctx, w, h, metrics, frame);
             updateDisplayMetricsDom(metrics);
         }
     };

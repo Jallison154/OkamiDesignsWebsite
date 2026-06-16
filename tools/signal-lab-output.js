@@ -35,12 +35,33 @@
         }
     }
 
+    function popoutDebug() {
+        return window.OkamiSignalLab?.PopoutDebug;
+    }
+
     function applyReceivedState(state) {
         if (!state?.activeModuleId || !engine || !window.OkamiSignalLab?.renderSignalLabCanvas) {
+            popoutDebug()?.logStateReceived({
+                applied: false,
+                reason: !state?.activeModuleId
+                    ? 'missing activeModuleId'
+                    : !engine
+                        ? 'render engine not ready'
+                        : 'renderSignalLabCanvas unavailable',
+                activeModuleId: state?.activeModuleId || null
+            });
             showWaiting(true);
             return;
         }
 
+        popoutDebug()?.logStateReceived({
+            applied: true,
+            activeModuleId: state.activeModuleId,
+            sentAt: state.sentAt,
+            requestFullscreen: Boolean(state.requestFullscreen)
+        });
+
+        // Always replace — pop-out never keeps prior settings.
         outputState = state;
         showWaiting(false);
 
@@ -158,10 +179,13 @@
     function notifyReady() {
         const MSG = window.OkamiSignalLab?.OutputState?.MSG;
         const readyMsg = { type: MSG?.READY || 'popout-ready' };
+        let sentOpener = false;
+        let sentBroadcast = false;
 
         if (window.opener) {
             try {
                 window.opener.postMessage(readyMsg, window.location.origin);
+                sentOpener = true;
             } catch {
                 /* ignore */
             }
@@ -169,9 +193,18 @@
 
         try {
             new BroadcastChannel(SYNC_CHANNEL).postMessage(readyMsg);
+            sentBroadcast = true;
         } catch {
             /* ignore */
         }
+
+        popoutDebug()?.logReady({
+            role: 'output-window',
+            sent: true,
+            viaOpener: sentOpener,
+            viaBroadcast: sentBroadcast,
+            hasOpener: Boolean(window.opener)
+        });
     }
 
     function initOutput() {

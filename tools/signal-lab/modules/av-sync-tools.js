@@ -198,9 +198,13 @@
         });
     }
 
-    function drawFlashClick(ctx, w, h, now, state) {
-        ctx.fillStyle = '#0a0a0a';
-        ctx.fillRect(0, 0, w, h);
+    function clearModeCanvas(ctx, w, h, frame) {
+        global.OkamiSignalLab?.TechnicalBackground?.fillModuleBase?.(ctx, w, h, frame)
+            ?? (ctx.fillStyle = '#0a0a0a', ctx.fillRect(0, 0, w, h));
+    }
+
+    function drawFlashClick(ctx, w, h, now, state, frame) {
+        clearModeCanvas(ctx, w, h, frame);
         drawCenterMarker(ctx, w, h);
 
         ctx.fillStyle = ACCENT;
@@ -219,9 +223,8 @@
         drawFlashOverlay(ctx, w, h, now, state);
     }
 
-    function drawSyncBall(ctx, w, h, now, state) {
-        ctx.fillStyle = '#0a0a0a';
-        ctx.fillRect(0, 0, w, h);
+    function drawSyncBall(ctx, w, h, now, state, frame) {
+        clearModeCanvas(ctx, w, h, frame);
 
         const margin = Math.min(w, h) * 0.1;
         const y = h / 2;
@@ -260,9 +263,8 @@
         drawFlashOverlay(ctx, w, h, now, state);
     }
 
-    function drawFrameCounter(ctx, w, h, now, state) {
-        ctx.fillStyle = '#0a0a0a';
-        ctx.fillRect(0, 0, w, h);
+    function drawFrameCounter(ctx, w, h, now, state, frame) {
+        clearModeCanvas(ctx, w, h, frame);
         drawCenterMarker(ctx, w, h);
 
         const frameNum = state.active ? runtime.frameCount : 0;
@@ -281,9 +283,8 @@
         drawFlashOverlay(ctx, w, h, now, state);
     }
 
-    function drawTimecode(ctx, w, h, now, state) {
-        ctx.fillStyle = '#0a0a0a';
-        ctx.fillRect(0, 0, w, h);
+    function drawTimecode(ctx, w, h, now, state, frame) {
+        clearModeCanvas(ctx, w, h, frame);
         drawCenterMarker(ctx, w, h);
 
         const elapsed = state.active && runtime.sessionStart > 0
@@ -418,7 +419,7 @@
             }
 
             const draw = MODE_RENDERERS[state.mode] || drawFlashClick;
-            draw(ctx, w, h, now, state);
+            draw(ctx, w, h, now, state, frame);
         }
     };
 

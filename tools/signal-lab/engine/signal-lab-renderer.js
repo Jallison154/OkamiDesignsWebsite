@@ -57,7 +57,21 @@
 
         const renderer = registry.getRenderer(activeModuleId);
         if (!renderer) {
-            return false;
+            const fallbackId = registry.DEFAULT_RENDERER_ID || 'video-patterns';
+            if (options._retriedFallback || activeModuleId === fallbackId) {
+                return false;
+            }
+            const fallback = registry.getRenderer(fallbackId);
+            if (!fallback) {
+                return false;
+            }
+            return renderSignalLabCanvas(
+                engine,
+                { ...outputState, activeModuleId: fallbackId },
+                timestamp,
+                tracker,
+                { ...options, _retriedFallback: true }
+            );
         }
 
         const moduleChanged = applyTracker.lastModuleId !== activeModuleId;
@@ -65,15 +79,30 @@
         const rendererChanged = engine.module !== renderer;
 
         if (moduleChanged || rendererChanged) {
-            engine.setModule(renderer, { skipAttach: true });
+            if (engine.module !== renderer) {
+                try {
+                    engine.setModule(renderer);
+                } catch (error) {
+                    global.OkamiSignalLab?.ModuleErrorBoundary?.reportError?.(activeModuleId, 'attach', error);
+                }
+            }
         }
 
         engine.setState({ ...activeState });
 
         if (!options.renderOnly && (moduleChanged || rendererChanged || patternChanged)) {
             if (typeof renderer.onAttach === 'function' && (moduleChanged || patternChanged)) {
-                renderer.onAttach(engine);
-                engine.setState({ ...activeState });
+                const boundary = global.OkamiSignalLab?.ModuleErrorBoundary;
+                const attach = () => {
+                    renderer.onAttach(engine);
+                    engine.setState({ ...activeState });
+                };
+
+                if (boundary) {
+                    boundary.safeRun(activeModuleId, 'attach', attach);
+                } else {
+                    attach();
+                }
             }
         }
 
@@ -98,7 +127,12 @@
         applyTracker.lastModuleId = activeModuleId;
         applyTracker.lastPatternId = activeState.patternId ?? null;
 
-        engine.renderFrame(timestamp ?? performance.now());
+        try {
+            engine.renderFrame(timestamp ?? performance.now());
+        } catch (error) {
+            global.OkamiSignalLab?.ModuleErrorBoundary?.reportError?.(activeModuleId, 'render', error);
+        }
+
         return shouldAnimateOutput(outputState);
     }
 

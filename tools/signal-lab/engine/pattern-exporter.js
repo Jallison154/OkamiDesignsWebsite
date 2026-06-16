@@ -156,7 +156,8 @@
             sourceState,
             width,
             height,
-            backgroundColor = '#050505',
+            outputSettings = {},
+            includeBackground = true,
             watermarks = {}
         } = options;
 
@@ -180,8 +181,19 @@
             throw new Error('Unable to create export canvas.');
         }
 
-        ctx.fillStyle = backgroundColor;
-        ctx.fillRect(0, 0, width, height);
+        const frameOutputSettings = {
+            ...outputSettings,
+            backgroundEnabled: includeBackground && outputSettings.backgroundEnabled !== false,
+            backgroundType: includeBackground ? (outputSettings.backgroundType || 'technical-grid') : 'none'
+        };
+
+        const techBg = global.OkamiSignalLab?.TechnicalBackground;
+        if (techBg?.draw) {
+            techBg.draw(ctx, width, height, frameOutputSettings, { _techBgCache: {} });
+        } else {
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, width, height);
+        }
 
         renderer.render(ctx, {
             timestamp: performance.now(),
@@ -190,6 +202,7 @@
             displayWidth: width,
             displayHeight: height,
             dpr: 1,
+            outputSettings: frameOutputSettings,
             state: { ...sourceState }
         });
 
@@ -212,7 +225,8 @@
             exportState,
             allModuleState,
             displaySize,
-            activeModuleId
+            activeModuleId,
+            outputSettings = {}
         } = options;
 
         let sourceModuleId = exportState.sourceModuleId || 'video-patterns';
@@ -235,6 +249,8 @@
             sourceState,
             width,
             height,
+            outputSettings,
+            includeBackground: exportState.exportIncludeBackground !== false,
             watermarks: {
                 textWatermarkEnabled: exportState.textWatermarkEnabled,
                 textWatermarkText: exportState.textWatermarkText,

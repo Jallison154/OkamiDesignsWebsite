@@ -11,6 +11,42 @@
         return JSON.parse(JSON.stringify(value));
     }
 
+    /** Simulation-only keys written during render — never overwrite user toolbar state. */
+    const RUNTIME_MODULE_STATE_KEYS = new Set([
+        'dvdCx',
+        'dvdCy',
+        'dvdVx',
+        'dvdVy',
+        'dvdBounceCount',
+        'dvdFlashUntil',
+        'dvdFlashEdge',
+        'dvdTrail',
+        'dvdLastTs',
+        'dvdInitialized'
+    ]);
+
+    function isRuntimeModuleStateKey(key) {
+        return key.startsWith('_') || RUNTIME_MODULE_STATE_KEYS.has(key);
+    }
+
+    /**
+     * Merge only runtime/simulation fields from the live engine into stored module state.
+     * User-facing control values in storedState always win.
+     */
+    function captureRuntimeModuleState(engineState, storedState = {}) {
+        if (!engineState) {
+            return { ...storedState };
+        }
+
+        const next = { ...storedState };
+        Object.keys(engineState).forEach((key) => {
+            if (isRuntimeModuleStateKey(key)) {
+                next[key] = engineState[key];
+            }
+        });
+        return next;
+    }
+
     function captureAnimationClock(activeModuleId, moduleState) {
         const syncedWallAt = Date.now();
 
@@ -76,6 +112,12 @@
             }
             if (animation.syncedWallAt !== undefined) {
                 next._syncedWallAt = animation.syncedWallAt;
+            }
+            if (animation.dvd) {
+                next._syncedDvd = animation.dvd;
+            }
+            if (animation.random) {
+                next._syncedRandom = animation.random;
             }
         }
 
@@ -181,6 +223,65 @@
         };
     }
 
+    /** Parent app registers transport; syncPopout(outputState) is the only send path. */
+    let popoutSyncTransport = null;
+
+    function configurePopoutSync(transport) {
+        popoutSyncTransport = transport;
+    }
+
+    /**
+     * Push the canonical outputState to an open pop-out window.
+     * No-op when pop-out is closed. Logs warnings on failure; never throws.
+     */
+    function syncPopout(outputState) {
+        if (!outputState || !popoutSyncTransport) {
+            return false;
+        }
+
+        const isOpen = popoutSyncTransport.isOpen?.();
+        if (!isOpen) {
+            return false;
+        }
+
+        const payload = { type: MSG.STATE, state: outputState };
+        let delivered = false;
+        let viaPostMessage = false;
+        let viaBroadcast = false;
+
+        const origin = popoutSyncTransport.getOrigin?.() || '';
+        const popoutWindow = popoutSyncTransport.getPopoutWindow?.();
+
+        if (popoutWindow && !popoutWindow.closed) {
+            try {
+                popoutWindow.postMessage(payload, origin);
+                delivered = true;
+                viaPostMessage = true;
+            } catch (err) {
+                console.warn('[Okami Signal Lab] Pop-out sync failed (postMessage):', err);
+            }
+        }
+
+        try {
+            popoutSyncTransport.getBroadcastChannel?.()?.postMessage(payload);
+            delivered = true;
+            viaBroadcast = true;
+        } catch (err) {
+            console.warn('[Okami Signal Lab] Pop-out sync failed (broadcast):', err);
+        }
+
+        popoutSyncTransport.debug?.()?.logStateSent?.({
+            delivered,
+            viaPostMessage,
+            viaBroadcast,
+            activeModuleId: outputState.activeModuleId,
+            requestFullscreen: Boolean(outputState.requestFullscreen),
+            popoutOpen: true
+        });
+
+        return delivered;
+    }
+
     global.OkamiSignalLab = global.OkamiSignalLab || {};
     global.OkamiSignalLab.OutputState = {
         MSG,
@@ -189,6 +290,10 @@
         applyOutputState,
         createApplyTracker,
         captureAnimationClock,
-        injectAnimationIntoState
+        injectAnimationIntoState,
+        captureRuntimeModuleState,
+        isRuntimeModuleStateKey,
+        configurePopoutSync,
+        syncPopout
     };
 })(typeof window !== 'undefined' ? window : globalThis);
