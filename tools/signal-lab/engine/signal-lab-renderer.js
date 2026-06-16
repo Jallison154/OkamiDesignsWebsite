@@ -3,6 +3,19 @@
 
     const OutputState = () => global.OkamiSignalLab?.OutputState;
 
+    function getPatternFingerprint(moduleId, state) {
+        if (!state) {
+            return '';
+        }
+        if (moduleId === 'sync-tools') {
+            return String(state.mode ?? '');
+        }
+        if (moduleId === 'motion-patterns' && state.patternId === 'random-motion') {
+            return `random-motion:${state.randomMotionType ?? 'random-bounce'}`;
+        }
+        return String(state.patternId ?? '');
+    }
+
     function shouldAnimateOutput(outputState) {
         const registry = global.OkamiSignalLab?.ModuleRegistry;
         const shouldAnimate = global.OkamiSignalLab?.ModuleAnimation?.shouldAnimateModule;
@@ -23,6 +36,28 @@
 
         const renderer = registry.getRenderer(activeModuleId);
         return shouldAnimate(renderer, state);
+    }
+
+    function notifyRendererStateChanges(renderer, engine, activeState, applyTracker, flags) {
+        if (typeof renderer.onStateChange !== 'function') {
+            return;
+        }
+
+        const { moduleChanged, rendererChanged, patternChanged } = flags;
+        const nextKeys = Object.keys(activeState).filter((key) => !key.startsWith('_'));
+        const keysToNotify = moduleChanged || rendererChanged || patternChanged
+            ? nextKeys
+            : nextKeys.filter((key) => {
+                const prev = applyTracker.lastStateSnapshot?.[key];
+                return JSON.stringify(prev) !== JSON.stringify(activeState[key]);
+            });
+
+        keysToNotify.forEach((key) => {
+            renderer.onStateChange(engine, activeState, key);
+        });
+
+        applyTracker.lastStateSnapshot = JSON.parse(JSON.stringify(activeState));
+        applyTracker.lastStateKeys = nextKeys;
     }
 
     /**
@@ -74,58 +109,41 @@
             );
         }
 
+        const patternFingerprint = getPatternFingerprint(activeModuleId, activeState);
         const moduleChanged = applyTracker.lastModuleId !== activeModuleId;
-        const patternChanged = applyTracker.lastPatternId !== activeState.patternId;
+        const patternChanged = applyTracker.lastPatternFingerprint !== patternFingerprint;
         const rendererChanged = engine.module !== renderer;
-
-        if (moduleChanged || rendererChanged) {
-            if (engine.module !== renderer) {
-                try {
-                    engine.setModule(renderer);
-                } catch (error) {
-                    global.OkamiSignalLab?.ModuleErrorBoundary?.reportError?.(activeModuleId, 'attach', error);
-                }
-            }
-        }
 
         engine.setState({ ...activeState });
 
-        if (!options.renderOnly && (moduleChanged || rendererChanged || patternChanged)) {
-            if (typeof renderer.onAttach === 'function' && (moduleChanged || patternChanged)) {
-                const boundary = global.OkamiSignalLab?.ModuleErrorBoundary;
-                const attach = () => {
-                    renderer.onAttach(engine);
-                    engine.setState({ ...activeState });
-                };
+        if (engine.module !== renderer) {
+            try {
+                engine.setModule(renderer);
+            } catch (error) {
+                global.OkamiSignalLab?.ModuleErrorBoundary?.reportError?.(activeModuleId, 'attach', error);
+            }
+        } else if (!options.renderOnly && patternChanged && typeof renderer.onAttach === 'function') {
+            const boundary = global.OkamiSignalLab?.ModuleErrorBoundary;
+            const attach = () => renderer.onAttach(engine);
 
-                if (boundary) {
-                    boundary.safeRun(activeModuleId, 'attach', attach);
-                } else {
-                    attach();
-                }
+            if (boundary) {
+                boundary.safeRun(activeModuleId, 'attach', attach);
+            } else {
+                attach();
             }
         }
 
-        if (!options.renderOnly && typeof renderer.onStateChange === 'function') {
-            const prevKeys = applyTracker.lastStateKeys || [];
-            const nextKeys = Object.keys(activeState).filter((key) => !key.startsWith('_'));
-            const keysToNotify = moduleChanged || rendererChanged || patternChanged
-                ? nextKeys
-                : nextKeys.filter((key) => {
-                    const prev = applyTracker.lastStateSnapshot?.[key];
-                    return JSON.stringify(prev) !== JSON.stringify(activeState[key]);
-                });
-
-            keysToNotify.forEach((key) => {
-                renderer.onStateChange(engine, activeState, key);
+        if (!options.renderOnly) {
+            notifyRendererStateChanges(renderer, engine, activeState, applyTracker, {
+                moduleChanged,
+                rendererChanged,
+                patternChanged
             });
-
-            applyTracker.lastStateSnapshot = JSON.parse(JSON.stringify(activeState));
-            applyTracker.lastStateKeys = nextKeys;
         }
 
         applyTracker.lastModuleId = activeModuleId;
         applyTracker.lastPatternId = activeState.patternId ?? null;
+        applyTracker.lastPatternFingerprint = patternFingerprint;
 
         try {
             engine.renderFrame(timestamp ?? performance.now());
@@ -137,6 +155,7 @@
     }
 
     global.OkamiSignalLab = global.OkamiSignalLab || {};
+    global.OkamiSignalLab.getPatternFingerprint = getPatternFingerprint;
     global.OkamiSignalLab.renderSignalLabCanvas = renderSignalLabCanvas;
     global.OkamiSignalLab.shouldAnimateOutput = shouldAnimateOutput;
 })(typeof window !== 'undefined' ? window : globalThis);

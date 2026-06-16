@@ -11,7 +11,7 @@
     <meta property="og:description" content="AV signal testing, calibration patterns, and production utilities.">
     <meta name="author" content="Jonathan Allison, Founder">
     <link rel="icon" href="../images/Okami_Designs_HeadWhite.png?v=20260615" type="image/png">
-    <link rel="stylesheet" href="../styles.css?v=20260626">
+    <link rel="stylesheet" href="../styles.css?v=20260627">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -99,21 +99,19 @@
                             <button type="button" id="signal-lab-close-popout" class="signal-lab-btn signal-lab-btn--text" hidden>Close Pop-out</button>
                             <p id="signal-lab-popout-connection" class="signal-lab-popout-connection" data-status="not-opened" aria-live="polite">Pop-out: Not Opened</p>
                             <p id="signal-lab-popout-note" class="signal-lab-screen-note">Pop-out mirrors live output automatically. Use Update Pop-Out if sync looks stale.</p>
+                            <div id="signal-lab-output-controls" class="signal-lab-output-controls" aria-label="Module output controls"></div>
                         </div>
                     </div>
                 </aside>
 
                 <div class="signal-lab-workspace">
                     <section class="signal-lab-preview signal-lab-output led-panel" aria-label="Live preview">
-                        <header class="signal-lab-preview-header signal-lab-preview-header--compact">
-                            <div class="signal-lab-preview-header-top">
-                                <div class="signal-lab-preview-header-copy">
-                                    <p class="signal-lab-preview-eyebrow">Live Output</p>
-                                    <h2 id="signal-lab-preview-pattern" class="signal-lab-preview-title">—</h2>
-                                </div>
+                        <header class="signal-lab-preview-header signal-lab-preview-header--row">
+                            <div class="signal-lab-preview-header-main">
+                                <h2 id="signal-lab-preview-pattern" class="signal-lab-preview-title">—</h2>
                                 <span id="signal-lab-output-badge" class="signal-lab-output-badge" data-state="preview">Preview</span>
                             </div>
-                            <dl class="signal-lab-preview-stats signal-lab-preview-stats--inline">
+                            <dl class="signal-lab-preview-stats signal-lab-preview-stats--row">
                                 <div class="signal-lab-preview-stat">
                                     <dt>Pattern</dt>
                                     <dd id="signal-lab-preview-pattern-res">—</dd>
@@ -161,13 +159,14 @@
     <script src="../script.js?v=20260615"></script>
     <script src="signal-lab/engine/control-utils.js?v=20260615"></script>
     <script src="signal-lab/engine/control-components.js?v=20260616"></script>
-    <script src="signal-lab/engine/control-ui.js?v=20260626"></script>
+    <script src="signal-lab/engine/control-ui.js?v=20260627"></script>
     <script src="signal-lab/engine/module-animation.js?v=20260615"></script>
     <script src="signal-lab/engine/canvas-layout.js?v=20260615"></script>
     <script src="signal-lab/engine/pattern-resolution.js?v=20260615"></script>
     <script src="signal-lab/engine/background-controls.js?v=20260623"></script>
+    <script src="signal-lab/engine/pattern-access.js?v=20260628"></script>
     <script src="signal-lab/engine/technical-background.js?v=20260623"></script>
-    <script src="signal-lab/engine/output-state.js?v=20260624"></script>
+    <script src="signal-lab/engine/output-state.js?v=20260628"></script>
     <script src="signal-lab/engine/popout-debug.js?v=20260616"></script>
     <script src="signal-lab/engine/overlay-renderer.js?v=20260615"></script>
     <script src="signal-lab/engine/display-metrics.js?v=20260615"></script>
@@ -181,12 +180,12 @@
     <script src="signal-lab/engine/led-wall-calculator.js?v=20260615"></script>
     <script src="signal-lab/engine/module-error-boundary.js?v=20260621"></script>
     <script src="signal-lab/engine/render-engine.js?v=20260621"></script>
-    <script src="signal-lab/engine/signal-lab-renderer.js?v=20260621"></script>
+    <script src="signal-lab/engine/signal-lab-renderer.js?v=20260628"></script>
     <script src="signal-lab/engine/okami-calibration-pattern.js?v=20260615"></script>
     <script src="signal-lab/modules/registry.js?v=20260621"></script>
-    <script src="signal-lab/modules/video-patterns.js?v=20260615"></script>
+    <script src="signal-lab/modules/video-patterns.js?v=20260628"></script>
     <script src="signal-lab/modules/random-motion.js?v=20260624"></script>
-    <script src="signal-lab/modules/motion-patterns.js?v=20260624"></script>
+    <script src="signal-lab/modules/motion-patterns.js?v=20260628"></script>
     <script src="signal-lab/modules/audio-generator.js?v=20260615"></script>
     <script src="signal-lab/modules/av-sync-tools.js?v=20260615"></script>
     <script src="signal-lab/modules/display-info.js?v=20260615"></script>
@@ -202,6 +201,6 @@
     <script src="../client/desktop/shell-bridge.js?v=20260615"></script>
     <script src="signal-lab/modules/pattern-export.js?v=20260615"></script>
     <script src="signal-lab/modules/led-wall-utilities.js?v=20260615"></script>
-    <script src="signal-lab/app.js?v=20260626"></script>
+    <script src="signal-lab/app.js?v=20260627"></script>
 </body>
 </html>

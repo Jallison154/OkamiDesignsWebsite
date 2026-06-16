@@ -434,7 +434,7 @@
             const w = frame.displayWidth;
             const h = frame.displayHeight;
             let patternId = frame.state?.patternId || 'okami-calibration';
-            if (!global.OkamiCommercialGate?.canUsePremiumPatternSync?.('video-patterns', patternId)) {
+            if (!global.OkamiSignalLab?.canRenderPattern?.('video-patterns', patternId)) {
                 patternId = 'okami-calibration';
             }
             const draw = PATTERN_RENDERERS[patternId] || PATTERN_RENDERERS['okami-calibration'];

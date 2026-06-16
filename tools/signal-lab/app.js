@@ -280,6 +280,7 @@
             stage: document.getElementById('signal-lab-stage'),
             moduleSelect: document.getElementById('signal-lab-module-select'),
             controlDeck: document.getElementById('signal-lab-control-deck'),
+            outputControls: document.getElementById('signal-lab-output-controls'),
             sidebar: document.getElementById('signal-lab-sidebar'),
             sidebarToggle: document.getElementById('signal-lab-sidebar-toggle'),
             sidebarPanel: document.getElementById('signal-lab-sidebar-panel'),
@@ -1163,8 +1164,12 @@
                         card.removeAttribute('open');
                     }
                 }
-            } else if (card.dataset.mobileTouched) {
+            } else {
                 delete card.dataset.mobileTouched;
+                const defaults = window.OkamiSignalLab?.ControlUI?.DECK_CARD_ORDER || ['pattern', 'motion', 'display'];
+                if (defaults.includes(card.dataset.card)) {
+                    card.setAttribute('open', '');
+                }
             }
         });
     }
@@ -1247,8 +1252,21 @@
         });
     }
 
+    function bindDeckControlLayers(container, layers) {
+        if (!container) {
+            return;
+        }
+
+        const controlUI = window.OkamiSignalLab?.ControlUI;
+        layers.filter((layer) => layer.schema.length).forEach((layer) => {
+            const flat = controlUI.flattenDeckLayers([layer]).map((entry) => entry.control);
+            bindModuleControlEvents(container, flat, layer.moduleId);
+        });
+    }
+
     function buildControlDeck(moduleId = activeModuleId) {
         const container = getElements().controlDeck;
+        const outputContainer = getElements().outputControls;
         const controlUI = window.OkamiSignalLab?.ControlUI;
         const registry = window.OkamiSignalLab?.ModuleRegistry;
         const boundary = getBoundary();
@@ -1273,21 +1291,18 @@
                 { schema: backgroundSchema, state: outputSettings, moduleId: '__background__' },
                 { schema: moduleSchema, state, moduleId }
             ];
+            const staticCards = getStaticDeckFragments();
 
-            container.innerHTML = controlUI.buildControlDeckHtml(layers, getStaticDeckFragments());
+            container.innerHTML = controlUI.buildControlDeckHtml(layers, staticCards);
+            container.hidden = !container.innerHTML.trim();
 
-            if (!container.innerHTML.trim()) {
-                container.hidden = true;
-                return;
+            if (outputContainer) {
+                outputContainer.innerHTML = controlUI.buildOutputPanelHtml(layers, staticCards);
+                outputContainer.hidden = !outputContainer.innerHTML.trim();
             }
 
-            container.hidden = false;
-
-            const deckLayers = layers.filter((layer) => layer.schema.length);
-            deckLayers.forEach((layer) => {
-                const flat = controlUI.flattenDeckLayers([layer]).map((entry) => entry.control);
-                bindModuleControlEvents(container, flat, layer.moduleId);
-            });
+            bindDeckControlLayers(container, layers);
+            bindDeckControlLayers(outputContainer, layers);
 
             renderModuleDropdown();
             syncModuleDropdownValue(moduleId);

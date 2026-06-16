@@ -995,7 +995,7 @@
             const speed = Number(state.speed) || 1;
 
             let patternId = state.patternId || 'bouncing-ball';
-            if (!global.OkamiCommercialGate?.canUsePremiumPatternSync?.('motion-patterns', patternId)) {
+            if (!global.OkamiSignalLab?.canRenderPattern?.('motion-patterns', patternId)) {
                 patternId = 'bouncing-ball';
             }
 

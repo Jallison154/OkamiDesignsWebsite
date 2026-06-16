@@ -5,6 +5,8 @@
 
     const CARD_ORDER = ['pattern', 'motion', 'display', 'output'];
 
+    const DECK_CARD_ORDER = ['pattern', 'motion', 'display'];
+
     const CARD_LABELS = {
         pattern: 'Pattern',
         motion: 'Motion',
@@ -12,7 +14,7 @@
         output: 'Output'
     };
 
-    const DEFAULT_OPEN_CARDS = new Set(['pattern']);
+    const DEFAULT_OPEN_CARDS = new Set(['pattern', 'motion', 'display']);
 
     const MOTION_CARD_KEYS = new Set([
         'playing', 'speed', 'motionBackgroundEnabled', 'reverse', 'active',
@@ -590,9 +592,11 @@
         `;
     }
 
-    function buildControlDeckHtml(layers, staticCards = {}) {
+    function buildControlDeckHtml(layers, staticCards = {}, options = {}) {
+        const cardOrder = options.cardOrder || DECK_CARD_ORDER;
+        const gridClass = options.gridClass || 'signal-lab-card-grid--deck';
         const cards = groupSchemaIntoCards(layers);
-        const merged = CARD_ORDER.map((id) => {
+        const merged = cardOrder.map((id) => {
             const dynamic = cards.find((card) => card.id === id);
             const extra = staticCards[id] || '';
             const items = dynamic?.items || [];
@@ -611,7 +615,14 @@
             return '';
         }
 
-        return `<div class="signal-lab-card-grid">${merged.map((card) => renderCard(card, card.extraHtml)).join('')}</div>`;
+        return `<div class="signal-lab-card-grid ${gridClass}">${merged.map((card) => renderCard(card, card.extraHtml)).join('')}</div>`;
+    }
+
+    function buildOutputPanelHtml(layers, staticCards = {}) {
+        return buildControlDeckHtml(layers, staticCards, {
+            cardOrder: ['output'],
+            gridClass: 'signal-lab-card-grid--output'
+        });
     }
 
     function flattenDeckLayers(layers) {
@@ -694,6 +705,7 @@
         SECTION_ORDER,
         SECTION_LABELS,
         CARD_ORDER,
+        DECK_CARD_ORDER,
         CARD_LABELS,
         getControlVisibility,
         groupSchemaIntoSections,
@@ -701,6 +713,7 @@
         buildOptionsHtml,
         buildToolbarHtml,
         buildControlDeckHtml,
+        buildOutputPanelHtml,
         flattenSchema,
         flattenDeckLayers,
         shouldRebuildOptions,

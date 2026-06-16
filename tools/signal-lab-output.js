@@ -57,6 +57,10 @@
         popoutDebug()?.logStateReceived({
             applied: true,
             activeModuleId: state.activeModuleId,
+            pattern: window.OkamiSignalLab?.getPatternFingerprint?.(
+                state.activeModuleId,
+                state.moduleState?.[state.activeModuleId]
+            ),
             sentAt: state.sentAt,
             requestFullscreen: Boolean(state.requestFullscreen)
         });

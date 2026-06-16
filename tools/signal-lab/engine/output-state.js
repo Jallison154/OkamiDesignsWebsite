@@ -218,6 +218,7 @@
         return {
             lastModuleId: null,
             lastPatternId: null,
+            lastPatternFingerprint: null,
             lastStateSnapshot: null,
             lastStateKeys: []
         };
