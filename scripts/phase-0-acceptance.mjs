@@ -39,11 +39,13 @@ async function fetchOk(url, label) {
 }
 
 function testLedCalculations() {
-    const label = 'LED wall golden calculation';
+    const label = 'LED wall golden calculation (inline smoke)';
     try {
+        const calcDir = path.join(root, 'tools', 'led-wall-calculator');
         const ctx = { OkamiLedWallCalculator: {} };
-        vm.runInNewContext(fs.readFileSync(path.join(root, 'tools/led-wall-calculator/constants.js'), 'utf8'), ctx);
-        vm.runInNewContext(fs.readFileSync(path.join(root, 'tools/led-wall-calculator/calculations.js'), 'utf8'), ctx);
+        for (const file of ['constants.js', 'calculations.js', 'metrics.js']) {
+            vm.runInNewContext(fs.readFileSync(path.join(calcDir, file), 'utf8'), ctx);
+        }
         const r = ctx.OkamiLedWallCalculator.computeWallProject({
             panelsWide: 10,
             panelsTall: 6,
@@ -107,17 +109,20 @@ function testServerRequires() {
     }
 }
 
-function testHtmlBootstrap(file, relPrefix) {
+function testHtmlBootstrap(file, relPrefix, options = {}) {
     const label = `HTML bootstrap: ${file}`;
+    const requireVisibility = options.requireVisibility !== false;
     try {
         const html = fs.readFileSync(path.join(root, file), 'utf8');
         const required = [
             `${relPrefix}shared/settings/site-settings.js`,
             `${relPrefix}shared/registry/pages.js`,
             `${relPrefix}shared/visibility/access-policy.js`,
-            `${relPrefix}page-registry.js`,
-            `${relPrefix}site-visibility.js`
+            `${relPrefix}page-registry.js`
         ];
+        if (requireVisibility) {
+            required.push(`${relPrefix}site-visibility.js`);
+        }
         const missing = required.filter((s) => !html.includes(s));
         if (missing.length) {
             fail(label, `missing: ${missing.join(', ')}`);
@@ -129,13 +134,49 @@ function testHtmlBootstrap(file, relPrefix) {
     }
 }
 
+function testSignalLabCalcShim() {
+    const label = 'Signal Lab LED calc shim loads shared metrics';
+    try {
+        const calcDir = path.join(root, 'tools', 'led-wall-calculator');
+        const ctx = {
+            OkamiLedWallCalculator: {},
+            OkamiSignalLab: {},
+            window: {},
+            globalThis: {}
+        };
+        ctx.window = ctx;
+        ctx.globalThis = ctx;
+        for (const file of ['constants.js', 'calculations.js', 'metrics.js']) {
+            vm.runInNewContext(fs.readFileSync(path.join(calcDir, file), 'utf8'), ctx);
+        }
+        vm.runInNewContext(
+            fs.readFileSync(path.join(root, 'tools/signal-lab/engine/led-wall-calculator.js'), 'utf8'),
+            ctx
+        );
+        const r = ctx.OkamiSignalLab.LedWallCalculator.calculateLedWall({
+            panelWidthPx: 192,
+            panelHeightPx: 192,
+            panelsWide: 10,
+            panelsTall: 6
+        });
+        if (r.totalWidth !== 1920 || r.totalHeight !== 1152) {
+            fail(label, `${r.totalWidth}×${r.totalHeight}`);
+            return;
+        }
+        pass(label);
+    } catch (error) {
+        fail(label, error.message);
+    }
+}
+
 function testCommercialFlagsDisabled() {
     const clientPath = path.join(root, 'client/commercial/commercial-client.js');
     const uiPath = path.join(root, 'client/commercial/commercial-ui.js');
     try {
         const client = fs.readFileSync(clientPath, 'utf8');
         const ui = fs.readFileSync(uiPath, 'utf8');
-        const clientOff = /COMMERCIAL_ENABLED\s*=\s*false/.test(client);
+        const clientOff = !/COMMERCIAL_ENABLED\s*=\s*true/.test(client)
+            && /isGatingActive/.test(client);
         const uiOff = /COMMERCIAL_UI_AUTO_INIT\s*=\s*false/.test(ui);
         if (clientOff && uiOff) {
             pass('Commercial flags disabled in client');
@@ -151,10 +192,12 @@ function testCommercialFlagsDisabled() {
 testLedCalculations();
 testSharedNodeModules();
 testServerRequires();
+testSignalLabCalcShim();
 testCommercialFlagsDisabled();
 testHtmlBootstrap('home.html', '');
 testHtmlBootstrap('tools/signal-lab.html', '../');
 testHtmlBootstrap('tools/led-wall-visualizer.html', '../');
+testHtmlBootstrap('admin.html', '', { requireVisibility: false });
 
 const pages = [
     '/home.html',

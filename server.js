@@ -9,9 +9,16 @@ const pageRegistry = require('./shared/registry/pages');
 const { DEFAULT_SITE_SETTINGS, normalizeSiteSettings } = require('./shared/settings/site-settings');
 const accessPolicy = require('./shared/visibility/access-policy');
 const commercialRoutes = require('./server/commercial/routes');
+const productVersion = require('./shared/commercial/product-version');
+const { readCommercialConfig, validateCommercialConfig, logCommercialValidation } = require('./server/commercial/config');
+const { readAppConfig } = require('./server/config/app-config');
+const { createCorsMiddleware } = require('./server/middleware/cors');
+const { isAdminRequest, requireAdmin } = require('./server/middleware/admin-auth');
+const { createRateLimiter } = require('./server/middleware/rate-limit');
 
+const appConfig = readAppConfig();
 const app = express();
-const PORT = Number(process.env.PORT) || 3000;
+const PORT = appConfig.port;
 const FILES_DIR = path.join(__dirname, 'files');
 const MANIFEST_PATH = path.join(FILES_DIR, 'manifest.json');
 const SITE_SETTINGS_PATH = path.join(FILES_DIR, 'site-settings.json');
@@ -47,22 +54,7 @@ async function buildUniqueFilename(manifest, slugCandidate, extension, excludeId
 
 // Middleware
 app.use(express.json());
-
-function parseRequestCookies(req) {
-    const header = req.headers.cookie || '';
-    return header.split(';').reduce((cookies, part) => {
-        const [name, ...rest] = part.trim().split('=');
-        if (!name) {
-            return cookies;
-        }
-        cookies[name] = decodeURIComponent(rest.join('='));
-        return cookies;
-    }, {});
-}
-
-function isAdminRequest(req) {
-    return parseRequestCookies(req).okami_admin === '1';
-}
+app.set('trust proxy', 1);
 
 const { normalizeVisibilityPath, getAccessDecision, buildVisibilityRedirect: sharedBuildVisibilityRedirect } = accessPolicy;
 
@@ -145,15 +137,12 @@ app.use('/files', express.static(FILES_DIR, {
     }
 }));
 
-// CORS middleware
-app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, DELETE, PUT, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type');
-    if (req.method === 'OPTIONS') {
-        return res.sendStatus(204);
-    }
-    next();
+app.use(createCorsMiddleware(appConfig));
+
+const analyticsRateLimit = createRateLimiter({
+    windowMs: appConfig.analyticsRateLimit.windowMs,
+    max: appConfig.analyticsRateLimit.max,
+    keyPrefix: 'analytics-view'
 });
 
 // Ensure files directory exists
@@ -421,7 +410,7 @@ app.get('/api/manifest', async (req, res) => {
 });
 
 // Upload file (with optional logo)
-app.post('/api/upload', upload.fields([
+app.post('/api/upload', requireAdmin, upload.fields([
     { name: 'file', maxCount: 1 },
     { name: 'logo', maxCount: 1 }
 ]), async (req, res) => {
@@ -488,7 +477,7 @@ app.post('/api/upload', upload.fields([
 });
 
 // Delete file
-app.delete('/api/files/:id', async (req, res) => {
+app.delete('/api/files/:id', requireAdmin, async (req, res) => {
     try {
         const fileId = parseInt(req.params.id);
         const manifest = await readManifest();
@@ -524,7 +513,7 @@ app.delete('/api/files/:id', async (req, res) => {
 });
 
 // Replace file contents (and optional logo)
-app.post('/api/files/:id/replace', upload.fields([
+app.post('/api/files/:id/replace', requireAdmin, upload.fields([
     { name: 'file', maxCount: 1 },
     { name: 'logo', maxCount: 1 }
 ]), async (req, res) => {
@@ -635,7 +624,7 @@ app.post('/api/files/:id/replace', upload.fields([
 });
 
 // Update file metadata
-app.put('/api/files/:id', async (req, res) => {
+app.put('/api/files/:id', requireAdmin, async (req, res) => {
     try {
         const fileId = parseInt(req.params.id);
         const manifest = await readManifest();
@@ -695,7 +684,7 @@ app.get('/api/site-settings', async (req, res) => {
     }
 });
 
-app.put('/api/site-settings', async (req, res) => {
+app.put('/api/site-settings', requireAdmin, async (req, res) => {
     try {
         const settings = await writeSiteSettings(req.body || {});
         res.json({ success: true, settings });
@@ -706,7 +695,7 @@ app.put('/api/site-settings', async (req, res) => {
 });
 
 // Site analytics
-app.post('/api/analytics/view', async (req, res) => {
+app.post('/api/analytics/view', analyticsRateLimit, async (req, res) => {
     try {
         const pathValue = (req.body?.path || '').trim();
         const title = (req.body?.title || '').trim();
@@ -723,7 +712,7 @@ app.post('/api/analytics/view', async (req, res) => {
     }
 });
 
-app.get('/api/analytics', async (req, res) => {
+app.get('/api/analytics', requireAdmin, async (req, res) => {
     try {
         const analytics = await readAnalytics();
         res.json(buildAnalyticsReport(analytics));
@@ -733,7 +722,7 @@ app.get('/api/analytics', async (req, res) => {
     }
 });
 
-app.post('/api/analytics/reset', async (req, res) => {
+app.post('/api/analytics/reset', requireAdmin, async (req, res) => {
     try {
         const scope = req.body?.scope;
         if (!['today', 'month', 'all'].includes(scope)) {
@@ -753,21 +742,43 @@ app.use('/api/commercial', commercialRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+    const commercial = readCommercialConfig();
+    res.json({
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        version: productVersion.WEB_APP_VERSION,
+        environment: appConfig.nodeEnv,
+        commercial: {
+            enabled: commercial.commercialEnabled
+        }
+    });
 });
 
-// Start server
-ensureFilesDir().then(() => {
-    app.listen(PORT, '0.0.0.0', () => {
-        console.log(`🚀 Okami Designs API server running on port ${PORT}`);
-        console.log(`📁 Files directory: ${FILES_DIR}`);
-        console.log(`✅ Server ready and listening on 0.0.0.0:${PORT}`);
+async function prepareServer() {
+    await ensureFilesDir();
+    logCommercialValidation(validateCommercialConfig(readCommercialConfig()));
+}
+
+function startServer() {
+    return prepareServer().then(() => new Promise((resolve, reject) => {
+        const server = app.listen(PORT, '0.0.0.0', () => {
+            console.log(`🚀 Okami Designs API server running on port ${PORT}`);
+            console.log(`📁 Files directory: ${FILES_DIR}`);
+            console.log(`✅ Server ready and listening on 0.0.0.0:${PORT}`);
+            resolve(server);
+        });
+        server.on('error', reject);
+    }));
+}
+
+module.exports = { app, prepareServer, startServer, PORT };
+
+if (require.main === module) {
+    startServer().catch((error) => {
+        console.error('Failed to start server:', error);
+        setTimeout(() => process.exit(1), 5000);
     });
-}).catch(error => {
-    console.error('Failed to start server:', error);
-    // Don't exit - let docker restart handle it
-    setTimeout(() => process.exit(1), 5000);
-});
+}
 
 // Graceful shutdown
 process.on('SIGTERM', () => {

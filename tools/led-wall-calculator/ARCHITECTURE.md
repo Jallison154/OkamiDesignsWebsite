@@ -39,8 +39,23 @@ All functions live on `OkamiLedWallCalculator` and accept plain objects.
 | `calculateProcessorPorts()` | Ports required for pixel load |
 | `calculateCabinetArtworkType()` | `square` / `tall` / custom preview art |
 | `computeWallProject()` | Full snapshot from project inputs |
+| `calculateLedWall()` | Quick grid metrics + scaling warnings (Signal Lab) |
 
 Constants and presets: `OkamiLedWallCalculator.Constants`.
+
+### Module load order (browser)
+
+```html
+<script src="led-wall-calculator/constants.js"></script>
+<script src="led-wall-calculator/calculations.js"></script>
+<script src="led-wall-calculator/metrics.js"></script>
+```
+
+### Tests
+
+```bash
+npm run test:calculations
+```
 
 ---
 
@@ -78,5 +93,6 @@ Future: persist this JSON for projects, multi-wall arrays, PDF/PNG/SVG export, p
 
 ## Related code
 
-- `tools/signal-lab/engine/led-wall-calculator.js` — Signal Lab metrics module; should converge on this layer over time.
-- `tools/signal-lab/modules/led-wall-utilities.js` — canvas preview; uses Signal Lab engine today.
+- `tools/led-wall-calculator/metrics.js` — grid metrics + warnings (`calculateLedWall`); shared by Signal Lab via shim.
+- `tools/signal-lab/engine/led-wall-calculator.js` — thin adapter → `OkamiLedWallCalculator.Metrics`.
+- `tools/signal-lab/modules/led-wall-utilities.js` — canvas preview; uses metrics via `OkamiSignalLab.LedWallCalculator`.

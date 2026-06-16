@@ -53,7 +53,8 @@
     }
 
     function renderUpgradePlaceholder(container, productId) {
-        if (!global.OkamiCommercialClient?.COMMERCIAL_ENABLED) {
+        const client = global.OkamiCommercialClient;
+        if (!client?.isGatingActive?.()) {
             return;
         }
 
@@ -73,20 +74,22 @@
     }
 
     async function initCommercialUi(options = {}) {
-        if (!global.OkamiCommercialClient?.COMMERCIAL_ENABLED && options.force !== true) {
-            return null;
-        }
-
         const client = global.OkamiCommercialClient;
         if (!client) {
             return null;
         }
 
-        let config = null;
-        try {
-            config = await client.fetchConfig();
-        } catch (error) {
-            console.warn('Commercial config unavailable:', error.message || error);
+        let config = options.config || null;
+        if (!config) {
+            try {
+                config = await client.fetchConfig();
+            } catch (error) {
+                console.warn('Commercial config unavailable:', error.message || error);
+            }
+        }
+
+        if (!client.isUiActive(config) && options.force !== true) {
+            return null;
         }
 
         if (options.footer !== false) {

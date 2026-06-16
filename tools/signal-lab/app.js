@@ -6,7 +6,7 @@
     }
 
     /** Temporary scaling debug — set false or use ?debugScale=0 to hide. ?debugScale=1 forces on. */
-    const PREVIEW_SCALE_DEBUG_DEFAULT = true;
+    const PREVIEW_SCALE_DEBUG_DEFAULT = false;
 
     function isPreviewScaleDebugEnabled() {
         const params = new URLSearchParams(window.location.search);
@@ -1129,6 +1129,8 @@
         initPreviewScaleDebug();
         updatePreviewPatternName();
         updateOutputBadge();
+
+        void global.OkamiCommercialGate?.initForProduct?.('okami-signal-lab');
     }
 
     window.initSignalLab = initSignalLab;

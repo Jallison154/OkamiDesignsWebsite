@@ -67,18 +67,85 @@
     const TOAST_DURATION = 5000;
     const SITE_SETTINGS_STORAGE_KEY = 'okami-site-settings';
 
-    const DEFAULT_SITE_SETTINGS = {
-        constructionMode: false,
-        pages: {
-            home: true,
-            services: true,
-            tools: true,
-            support: true,
-            contact: true,
-            ledVideoWallCalculator: true,
-            okamiSignalLab: true
+    function getSettingsApi() {
+        return window.OkamiShared?.Settings || null;
+    }
+
+    function getDefaultSiteSettings() {
+        const api = getSettingsApi();
+        if (api?.DEFAULT_SITE_SETTINGS) {
+            return api.DEFAULT_SITE_SETTINGS;
         }
-    };
+        return {
+            constructionMode: false,
+            pages: {
+                home: true,
+                services: true,
+                tools: true,
+                support: true,
+                contact: true,
+                ledVideoWallCalculator: true,
+                okamiSignalLab: true
+            }
+        };
+    }
+
+    function normalizeSiteSettings(raw) {
+        const api = getSettingsApi();
+        if (api?.mergeSettings) {
+            return api.mergeSettings(raw);
+        }
+
+        const defaults = getDefaultSiteSettings();
+        const pages = { ...defaults.pages, ...(raw?.pages || {}) };
+        Object.keys(defaults.pages).forEach((key) => {
+            pages[key] = pages[key] !== false;
+        });
+
+        return {
+            constructionMode: Boolean(raw?.constructionMode),
+            pages
+        };
+    }
+
+    function formatVisibilityPath(page) {
+        if (page.analyticsPath) {
+            return page.analyticsPath;
+        }
+        const filePath = page.filePaths?.[0];
+        return filePath ? `/${filePath}` : '/';
+    }
+
+    function renderVisibilityPageList() {
+        const container = document.getElementById('visibility-page-list');
+        if (!container || container.dataset.rendered === 'true') {
+            return;
+        }
+
+        const pages = window.OkamiPageRegistry?.PUBLIC_PAGES;
+        if (!pages?.length) {
+            return;
+        }
+
+        container.innerHTML = pages.map((page) => {
+            const pathLabel = formatVisibilityPath(page);
+            return `
+                <div class="visibility-page-row" data-page-key="${escapeHtml(page.key)}">
+                    <div class="visibility-page-info">
+                        <span class="visibility-page-name">${escapeHtml(page.title)}</span>
+                        <span class="visibility-page-path">${escapeHtml(pathLabel)}</span>
+                    </div>
+                    <label class="visibility-switch">
+                        <input type="checkbox" class="visibility-page-toggle" data-page-key="${escapeHtml(page.key)}" checked>
+                        <span class="visibility-switch-slider" aria-hidden="true"></span>
+                        <span class="visibility-switch-text">Visible</span>
+                    </label>
+                </div>
+            `;
+        }).join('');
+
+        container.dataset.rendered = 'true';
+    }
 
     function showToast(message, type = 'info') {
         const toastContainer = document.getElementById('toast-container');
@@ -426,21 +493,9 @@
         loadSiteVisibilitySettings();
     }
 
-    function normalizeSiteSettings(raw) {
-        const pages = { ...DEFAULT_SITE_SETTINGS.pages, ...(raw?.pages || {}) };
-        Object.keys(DEFAULT_SITE_SETTINGS.pages).forEach((key) => {
-            pages[key] = pages[key] !== false;
-        });
-
-        return {
-            constructionMode: Boolean(raw?.constructionMode),
-            pages
-        };
-    }
-
     function readSiteVisibilityForm() {
         const constructionToggle = document.getElementById('construction-mode-toggle');
-        const settings = normalizeSiteSettings(DEFAULT_SITE_SETTINGS);
+        const settings = normalizeSiteSettings(getDefaultSiteSettings());
         settings.constructionMode = Boolean(constructionToggle?.checked);
 
         document.querySelectorAll('.visibility-page-toggle').forEach((toggle) => {
@@ -517,7 +572,7 @@
             }
         }
 
-        applySiteVisibilityForm(settings || DEFAULT_SITE_SETTINGS);
+        applySiteVisibilityForm(settings || getDefaultSiteSettings());
     }
 
     function setVisibilitySaveStatus(message, isError = false) {
@@ -570,6 +625,8 @@
     }
 
     function initSiteVisibilityAdmin() {
+        renderVisibilityPageList();
+
         const saveButton = document.getElementById('save-site-visibility');
         const constructionToggle = document.getElementById('construction-mode-toggle');
 

@@ -1,24 +1,7 @@
 (function(global) {
     'use strict';
 
-    /** Set true when commercial API + UI gating is ready for production. */
-    const COMMERCIAL_ENABLED = false;
-
     const API_BASE = '/api/commercial';
-
-    const MOCK_CONFIG = {
-        companyName: 'Okami Designs',
-        legal: global.OkamiShared?.CommercialPublic?.LEGAL_LINKS || {},
-        commercialEnabled: false
-    };
-
-    const MOCK_ENTITLEMENTS = {
-        tier: 'professional',
-        tierLabel: 'Development',
-        featureMap: {},
-        authenticated: false,
-        license: { valid: true, source: 'mock', message: null }
-    };
 
     let configCache = null;
     let entitlementsCache = new Map();
@@ -26,7 +9,7 @@
     function buildAllFeaturesMap() {
         const features = global.OkamiShared?.CommercialFeatures?.FEATURES;
         if (!features) {
-            return { all: true };
+            return {};
         }
         return Object.values(features).reduce((acc, key) => {
             acc[key] = true;
@@ -34,24 +17,15 @@
         }, {});
     }
 
-    MOCK_ENTITLEMENTS.featureMap = buildAllFeaturesMap();
+    function isGatingActive(config = configCache) {
+        return Boolean(config?.commercialEnabled || config?.featureGatingEnabled);
+    }
+
+    function isUiActive(config = configCache) {
+        return Boolean(config?.clientCommercialUiEnabled);
+    }
 
     async function fetchJson(path, options = {}) {
-        if (!COMMERCIAL_ENABLED) {
-            if (path === '/config' || path.startsWith('/config?')) {
-                return { ...MOCK_CONFIG, featureMap: MOCK_ENTITLEMENTS.featureMap };
-            }
-            if (path.startsWith('/entitlements')) {
-                return { ...MOCK_ENTITLEMENTS, featureMap: buildAllFeaturesMap() };
-            }
-            if (path.startsWith('/account/session')) {
-                return { authenticated: false, user: null, tier: 'professional' };
-            }
-            if (path.startsWith('/version')) {
-                return { updateAvailable: false, currentVersion: '1.0.0' };
-            }
-        }
-
         const response = await fetch(`${API_BASE}${path}`, {
             credentials: 'same-origin',
             ...options,
@@ -72,12 +46,19 @@
         if (configCache && !forceRefresh) {
             return configCache;
         }
+
         try {
             configCache = await fetchJson('/config');
         } catch (error) {
-            console.warn('Commercial config unavailable, using mock:', error.message || error);
-            configCache = { ...MOCK_CONFIG, featureMap: buildAllFeaturesMap() };
+            console.warn('Commercial config unavailable:', error.message || error);
+            configCache = {
+                commercialEnabled: false,
+                clientCommercialUiEnabled: false,
+                featureGatingEnabled: false,
+                legal: global.OkamiShared?.CommercialPublic?.LEGAL_LINKS || {}
+            };
         }
+
         return configCache;
     }
 
@@ -89,26 +70,44 @@
 
         const query = productId ? `?productId=${encodeURIComponent(productId)}` : '';
         let entitlements;
+
         try {
             entitlements = await fetchJson(`/entitlements${query}`);
         } catch (error) {
-            console.warn('Commercial entitlements unavailable, using mock:', error.message || error);
+            console.warn('Commercial entitlements unavailable:', error.message || error);
             entitlements = {
-                ...MOCK_ENTITLEMENTS,
                 productId: productId || null,
+                tier: 'professional',
+                featureMap: buildAllFeaturesMap(),
+                license: { valid: true, source: 'fallback' }
+            };
+        }
+
+        if (!isGatingActive(configCache)) {
+            entitlements = {
+                ...entitlements,
+                tier: 'professional',
                 featureMap: buildAllFeaturesMap()
             };
         }
+
         entitlementsCache.set(cacheKey, entitlements);
         return entitlements;
     }
 
+    async function activateLicense(productId, licenseKey) {
+        const entitlements = await fetchJson('/entitlements', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ productId, licenseKey })
+        });
+        entitlementsCache.set(productId || '__default__', entitlements);
+        global.OkamiCommercialEntitlements = entitlements;
+        return entitlements;
+    }
+
     async function fetchAccountSession() {
-        try {
-            return await fetchJson('/account/session');
-        } catch {
-            return { authenticated: false, user: null, tier: 'professional' };
-        }
+        return fetchJson('/account/session');
     }
 
     async function checkVersion(channel, currentVersion) {
@@ -120,15 +119,11 @@
             params.set('version', currentVersion);
         }
         const suffix = params.toString() ? `?${params.toString()}` : '';
-        try {
-            return await fetchJson(`/version${suffix}`);
-        } catch {
-            return { updateAvailable: false, currentVersion: currentVersion || '1.0.0' };
-        }
+        return fetchJson(`/version${suffix}`);
     }
 
     function hasFeature(entitlements, featureKey) {
-        if (!COMMERCIAL_ENABLED) {
+        if (!isGatingActive()) {
             return true;
         }
         return Boolean(entitlements?.featureMap?.[featureKey]);
@@ -140,12 +135,17 @@
     }
 
     global.OkamiCommercialClient = {
-        COMMERCIAL_ENABLED,
         fetchConfig,
         fetchEntitlements,
+        activateLicense,
         fetchAccountSession,
         checkVersion,
         hasFeature,
-        clearCache
+        isGatingActive,
+        isUiActive,
+        clearCache,
+        getFeatureKeys() {
+            return global.OkamiShared?.CommercialFeatures?.FEATURES || {};
+        }
     };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -285,6 +285,18 @@
                 return;
             }
 
+            const gate = global.OkamiCommercialGate;
+            if (gate?.checkExportAllowed) {
+                const check = await gate.checkExportAllowed(state);
+                if (!check.allowed) {
+                    gate.showUpgradeNotice?.(
+                        'JPG exports and resolutions above 1080p require a premium license.'
+                    );
+                    context?.setStatus?.('Premium export — license required.');
+                    return;
+                }
+            }
+
             context?.setStatus?.('Rendering export…');
 
             try {

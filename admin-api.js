@@ -18,6 +18,7 @@ async function uploadFile({ file, logo, displayName, slug }) {
     try {
         const response = await fetch(`${API_BASE}/upload`, {
             method: 'POST',
+            credentials: 'same-origin',
             body: formData
         });
 
@@ -51,7 +52,8 @@ async function getFiles() {
 async function deleteFileById(fileId) {
     try {
         const response = await fetch(`${API_BASE}/files/${fileId}`, {
-            method: 'DELETE'
+            method: 'DELETE',
+            credentials: 'same-origin'
         });
         if (!response.ok) {
             throw new Error(`Delete failed: ${response.statusText}`);
@@ -86,6 +88,7 @@ async function replaceFileById(fileId, { file, logo, displayName, slug }) {
     try {
         const response = await fetch(`${API_BASE}/files/${fileId}/replace`, {
             method: 'POST',
+            credentials: 'same-origin',
             body: formData
         });
 
@@ -105,6 +108,7 @@ async function updateFileMetadata(fileId, updates) {
     try {
         const response = await fetch(`${API_BASE}/files/${fileId}`, {
             method: 'PUT',
+            credentials: 'same-origin',
             headers: {
                 'Content-Type': 'application/json'
             },
@@ -138,6 +142,7 @@ async function saveSiteSettings(settings) {
     try {
         const response = await fetch(`${API_BASE}/site-settings`, {
             method: 'PUT',
+            credentials: 'same-origin',
             headers: {
                 'Content-Type': 'application/json'
             },
@@ -157,7 +162,10 @@ async function saveSiteSettings(settings) {
 
 async function getAnalyticsReport() {
     try {
-        const response = await fetch(`${API_BASE}/analytics`, { cache: 'no-store' });
+        const response = await fetch(`${API_BASE}/analytics`, {
+            cache: 'no-store',
+            credentials: 'same-origin'
+        });
         if (!response.ok) {
             throw new Error(`Failed to fetch analytics: ${response.statusText}`);
         }
@@ -172,6 +180,7 @@ async function resetAnalytics(scope) {
     try {
         const response = await fetch(`${API_BASE}/analytics/reset`, {
             method: 'POST',
+            credentials: 'same-origin',
             headers: {
                 'Content-Type': 'application/json'
             },

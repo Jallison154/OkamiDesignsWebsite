@@ -14,6 +14,7 @@ const router = express.Router();
 
 /** Public config safe for browsers and desktop shells (no secrets). */
 router.get('/config', (req, res) => {
+    const commercial = readCommercialConfig();
     res.json({
         companyName: publicConfig.companyName,
         supportEmail: publicConfig.supportEmail,
@@ -22,7 +23,9 @@ router.get('/config', (req, res) => {
         features: FEATURES,
         tiers: Object.keys(TIERS),
         version: getPublicVersionInfo(),
-        commercialEnabled: readCommercialConfig().commercialEnabled
+        commercialEnabled: commercial.commercialEnabled,
+        clientCommercialUiEnabled: commercial.clientCommercialUiEnabled,
+        featureGatingEnabled: commercial.commercialEnabled
     });
 });
 

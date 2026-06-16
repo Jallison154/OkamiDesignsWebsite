@@ -1,6 +1,8 @@
 # Okami Designs Website
 
-A modern, responsive "Coming Soon" splash page for Okami Designs with brand colors and professional typography.
+A modern, responsive website for Okami Designs with AV tools (Signal Lab, LED Video Wall Calculator), admin panel, and API backend.
+
+**Developer docs:** [Contributing](docs/CONTRIBUTING.md) · [Script load order](docs/SCRIPT-LOAD-ORDER.md) · [Commercial architecture](ARCHITECTURE-COMMERCIAL.md)
 
 ## Current Status
 

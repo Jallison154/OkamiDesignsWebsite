@@ -58,6 +58,7 @@ Separate surfaces (same core, different hosts):
 | `engine/sync-audio.js` | AV sync click synth | Yes |
 | `engine/output-state.js` | Canonical state snapshot + apply | Yes |
 | `engine/control-utils.js` | Numeric clamp/display helpers | Yes |
+| `engine/led-wall-calculator.js` | Adapter → `../led-wall-calculator/metrics.js` | Yes (via shared module) |
 | `engine/screen-placement.js` | Multi-monitor (browser API) | Web-only adapter; replace in desktop |
 | `modules/*.js` | Feature plugins + pattern definitions | Mostly yes |
 | `modules/registry.js` | Module catalog | Yes |
