@@ -75,7 +75,8 @@
             tools: true,
             support: true,
             contact: true,
-            ledVideoWallCalculator: true
+            ledVideoWallCalculator: true,
+            okamiSignalLab: true
         }
     };
 

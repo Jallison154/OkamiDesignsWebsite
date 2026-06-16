@@ -9,7 +9,8 @@
             tools: true,
             support: true,
             contact: true,
-            ledVideoWallCalculator: true
+            ledVideoWallCalculator: true,
+            okamiSignalLab: true
         }
     };
 
@@ -18,8 +19,15 @@
         services: ['services.html'],
         support: ['support.html'],
         contact: ['contact.html'],
-        ledVideoWallCalculator: ['tools/led-wall-visualizer.html']
+        tools: ['tools/index.html'],
+        ledVideoWallCalculator: ['tools/led-wall-visualizer.html'],
+        okamiSignalLab: ['tools/signal-lab.html']
     };
+
+    const TOOL_PAGE_KEYS = window.OkamiPageRegistry?.TOOL_PAGE_KEYS || [
+        'ledVideoWallCalculator',
+        'okamiSignalLab'
+    ];
 
     const SYSTEM_PAGES = new Set(['404.html', '50x.html']);
     const ADMIN_LOGIN_PAGE = 'admin.html';
@@ -73,6 +81,10 @@
 
         if (path === 'home.html') {
             return 'home';
+        }
+
+        if (path === 'tools/index.html') {
+            return 'tools';
         }
 
         for (const [key, paths] of Object.entries(PAGE_PATHS)) {
@@ -317,9 +329,10 @@
 
     function applyNavigation(settings) {
         const pages = settings.pages;
+        const skipNavKeys = new Set(['tools', ...TOOL_PAGE_KEYS]);
 
         Object.entries(PAGE_PATHS).forEach(([pageKey, paths]) => {
-            if (pageKey === 'ledVideoWallCalculator') {
+            if (skipNavKeys.has(pageKey)) {
                 return;
             }
 
@@ -333,16 +346,38 @@
             });
         });
 
-        document.querySelectorAll('a[href*="led-wall-visualizer"]').forEach((link) => {
-            setNavItemVisible(link, pages.ledVideoWallCalculator !== false);
+        document.querySelectorAll('[data-tool-key]').forEach((link) => {
+            const pageKey = link.dataset.toolKey;
+            if (!pageKey || !Object.prototype.hasOwnProperty.call(pages, pageKey)) {
+                return;
+            }
+            setNavItemVisible(link, pages[pageKey] !== false);
         });
 
-        const showToolsMenu = pages.tools !== false && pages.ledVideoWallCalculator !== false;
+        document.querySelectorAll('[data-tools-hub]').forEach((link) => {
+            setNavItemVisible(link, pages.tools !== false);
+        });
+
+        const anyToolVisible = TOOL_PAGE_KEYS.some((key) => pages[key] !== false);
+        const showToolsMenu = pages.tools !== false && anyToolVisible;
+
         document.querySelectorAll('.nav-dropdown').forEach((dropdown) => {
             setNavItemVisible(dropdown, showToolsMenu);
         });
         document.querySelectorAll('.nav-mobile-group').forEach((group) => {
             setNavItemVisible(group, showToolsMenu);
+        });
+
+        document.querySelectorAll('[data-tools-card]').forEach((card) => {
+            const pageKey = card.dataset.toolsCard;
+            if (!pageKey) {
+                return;
+            }
+            const visible = pageKey === 'tools'
+                ? pages.tools !== false
+                : pages[pageKey] !== false;
+            card.hidden = !visible;
+            card.style.display = visible ? '' : 'none';
         });
     }
 

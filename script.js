@@ -370,6 +370,10 @@ function reinitializeDynamicContent() {
         window.initLedWallVisualizer();
     }
 
+    if (typeof window.initSignalLab === 'function' && document.getElementById('signal-lab-app')) {
+        window.initSignalLab();
+    }
+
     initNavDropdown();
 
     if (window.SiteVisibility && typeof window.SiteVisibility.fetchSiteSettings === 'function') {

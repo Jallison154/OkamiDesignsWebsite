@@ -20,7 +20,8 @@ const DEFAULT_SITE_SETTINGS = {
         tools: true,
         support: true,
         contact: true,
-        ledVideoWallCalculator: true
+        ledVideoWallCalculator: true,
+        okamiSignalLab: true
     }
 };
 
@@ -95,8 +96,14 @@ function getVisibilityPageKey(pathValue) {
     if (pathValue === 'contact.html') {
         return 'contact';
     }
+    if (pathValue === 'tools/index.html') {
+        return 'tools';
+    }
     if (pathValue === 'tools/led-wall-visualizer.html') {
         return 'ledVideoWallCalculator';
+    }
+    if (pathValue === 'tools/signal-lab.html') {
+        return 'okamiSignalLab';
     }
     return null;
 }
@@ -320,7 +327,9 @@ const TRACKABLE_PAGES = [
     { path: '/services.html', title: 'Services' },
     { path: '/support.html', title: 'Support' },
     { path: '/contact.html', title: 'Contact' },
+    { path: '/tools/index.html', title: 'Tools' },
     { path: '/tools/led-wall-visualizer.html', title: 'LED Video Wall Calculator' },
+    { path: '/tools/signal-lab.html', title: 'Okami Signal Lab' },
     { path: '/', title: 'Construction Splash' }
 ];
 

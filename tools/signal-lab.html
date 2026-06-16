@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en" class="signal-lab-root">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Okami Signal Lab | Okami Designs</title>
+    <meta name="title" content="Okami Signal Lab | Okami Designs">
+    <meta name="description" content="Professional AV testing and calibration for LED walls, projectors, broadcast systems, and event production. By Okami Designs.">
+    <meta property="og:title" content="Okami Signal Lab | Okami Designs">
+    <meta property="og:description" content="AV signal testing, calibration patterns, and production utilities.">
+    <meta name="author" content="Jonathan Allison, Founder">
+    <link rel="icon" href="../images/Okami_Designs_HeadWhite.png" type="image/png">
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body class="signal-lab-page">
+    <header class="header">
+        <div class="container">
+            <div class="nav-wrapper">
+                <div class="logo">
+                    <a href="../home.html">
+                        <img src="../GFX/Full/Okami_Designs_FullW.png" alt="Okami Designs" class="logo-img">
+                    </a>
+                </div>
+                <button class="mobile-menu-toggle" aria-label="Toggle menu">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+                <nav class="nav">
+                    <a href="../home.html" class="nav-link">HOME</a>
+                    <a href="../services.html" class="nav-link">SERVICES</a>
+                    <a href="../support.html" class="nav-link">SUPPORT</a>
+                    <div class="nav-dropdown">
+                        <button type="button" class="nav-link nav-dropdown-toggle active" aria-expanded="false" aria-haspopup="true">
+                            TOOLS <span class="nav-dropdown-caret" aria-hidden="true">▾</span>
+                        </button>
+                        <div class="nav-dropdown-menu" role="menu">
+                            <a href="index.html" class="nav-dropdown-item" data-tools-hub role="menuitem">All Tools</a>
+                            <a href="led-wall-visualizer.html" class="nav-dropdown-item" data-tool-key="ledVideoWallCalculator" role="menuitem">LED Video Wall Calculator</a>
+                            <a href="signal-lab.html" class="nav-dropdown-item active" data-tool-key="okamiSignalLab" role="menuitem">Okami Signal Lab</a>
+                        </div>
+                    </div>
+                    <a href="../contact.html" class="nav-link contact-btn">CONTACT</a>
+                </nav>
+                <nav class="nav-mobile">
+                    <a href="../home.html" class="nav-link">HOME</a>
+                    <a href="../services.html" class="nav-link">SERVICES</a>
+                    <a href="../support.html" class="nav-link">SUPPORT</a>
+                    <div class="nav-mobile-group open">
+                        <button type="button" class="nav-link nav-dropdown-toggle active" aria-expanded="true">TOOLS <span class="nav-dropdown-caret" aria-hidden="true">▾</span></button>
+                        <div class="nav-mobile-submenu">
+                            <a href="index.html" class="nav-link nav-sublink" data-tools-hub>All Tools</a>
+                            <a href="led-wall-visualizer.html" class="nav-link nav-sublink" data-tool-key="ledVideoWallCalculator">LED Video Wall Calculator</a>
+                            <a href="signal-lab.html" class="nav-link nav-sublink active" data-tool-key="okamiSignalLab">Okami Signal Lab</a>
+                        </div>
+                    </div>
+                    <a href="../contact.html" class="nav-link contact-btn">CONTACT</a>
+                </nav>
+            </div>
+        </div>
+        <div class="header-divider"></div>
+    </header>
+
+    <main class="main signal-lab-main">
+        <div id="signal-lab-app" class="signal-lab-app">
+            <header class="signal-lab-header">
+                <div class="signal-lab-header-copy">
+                    <h1 class="tool-title">Okami Signal Lab</h1>
+                    <p class="tool-subtitle">Professional AV testing and calibration for LED walls, projectors, TVs, broadcast, and media servers.</p>
+                </div>
+                <div class="signal-lab-header-meta">
+                    <span id="signal-lab-status" class="signal-lab-status">Initializing…</span>
+                    <span id="signal-lab-resolution" class="signal-lab-resolution">—</span>
+                </div>
+            </header>
+
+            <div class="signal-lab-layout">
+                <aside class="signal-lab-controls led-panel" aria-label="Signal Lab controls">
+                    <h2 class="led-panel-title">Modules</h2>
+                    <p class="signal-lab-controls-note">Select a module, then choose a pattern or setting to update the live output instantly.</p>
+
+                    <div class="signal-lab-search">
+                        <label class="signal-lab-search-label" for="signal-lab-search">Search tools</label>
+                        <input type="search" id="signal-lab-search" class="signal-lab-search-input"
+                            placeholder="Search patterns, audio, sync, export…" autocomplete="off" spellcheck="false">
+                        <p id="signal-lab-search-status" class="signal-lab-search-status" hidden></p>
+                    </div>
+
+                    <div id="signal-lab-module-list" class="signal-lab-module-list" role="listbox" aria-label="Signal Lab modules"></div>
+
+                    <div id="signal-lab-module-options" class="signal-lab-module-options" hidden></div>
+
+                    <div class="signal-lab-module-info">
+                        <h3 id="signal-lab-module-title" class="signal-lab-module-info-title">Signal Check</h3>
+                        <p id="signal-lab-module-desc" class="signal-lab-module-info-desc">Professional calibration pattern with color bars, focus targets, safe areas, and motion tests.</p>
+                    </div>
+
+                    <div class="signal-lab-output-actions">
+                        <h3 class="signal-lab-actions-label">Output</h3>
+                        <div class="signal-lab-output-setting">
+                            <label class="signal-lab-control-label" for="signal-lab-pattern-resolution">Pattern Resolution</label>
+                            <select id="signal-lab-pattern-resolution" class="led-select signal-lab-select"></select>
+                        </div>
+                        <div id="signal-lab-pattern-custom" class="signal-lab-pattern-custom" hidden>
+                            <div class="signal-lab-output-setting">
+                                <label class="signal-lab-control-label" for="signal-lab-pattern-width">Pattern Width</label>
+                                <input type="number" id="signal-lab-pattern-width" class="signal-lab-number-input" min="64" max="16384" step="1" value="1920">
+                            </div>
+                            <div class="signal-lab-output-setting">
+                                <label class="signal-lab-control-label" for="signal-lab-pattern-height">Pattern Height</label>
+                                <input type="number" id="signal-lab-pattern-height" class="signal-lab-number-input" min="64" max="16384" step="1" value="1080">
+                            </div>
+                        </div>
+                        <p id="signal-lab-resolution-warning" class="signal-lab-resolution-warning" hidden></p>
+                        <div id="signal-lab-screen-select-wrap" class="signal-lab-output-setting">
+                            <label class="signal-lab-control-label" for="signal-lab-screen-select">Open on Screen</label>
+                            <select id="signal-lab-screen-select" class="led-select signal-lab-select"></select>
+                            <p id="signal-lab-screen-note" class="signal-lab-screen-note"></p>
+                        </div>
+                        <div class="signal-lab-actions-row">
+                            <button type="button" id="signal-lab-fullscreen" class="led-btn led-btn-secondary">Fullscreen</button>
+                            <button type="button" id="signal-lab-popout" class="led-btn led-btn-secondary">Pop Out</button>
+                        </div>
+                        <div class="signal-lab-actions-row">
+                            <button type="button" id="signal-lab-popout-fullscreen" class="led-btn led-btn-secondary">Pop Out Fullscreen</button>
+                            <button type="button" id="signal-lab-open-screen" class="led-btn led-btn-secondary">Open on Screen</button>
+                        </div>
+                        <button type="button" id="signal-lab-close-popout" class="led-btn led-btn-text" hidden>Close Pop-out Window</button>
+                    </div>
+                </aside>
+
+                <section class="signal-lab-preview led-panel" aria-label="Live preview">
+                    <div class="signal-lab-preview-bar">
+                        <h2 class="led-panel-title">Live Output</h2>
+                    </div>
+                    <div class="signal-lab-stage" id="signal-lab-stage">
+                        <div class="signal-lab-canvas-wrap" id="signal-lab-canvas-wrap">
+                            <canvas id="signal-lab-canvas" aria-label="Signal Lab live output canvas"></canvas>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <div id="particles-js"></div>
+
+    <script src="../page-registry.js"></script>
+    <script src="../site-visibility.js"></script>
+    <script src="../analytics-tracker.js"></script>
+    <script src="../script.js"></script>
+    <script src="signal-lab/engine/control-utils.js"></script>
+    <script src="signal-lab/engine/pattern-resolution.js"></script>
+    <script src="signal-lab/engine/screen-placement.js"></script>
+    <script src="signal-lab/engine/overlay-renderer.js"></script>
+    <script src="signal-lab/engine/display-metrics.js"></script>
+    <script src="signal-lab/engine/sync-audio.js"></script>
+    <script src="signal-lab/engine/audio-engine.js"></script>
+    <script src="signal-lab/engine/module-search.js"></script>
+    <script src="signal-lab/engine/pattern-exporter.js"></script>
+    <script src="signal-lab/engine/led-wall-calculator.js"></script>
+    <script src="signal-lab/engine/render-engine.js"></script>
+    <script src="signal-lab/engine/okami-calibration-pattern.js"></script>
+    <script src="signal-lab/modules/registry.js"></script>
+    <script src="signal-lab/modules/welcome-pattern.js"></script>
+    <script src="signal-lab/modules/video-patterns.js"></script>
+    <script src="signal-lab/modules/motion-patterns.js"></script>
+    <script src="signal-lab/modules/audio-generator.js"></script>
+    <script src="signal-lab/modules/av-sync-tools.js"></script>
+    <script src="signal-lab/modules/display-info.js"></script>
+    <script src="signal-lab/modules/branding-overlay.js"></script>
+    <script src="signal-lab/modules/pattern-export.js"></script>
+    <script src="signal-lab/modules/led-wall-utilities.js"></script>
+    <script src="signal-lab/app.js"></script>
+</body>
+</html>

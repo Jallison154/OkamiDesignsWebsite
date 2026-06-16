@@ -6,7 +6,8 @@
     "tools": true,
     "support": true,
     "contact": true,
-    "ledVideoWallCalculator": true
+    "ledVideoWallCalculator": true,
+    "okamiSignalLab": true
   },
   "updatedAt": "2026-06-15T01:50:17.461Z"
 }

@@ -35,13 +35,29 @@
             trackAnalytics: true
         },
         {
+            key: 'tools',
+            title: 'Tools',
+            filePaths: ['tools/index.html'],
+            analyticsPath: '/tools/index.html',
+            trackAnalytics: true
+        },
+        {
             key: 'ledVideoWallCalculator',
             title: 'LED Video Wall Calculator',
             filePaths: ['tools/led-wall-visualizer.html'],
             analyticsPath: '/tools/led-wall-visualizer.html',
             trackAnalytics: true
+        },
+        {
+            key: 'okamiSignalLab',
+            title: 'Okami Signal Lab',
+            filePaths: ['tools/signal-lab.html'],
+            analyticsPath: '/tools/signal-lab.html',
+            trackAnalytics: true
         }
     ];
+
+    const TOOL_PAGE_KEYS = ['ledVideoWallCalculator', 'okamiSignalLab'];
 
     const SPLASH_PAGE = {
         key: 'splash',
@@ -122,6 +138,14 @@
         ];
     }
 
+    function getToolPages() {
+        return PUBLIC_PAGES.filter((page) => TOOL_PAGE_KEYS.includes(page.key));
+    }
+
+    function getToolsHubPage() {
+        return PUBLIC_PAGES.find((page) => page.key === 'tools') || null;
+    }
+
     function isExemptPath(pathname) {
         const filePath = normalizeFilePath(pathname);
         return EXEMPT_PATHS.has(filePath);
@@ -139,12 +163,15 @@
     window.OkamiPageRegistry = {
         PUBLIC_PAGES,
         SPLASH_PAGE,
+        TOOL_PAGE_KEYS,
         EXEMPT_PATHS,
         normalizeFilePath,
         normalizeAnalyticsPath,
         resolvePage,
         getVisibilityPagePaths,
         getTrackablePages,
+        getToolPages,
+        getToolsHubPage,
         isExemptPath,
         shouldTrackAnalytics
     };
