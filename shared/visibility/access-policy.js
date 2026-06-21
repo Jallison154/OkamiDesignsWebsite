@@ -109,12 +109,17 @@
                 : { allowed: false, reason: 'admin-auth' };
         }
 
-        if (isAdminRole(input) || isAdminRoutePath(pathname)) {
-            return { allowed: true, reason: null };
+        if (isAdminRoutePath(pathname)) {
+            return isAdminRole(input)
+                ? { allowed: true, reason: null }
+                : { allowed: false, reason: 'admin-auth' };
         }
 
         if (settings.constructionMode) {
             if (isConstructionLandingPath(pathname)) {
+                return { allowed: true, reason: null };
+            }
+            if (isAdminRole(input)) {
                 return { allowed: true, reason: null };
             }
             return { allowed: false, reason: 'construction' };
@@ -133,7 +138,10 @@
             return { allowed: false, reason: 'hidden' };
         }
 
-        const pageKey = getPageKeyFromPath(pathValue);
+        let pageKey = getPageKeyFromPath(pathValue);
+        if (!pageKey && input.pathname) {
+            pageKey = getPageKeyFromPath(normalizeVisibilityPath(input.pathname));
+        }
         if (pageKey && settings.pages?.[pageKey] === false) {
             return { allowed: false, reason: 'hidden' };
         }

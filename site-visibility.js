@@ -398,12 +398,11 @@
                 : { allowed: false, reason: 'admin-auth' };
         }
 
-        if (userRole === 'admin') {
-            return { allowed: true, reason: null };
-        }
-
         if (settings.constructionMode) {
             if (isSplashPage(pathname)) {
+                return { allowed: true, reason: null };
+            }
+            if (userRole === 'admin') {
                 return { allowed: true, reason: null };
             }
             return { allowed: false, reason: 'construction' };
@@ -688,7 +687,9 @@
         const pages = settings.pages;
         const skipNavKeys = new Set(['tools', ...TOOL_PAGE_KEYS]);
 
-        Object.entries(PAGE_PATHS).forEach(([pageKey, paths]) => {
+        applyNavOrder(settings);
+
+        Object.entries(getNavigationPagePaths()).forEach(([pageKey, paths]) => {
             if (skipNavKeys.has(pageKey)) {
                 return;
             }
@@ -736,18 +737,23 @@
             card.hidden = !visible;
             card.style.display = visible ? '' : 'none';
         });
-
-        applyNavOrder(settings);
     }
 
     async function applyLiveSettingsUpdate(settings) {
         applyNavigation(settings);
 
-        if (getUserRole() === 'admin' || isAdminRoute(window.location.pathname)) {
+        if (isAdminRoute(window.location.pathname)) {
             return;
         }
 
         await applyRouteGuard(settings, 'settings-update');
+    }
+
+    function getNavigationPagePaths() {
+        if (registryApi?.getVisibilityPagePaths) {
+            return registryApi.getVisibilityPagePaths();
+        }
+        return PAGE_PATHS;
     }
 
     function listenForSettingsUpdates() {

@@ -29,6 +29,53 @@ const MANIFEST_PATH = path.join(FILES_DIR, 'manifest.json');
 const SITE_SETTINGS_PATH = path.join(FILES_DIR, 'site-settings.json');
 const ANALYTICS_PATH = path.join(FILES_DIR, 'analytics.json');
 
+async function readSiteSettings() {
+    try {
+        const data = await fs.readFile(SITE_SETTINGS_PATH, 'utf8');
+        return normalizeSiteSettings(JSON.parse(data));
+    } catch {
+        return normalizeSiteSettings(DEFAULT_SITE_SETTINGS);
+    }
+}
+
+async function writeSiteSettings(settings) {
+    const normalized = normalizeSiteSettings(settings);
+    normalized.updatedAt = new Date().toISOString();
+    await fs.writeFile(SITE_SETTINGS_PATH, JSON.stringify(normalized, null, 2));
+    return normalized;
+}
+
+async function handleSaveSiteSettings(req, res) {
+    try {
+        const settings = await writeSiteSettings(req.body || {});
+        res.json({
+            success: true,
+            settings: {
+                constructionMode: settings.constructionMode,
+                pages: settings.pages,
+                pageOrder: settings.pageOrder,
+                updatedAt: settings.updatedAt || null
+            }
+        });
+    } catch (error) {
+        console.error('Error saving site settings:', error);
+        res.status(500).json({ error: 'Failed to save site settings' });
+    }
+}
+
+function setNoCacheHeaders(res) {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    res.set('Surrogate-Control', 'no-store');
+    res.set('CDN-Cache-Control', 'no-store');
+}
+
+function setAdminSecurityHeaders(res) {
+    setNoCacheHeaders(res);
+    res.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+}
+
 function slugify(value) {
     return value
         .toString()
@@ -70,6 +117,24 @@ app.use('/api/site-settings', (req, res, next) => {
     setNoCacheHeaders(res);
     next();
 });
+
+app.get('/api/site-settings', async (req, res) => {
+    try {
+        const settings = await readSiteSettings();
+        res.json({
+            constructionMode: settings.constructionMode,
+            pages: settings.pages,
+            pageOrder: settings.pageOrder,
+            updatedAt: settings.updatedAt || null
+        });
+    } catch (error) {
+        console.error('Error reading site settings:', error);
+        res.status(500).json({ error: 'Failed to read site settings' });
+    }
+});
+
+app.post('/api/site-settings', requireAdmin, handleSaveSiteSettings);
+app.put('/api/site-settings', requireAdmin, handleSaveSiteSettings);
 
 const { normalizeVisibilityPath, getAccessDecision, buildVisibilityRedirect: sharedBuildVisibilityRedirect, resolvePublicLandingPage } = accessPolicy;
 
@@ -158,19 +223,6 @@ function legacyHtmlRedirectMiddleware(req, res, next) {
 
 app.use(legacyHtmlRedirectMiddleware);
 
-function setNoCacheHeaders(res) {
-    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    res.set('Pragma', 'no-cache');
-    res.set('Expires', '0');
-    res.set('Surrogate-Control', 'no-store');
-    res.set('CDN-Cache-Control', 'no-store');
-}
-
-function setAdminSecurityHeaders(res) {
-    setNoCacheHeaders(res);
-    res.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
-}
-
 const ADMIN_PAGE_PATTERN = /^\/admin(-analytics)?\.html$/i;
 
 app.use((req, res, next) => {
@@ -248,7 +300,8 @@ async function siteVisibilityMiddleware(req, res, next) {
         return res.redirect(301, redirectTarget);
     } catch (error) {
         console.error('Site visibility middleware error:', error);
-        return next();
+        setNoCacheHeaders(res);
+        return res.status(503).send('Service temporarily unavailable');
     }
 }
 
@@ -346,22 +399,6 @@ async function readManifest() {
 async function writeManifest(manifest) {
     manifest.generated = new Date().toISOString();
     await fs.writeFile(MANIFEST_PATH, JSON.stringify(manifest, null, 2));
-}
-
-async function readSiteSettings() {
-    try {
-        const data = await fs.readFile(SITE_SETTINGS_PATH, 'utf8');
-        return normalizeSiteSettings(JSON.parse(data));
-    } catch {
-        return normalizeSiteSettings(DEFAULT_SITE_SETTINGS);
-    }
-}
-
-async function writeSiteSettings(settings) {
-    const normalized = normalizeSiteSettings(settings);
-    normalized.updatedAt = new Date().toISOString();
-    await fs.writeFile(SITE_SETTINGS_PATH, JSON.stringify(normalized, null, 2));
-    return normalized;
 }
 
 const TRACKABLE_PAGES = pageRegistry.getTrackablePages().map((page) => ({
@@ -822,40 +859,6 @@ app.put('/api/files/:id', requireAdmin, async (req, res) => {
     }
 });
 
-// Site visibility settings
-app.get('/api/site-settings', async (req, res) => {
-    try {
-        const settings = await readSiteSettings();
-        res.json({
-            constructionMode: settings.constructionMode,
-            pages: settings.pages,
-            pageOrder: settings.pageOrder,
-            updatedAt: settings.updatedAt || null
-        });
-    } catch (error) {
-        console.error('Error reading site settings:', error);
-        res.status(500).json({ error: 'Failed to read site settings' });
-    }
-});
-
-async function handleSaveSiteSettings(req, res) {
-    try {
-        const settings = await writeSiteSettings(req.body || {});
-        res.json({
-            success: true,
-            settings: {
-                constructionMode: settings.constructionMode,
-                pages: settings.pages,
-                pageOrder: settings.pageOrder,
-                updatedAt: settings.updatedAt || null
-            }
-        });
-    } catch (error) {
-        console.error('Error saving site settings:', error);
-        res.status(500).json({ error: 'Failed to save site settings' });
-    }
-}
-
 function syncAdminAuthFromEnvironment() {
     reloadEnv();
     return refreshAdminAuth(appConfig);
@@ -937,9 +940,6 @@ app.get('/api/admin/session', (req, res) => {
         expiresAt: new Date(session.exp).toISOString()
     });
 });
-
-app.post('/api/site-settings', requireAdmin, handleSaveSiteSettings);
-app.put('/api/site-settings', requireAdmin, handleSaveSiteSettings);
 
 // Site analytics
 app.post('/api/analytics/view', analyticsRateLimit, async (req, res) => {
