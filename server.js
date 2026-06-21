@@ -108,12 +108,14 @@ async function logStartupSiteRouting() {
 
 function serveManagedRoot(req, res, settings, pathValue, isAdmin) {
     const landing = resolvePublicLandingPage(settings);
+    const renderedPage = landing === 'home' ? 'home.html' : 'index.html (construction)';
 
     logSiteRouting({
         context: 'request',
         route: req.path,
         constructionMode: Boolean(settings.constructionMode),
         landingPage: describeLandingPage(landing),
+        renderedPage,
         isAdmin
     });
 
@@ -137,6 +139,7 @@ function setNoCacheHeaders(res) {
     res.set('Pragma', 'no-cache');
     res.set('Expires', '0');
     res.set('Surrogate-Control', 'no-store');
+    res.set('CDN-Cache-Control', 'no-store');
 }
 
 function setAdminSecurityHeaders(res) {

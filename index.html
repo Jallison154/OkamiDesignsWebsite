@@ -174,6 +174,17 @@
       visibility: hidden;
     }
   </style>
+  <script>
+    (function () {
+      fetch('/api/site-settings', { cache: 'no-store' }).then(function (response) {
+        return response.ok ? response.json() : null;
+      }).then(function (settings) {
+        if (settings && !settings.constructionMode) {
+          window.location.replace('/home.html');
+        }
+      }).catch(function () {});
+    })();
+  </script>
 </head>
 <body>
   <div class="container">

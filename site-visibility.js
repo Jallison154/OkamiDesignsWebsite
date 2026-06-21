@@ -422,6 +422,79 @@
         return { allowed: true, reason: null };
     }
 
+    function detectRenderedPage() {
+        if (document.querySelector('.under-construction') || /Coming Soon|Under Construction/i.test(document.title)) {
+            return 'construction (index.html splash)';
+        }
+        if (document.querySelector('.hero-title') || document.querySelector('.hero-section')) {
+            return 'home.html';
+        }
+        return window.location.pathname || 'unknown';
+    }
+
+    function renderRoutingDebug(settings) {
+        const payload = {
+            currentPath: window.location.pathname,
+            constructionMode: Boolean(settings?.constructionMode),
+            settingsSource: lastSettingsSource,
+            renderedPage: detectRenderedPage()
+        };
+
+        console.info('[Okami Route Debug]', payload);
+
+        let el = document.getElementById('site-routing-debug');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'site-routing-debug';
+            el.setAttribute('aria-hidden', 'true');
+            el.style.cssText = [
+                'position:fixed',
+                'bottom:0',
+                'left:0',
+                'right:0',
+                'z-index:99999',
+                'padding:6px 10px',
+                'font:11px/1.4 monospace',
+                'background:#111',
+                'color:#0f0',
+                'border-top:1px solid #333',
+                'opacity:0.92',
+                'pointer-events:none'
+            ].join(';');
+            document.body.appendChild(el);
+        }
+
+        el.textContent = [
+            `path=${payload.currentPath}`,
+            `constructionMode=${payload.constructionMode}`,
+            `source=${payload.settingsSource}`,
+            `rendered=${payload.renderedPage}`
+        ].join(' | ');
+    }
+
+    /** Fallback when static index.html is served at / but constructionMode is off */
+    function escapeConstructionPageWhenDisabled(settings) {
+        if (settings?.constructionMode || !document.querySelector('.under-construction')) {
+            return false;
+        }
+
+        const target = window.location.pathname.includes('/tools/') ? '../home.html' : '/home.html';
+        logRouteDecision({
+            constructionMode: false,
+            routeDecision: 'redirect',
+            reason: 'construction-html-with-mode-off',
+            redirectTarget: target,
+            currentPath: window.location.pathname
+        });
+
+        if (normalizeComparablePath(window.location.pathname) !== normalizeComparablePath(target)) {
+            window.location.replace(target);
+            return true;
+        }
+
+        return false;
+    }
+
     function revealPage() {
         document.documentElement.classList.remove('site-visibility-pending');
     }
@@ -470,6 +543,7 @@
             redirectTarget: null,
             context
         });
+        renderRoutingDebug(settings);
         return true;
     }
 
@@ -622,6 +696,11 @@
                 await settingsPromise;
             }
 
+            if (escapeConstructionPageWhenDisabled(settings)) {
+                initialRouteApplied = true;
+                return;
+            }
+
             const allowed = await applyRouteGuard(settings, 'init');
             if (!allowed) {
                 initialRouteApplied = true;
@@ -631,6 +710,7 @@
             logVisibilityDebug(settings, 'init');
             lastAppliedSettingsSignature = getSettingsSignature(settings);
             applyNavigation(settings);
+            renderRoutingDebug(settings);
             listenForSettingsUpdates();
             initialRouteApplied = true;
         } catch (error) {
