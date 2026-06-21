@@ -67,7 +67,16 @@
                 contact: true,
                 ledVideoWallCalculator: true,
                 okamiSignalLab: true
-            }
+            },
+            pageOrder: [
+                'home',
+                'services',
+                'support',
+                'contact',
+                'tools',
+                'ledVideoWallCalculator',
+                'okamiSignalLab'
+            ]
         };
     }
 
@@ -85,7 +94,8 @@
 
         return {
             constructionMode: Boolean(raw?.constructionMode),
-            pages
+            pages,
+            pageOrder: Array.isArray(raw?.pageOrder) ? raw.pageOrder : defaults.pageOrder.slice()
         };
     }
 
@@ -97,9 +107,101 @@
         return filePath ? `/${filePath}` : '/';
     }
 
-    function renderVisibilityPageList() {
+    function getVisibilityPageOrder(settings) {
+        if (window.OkamiPageRegistry?.normalizePageOrder) {
+            return window.OkamiPageRegistry.normalizePageOrder(settings?.pageOrder);
+        }
+        if (window.OkamiShared?.Settings?.normalizePageOrder) {
+            return window.OkamiShared.Settings.normalizePageOrder(settings?.pageOrder);
+        }
+        return window.OkamiPageRegistry?.PUBLIC_PAGES?.map((page) => page.key) || [];
+    }
+
+    function buildVisibilityPageRow(page, isVisible) {
+        const pathLabel = formatVisibilityPath(page);
+        return `
+            <div class="visibility-page-row" data-page-key="${escapeHtml(page.key)}">
+                <div class="visibility-page-order" aria-label="Reorder page">
+                    <button type="button" class="visibility-order-btn visibility-order-up" data-page-key="${escapeHtml(page.key)}" aria-label="Move ${escapeHtml(page.title)} up">↑</button>
+                    <button type="button" class="visibility-order-btn visibility-order-down" data-page-key="${escapeHtml(page.key)}" aria-label="Move ${escapeHtml(page.title)} down">↓</button>
+                </div>
+                <div class="visibility-page-info">
+                    <span class="visibility-page-name">${escapeHtml(page.title)}</span>
+                    <span class="visibility-page-path">${escapeHtml(pathLabel)}</span>
+                </div>
+                <label class="visibility-switch">
+                    <input type="checkbox" class="visibility-page-toggle" data-page-key="${escapeHtml(page.key)}"${isVisible ? ' checked' : ''}>
+                    <span class="visibility-switch-slider" aria-hidden="true"></span>
+                    <span class="visibility-switch-text">Visible</span>
+                </label>
+            </div>
+        `;
+    }
+
+    function updateVisibilityOrderButtonState(container) {
+        const rows = [...container.querySelectorAll('.visibility-page-row')];
+        rows.forEach((row, index) => {
+            const upButton = row.querySelector('.visibility-order-up');
+            const downButton = row.querySelector('.visibility-order-down');
+            if (upButton) {
+                upButton.disabled = index === 0;
+            }
+            if (downButton) {
+                downButton.disabled = index === rows.length - 1;
+            }
+        });
+    }
+
+    function moveVisibilityPageRow(pageKey, direction) {
         const container = document.getElementById('visibility-page-list');
-        if (!container || container.dataset.rendered === 'true') {
+        if (!container) {
+            return;
+        }
+
+        const rows = [...container.querySelectorAll('.visibility-page-row')];
+        const index = rows.findIndex((row) => row.dataset.pageKey === pageKey);
+        const targetIndex = index + direction;
+
+        if (index < 0 || targetIndex < 0 || targetIndex >= rows.length) {
+            return;
+        }
+
+        const row = rows[index];
+        const target = rows[targetIndex];
+
+        if (direction < 0) {
+            container.insertBefore(row, target);
+        } else {
+            container.insertBefore(row, target.nextSibling);
+        }
+
+        updateVisibilityOrderButtonState(container);
+    }
+
+    function bindVisibilityOrderButtons(container) {
+        if (!container || container.dataset.orderBound === 'true') {
+            return;
+        }
+
+        container.addEventListener('click', (event) => {
+            const upButton = event.target.closest('.visibility-order-up');
+            if (upButton?.dataset.pageKey) {
+                moveVisibilityPageRow(upButton.dataset.pageKey, -1);
+                return;
+            }
+
+            const downButton = event.target.closest('.visibility-order-down');
+            if (downButton?.dataset.pageKey) {
+                moveVisibilityPageRow(downButton.dataset.pageKey, 1);
+            }
+        });
+
+        container.dataset.orderBound = 'true';
+    }
+
+    function renderVisibilityPageList(settings = getDefaultSiteSettings()) {
+        const container = document.getElementById('visibility-page-list');
+        if (!container) {
             return;
         }
 
@@ -108,23 +210,17 @@
             return;
         }
 
-        container.innerHTML = pages.map((page) => {
-            const pathLabel = formatVisibilityPath(page);
-            return `
-                <div class="visibility-page-row" data-page-key="${escapeHtml(page.key)}">
-                    <div class="visibility-page-info">
-                        <span class="visibility-page-name">${escapeHtml(page.title)}</span>
-                        <span class="visibility-page-path">${escapeHtml(pathLabel)}</span>
-                    </div>
-                    <label class="visibility-switch">
-                        <input type="checkbox" class="visibility-page-toggle" data-page-key="${escapeHtml(page.key)}" checked>
-                        <span class="visibility-switch-slider" aria-hidden="true"></span>
-                        <span class="visibility-switch-text">Visible</span>
-                    </label>
-                </div>
-            `;
-        }).join('');
+        const normalized = normalizeSiteSettings(settings);
+        const order = getVisibilityPageOrder(normalized);
+        const pagesByKey = Object.fromEntries(pages.map((page) => [page.key, page]));
+        const sortedPages = order.map((key) => pagesByKey[key]).filter(Boolean);
 
+        container.innerHTML = sortedPages
+            .map((page) => buildVisibilityPageRow(page, normalized.pages[page.key] !== false))
+            .join('');
+
+        bindVisibilityOrderButtons(container);
+        updateVisibilityOrderButtonState(container);
         container.dataset.rendered = 'true';
     }
 
@@ -446,10 +542,22 @@
         loadSiteVisibilitySettings();
     }
 
+    function readPageOrderFromList() {
+        const container = document.getElementById('visibility-page-list');
+        if (!container) {
+            return getVisibilityPageOrder(getDefaultSiteSettings());
+        }
+
+        return [...container.querySelectorAll('.visibility-page-row')]
+            .map((row) => row.dataset.pageKey)
+            .filter(Boolean);
+    }
+
     function readSiteVisibilityForm() {
         const constructionToggle = document.getElementById('construction-mode-toggle');
         const settings = normalizeSiteSettings(getDefaultSiteSettings());
         settings.constructionMode = Boolean(constructionToggle?.checked);
+        settings.pageOrder = getVisibilityPageOrder({ pageOrder: readPageOrderFromList() });
 
         document.querySelectorAll('.visibility-page-toggle').forEach((toggle) => {
             const pageKey = toggle.dataset.pageKey;
@@ -462,6 +570,7 @@
     }
 
     function applySiteVisibilityForm(settings) {
+        renderVisibilityPageList(settings);
         const normalized = normalizeSiteSettings(settings);
         const constructionToggle = document.getElementById('construction-mode-toggle');
 
@@ -469,13 +578,6 @@
             constructionToggle.checked = normalized.constructionMode;
             updateConstructionToggleState(constructionToggle);
         }
-
-        document.querySelectorAll('.visibility-page-toggle').forEach((toggle) => {
-            const pageKey = toggle.dataset.pageKey;
-            if (pageKey && Object.prototype.hasOwnProperty.call(normalized.pages, pageKey)) {
-                toggle.checked = normalized.pages[pageKey];
-            }
-        });
     }
 
     function updateConstructionToggleState(toggle) {
@@ -638,7 +740,7 @@
     }
 
     function initSiteVisibilityAdmin() {
-        renderVisibilityPageList();
+        renderVisibilityPageList(getDefaultSiteSettings());
 
         const saveButton = document.getElementById('save-site-visibility');
         const constructionToggle = document.getElementById('construction-mode-toggle');

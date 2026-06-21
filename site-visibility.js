@@ -183,7 +183,8 @@
     function getSettingsSignature(settings) {
         return JSON.stringify({
             constructionMode: Boolean(settings?.constructionMode),
-            pages: settings?.pages || {}
+            pages: settings?.pages || {},
+            pageOrder: settings?.pageOrder || []
         });
     }
 
@@ -277,6 +278,9 @@
         return {
             constructionMode: Boolean(raw?.constructionMode),
             pages,
+            pageOrder: settingsApi?.normalizePageOrder
+                ? settingsApi.normalizePageOrder(raw?.pageOrder)
+                : (Array.isArray(raw?.pageOrder) ? raw.pageOrder : []),
             updatedAt: raw?.updatedAt || null
         };
     }
@@ -606,6 +610,80 @@
         element.setAttribute('aria-hidden', visible ? 'false' : 'true');
     }
 
+    function findNavLinksForPath(path) {
+        const selectors = [`a[href="${path}"]`];
+        const relativePath = path.startsWith('/') ? path.slice(1) : path;
+        selectors.push(`a[href="../${relativePath}"]`);
+        return document.querySelectorAll(selectors.join(', '));
+    }
+
+    function applyNavOrder(settings) {
+        const pageOrder = registryApi?.normalizePageOrder
+            ? registryApi.normalizePageOrder(settings?.pageOrder)
+            : (settings?.pageOrder || registryApi?.getDefaultPageOrder?.() || []);
+
+        const pagesByKey = registryApi?.PUBLIC_PAGES
+            ? Object.fromEntries(registryApi.PUBLIC_PAGES.map((page) => [page.key, page]))
+            : null;
+
+        if (!pagesByKey) {
+            return;
+        }
+
+        function reorderTopLevelNav(navRoot) {
+            if (!navRoot) {
+                return;
+            }
+
+            pageOrder.forEach((key) => {
+                const page = pagesByKey[key];
+                if (!page) {
+                    return;
+                }
+
+                if (key === 'tools') {
+                    const toolsBlock = navRoot.querySelector(':scope > .nav-dropdown, :scope > .nav-mobile-group');
+                    if (toolsBlock) {
+                        navRoot.appendChild(toolsBlock);
+                    }
+                    return;
+                }
+
+                const href = page.publicPath || '/';
+                const link = navRoot.querySelector(
+                    `:scope > a.nav-link[href="${href}"], :scope > a.contact-btn[href="${href}"]`
+                );
+                if (link) {
+                    navRoot.appendChild(link);
+                }
+            });
+        }
+
+        function reorderToolLinks(menuRoot) {
+            if (!menuRoot) {
+                return;
+            }
+
+            const toolsHub = menuRoot.querySelector('[data-tools-hub]');
+            if (toolsHub) {
+                menuRoot.insertBefore(toolsHub, menuRoot.firstChild);
+            }
+
+            pageOrder
+                .filter((key) => TOOL_PAGE_KEYS.includes(key))
+                .forEach((key) => {
+                    const link = menuRoot.querySelector(`[data-tool-key="${key}"]`);
+                    if (link) {
+                        menuRoot.appendChild(link);
+                    }
+                });
+        }
+
+        document.querySelectorAll('nav.nav').forEach(reorderTopLevelNav);
+        document.querySelectorAll('nav.nav-mobile').forEach(reorderTopLevelNav);
+        document.querySelectorAll('.nav-dropdown-menu, .nav-mobile-submenu').forEach(reorderToolLinks);
+    }
+
     function applyNavigation(settings) {
         const pages = settings.pages;
         const skipNavKeys = new Set(['tools', ...TOOL_PAGE_KEYS]);
@@ -616,7 +694,7 @@
             }
 
             paths.forEach((path) => {
-                document.querySelectorAll(`a[href="${path}"], a[href="../${path}"]`).forEach((link) => {
+                findNavLinksForPath(path).forEach((link) => {
                     if (link.classList.contains('nav-dropdown-item') || link.classList.contains('nav-sublink')) {
                         return;
                     }
@@ -658,6 +736,8 @@
             card.hidden = !visible;
             card.style.display = visible ? '' : 'none';
         });
+
+        applyNavOrder(settings);
     }
 
     async function applyLiveSettingsUpdate(settings) {

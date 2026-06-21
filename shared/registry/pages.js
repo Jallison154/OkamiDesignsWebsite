@@ -300,12 +300,56 @@
         return page.key;
     }
 
+    function getPageLinkPaths(page) {
+        const paths = new Set();
+
+        if (page.publicPath) {
+            paths.add(page.publicPath);
+        }
+
+        if (page.analyticsPath) {
+            paths.add(page.analyticsPath);
+        }
+
+        (page.filePaths || []).forEach((filePath) => {
+            paths.add(`/${filePath}`);
+            paths.add(filePath);
+        });
+
+        if (page.publicPath === '/') {
+            paths.add('/');
+            paths.add('/home.html');
+            paths.add('home.html');
+        }
+
+        return [...paths];
+    }
+
     function getVisibilityPagePaths() {
         const map = {};
         PUBLIC_PAGES.forEach((page) => {
-            map[page.key] = page.filePaths.slice();
+            map[page.key] = getPageLinkPaths(page);
         });
         return map;
+    }
+
+    function getDefaultPageOrder() {
+        return PUBLIC_PAGES.map((page) => page.key);
+    }
+
+    function normalizePageOrder(rawOrder) {
+        const defaults = getDefaultPageOrder();
+        const order = Array.isArray(rawOrder)
+            ? rawOrder.filter((key) => defaults.includes(key))
+            : [];
+
+        defaults.forEach((key) => {
+            if (!order.includes(key)) {
+                order.push(key);
+            }
+        });
+
+        return order;
     }
 
     function getPublicServeRoutes() {
@@ -372,7 +416,10 @@
         getPublicServeRoutes,
         resolvePage,
         getPageKeyFromPathValue,
+        getPageLinkPaths,
         getVisibilityPagePaths,
+        getDefaultPageOrder,
+        normalizePageOrder,
         getTrackablePages,
         getToolPages,
         getToolsHubPage,
