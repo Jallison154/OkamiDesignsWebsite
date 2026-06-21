@@ -6,14 +6,36 @@ const bcrypt = require('bcrypt');
 const SESSION_COOKIE = 'okami_admin_session';
 const DEFAULT_SESSION_MAX_AGE_MS = 30 * 60 * 1000;
 
+const DEV_SESSION_FALLBACK = 'okami-local-dev-session-secret-not-for-production';
+
 function readAdminAuthConfig(appConfig = {}) {
     const isProduction = appConfig.isProduction ?? process.env.NODE_ENV === 'production';
+    let passwordHash = (process.env.ADMIN_PASSWORD_HASH || '').trim();
+    let sessionSecret = (
+        process.env.ADMIN_SESSION_SECRET
+        || process.env.OKAMI_SESSION_SECRET
+        || ''
+    ).trim();
+    let usingDevPasswordFallback = false;
+
+    if (!passwordHash && !isProduction) {
+        const devPassword = (process.env.ADMIN_DEV_PASSWORD || '').trim();
+        if (devPassword) {
+            passwordHash = bcrypt.hashSync(devPassword, 12);
+            usingDevPasswordFallback = true;
+        }
+    }
+
+    if (!sessionSecret && !isProduction && passwordHash) {
+        sessionSecret = DEV_SESSION_FALLBACK;
+    }
 
     return {
-        passwordHash: (process.env.ADMIN_PASSWORD_HASH || '').trim(),
-        sessionSecret: (process.env.ADMIN_SESSION_SECRET || process.env.OKAMI_SESSION_SECRET || '').trim(),
+        passwordHash,
+        sessionSecret,
         isProduction,
-        sessionMaxAgeMs: Number(process.env.ADMIN_SESSION_MAX_AGE_MS) || DEFAULT_SESSION_MAX_AGE_MS
+        sessionMaxAgeMs: Number(process.env.ADMIN_SESSION_MAX_AGE_MS) || DEFAULT_SESSION_MAX_AGE_MS,
+        usingDevPasswordFallback
     };
 }
 

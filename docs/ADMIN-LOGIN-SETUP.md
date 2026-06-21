@@ -1,0 +1,122 @@
+# Admin login setup
+
+The admin panel (`/admin.html`) authenticates through the Node API. The server **never** reads passwords from frontend code or `localStorage`. Credentials come from environment variables only.
+
+## Required variables (production)
+
+| Variable | Purpose |
+|----------|---------|
+| `ADMIN_PASSWORD_HASH` | Bcrypt hash of your admin password |
+| `ADMIN_SESSION_SECRET` | Long random string used to sign admin session cookies |
+
+Optional: `ADMIN_SESSION_MAX_AGE_MS` (default `1800000` = 30 minutes).
+
+## 1. Generate a password hash
+
+From the project root:
+
+```bash
+node scripts/generate-admin-password-hash.mjs "your-secure-password"
+```
+
+Example output:
+
+```text
+Add to your server environment (.env or host config):
+ADMIN_PASSWORD_HASH=$2b$12$...
+ADMIN_SESSION_SECRET=a1b2c3d4e5...
+```
+
+The script prints both values. **Do not commit the password or the `.env` file.**
+
+## 2. Create `.env`
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` and set at minimum:
+
+```env
+NODE_ENV=production
+PORT=3000
+
+ADMIN_PASSWORD_HASH=your_bcrypt_hash_here
+ADMIN_SESSION_SECRET=your_long_random_secret_here
+```
+
+The server loads `.env` automatically on startup (`server/config/load-env.js`).
+
+## 3. Restart the server
+
+After changing environment variables:
+
+```bash
+npm start
+```
+
+Or with nodemon:
+
+```bash
+npm run dev
+```
+
+**Docker Compose:**
+
+```bash
+docker compose down
+docker compose up -d
+```
+
+Ensure `docker-compose.yml` includes `env_file: .env` (or set the same variables in your host/orchestrator).
+
+**Cloudflare Tunnel:** restart `cloudflared` only if you changed the tunnel target or the process behind it is not running. If the Node app restarted on the same port, the tunnel usually does not need a restart.
+
+```bash
+# Linux systemd example
+sudo systemctl restart okami-designs
+sudo systemctl restart cloudflared   # only if needed
+```
+
+## 4. Verify
+
+1. Open `/admin.html` and sign in with the **plain password** you hashed (not the hash itself).
+2. Check server logs for: `✅ Admin login configured`
+3. Optional: `GET /api/health` should include `"admin": { "configured": true }`
+
+If login returns **“Admin login is not configured on the server.”**, the API returned `503` with `admin_auth_not_configured` — `ADMIN_PASSWORD_HASH` and/or `ADMIN_SESSION_SECRET` are missing or `.env` was not loaded.
+
+## Local development fallback
+
+When `NODE_ENV` is **not** `production`, you may use a dev-only shortcut instead of a bcrypt hash:
+
+```env
+NODE_ENV=development
+ADMIN_DEV_PASSWORD=your-local-dev-password
+```
+
+Rules:
+
+- Used **only** when `NODE_ENV !== "production"`
+- Never enabled in production, even if `ADMIN_DEV_PASSWORD` is set
+- Password stays server-side; the browser never receives it
+- A fixed development session secret is used if `ADMIN_SESSION_SECRET` is unset
+
+For anything shared or deployed, use `ADMIN_PASSWORD_HASH` + `ADMIN_SESSION_SECRET` instead.
+
+## Production / deploy checklist
+
+- [ ] `NODE_ENV=production`
+- [ ] `ADMIN_PASSWORD_HASH` set (bcrypt hash, not plain text)
+- [ ] `ADMIN_SESSION_SECRET` set (unique per environment)
+- [ ] `.env` present on the server **or** the same variables set in Docker / systemd / hosting panel
+- [ ] `.env` is **not** committed to git
+- [ ] App restarted after env changes
+- [ ] Cloudflare Tunnel points at `http://127.0.0.1:3000` (Node app root)
+
+## Security notes
+
+- Login is rejected with `503` when auth is not configured — no bypass.
+- Wrong password returns `401` (`invalid_credentials`).
+- Session cookie is `HttpOnly`, `SameSite=Strict`, and `Secure` in production.
+- Rotate `ADMIN_SESSION_SECRET` if you suspect compromise (invalidates existing admin sessions).

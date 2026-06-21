@@ -12,6 +12,8 @@ services:
     working_dir: /app
     command: npm start
     restart: unless-stopped
+    env_file:
+      - .env
     networks:
       - okami-designs-network
     environment:

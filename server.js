@@ -1,4 +1,7 @@
 // Okami Designs - Backend API Server
+const { loadEnv, ENV_PATH } = require('./server/config/load-env');
+const envLoadResult = loadEnv();
+
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
@@ -928,19 +931,53 @@ app.use('/api/commercial', commercialRoutes);
 app.get('/api/health', (req, res) => {
     setNoCacheHeaders(res);
     const commercial = readCommercialConfig();
+    const adminConfig = getAdminAuthConfig();
     res.json({
         status: 'ok',
         timestamp: new Date().toISOString(),
         version: productVersion.WEB_APP_VERSION,
         environment: appConfig.nodeEnv,
+        admin: {
+            configured: adminAuthService.isAdminAuthConfigured(adminConfig),
+            devFallback: Boolean(adminConfig.usingDevPasswordFallback)
+        },
         commercial: {
             enabled: commercial.commercialEnabled
         }
     });
 });
 
+function logAdminAuthStartup() {
+    const config = getAdminAuthConfig();
+    const configured = adminAuthService.isAdminAuthConfigured(config);
+
+    if (envLoadResult.loaded) {
+        console.log(`🔐 Environment loaded from ${envLoadResult.path} (${envLoadResult.method || 'dotenv'})`);
+    } else {
+        console.warn(`⚠️  No .env file at ${ENV_PATH} — using process environment only`);
+    }
+
+    if (configured) {
+        console.log('✅ Admin login configured (ADMIN_PASSWORD_HASH or development fallback)');
+        if (config.usingDevPasswordFallback) {
+            console.warn('⚠️  Development mode: using ADMIN_DEV_PASSWORD — set ADMIN_PASSWORD_HASH before production');
+        }
+        return;
+    }
+
+    console.warn('⚠️  Admin login is NOT configured.');
+    console.warn('   Set ADMIN_PASSWORD_HASH and ADMIN_SESSION_SECRET in .env (see docs/ADMIN-LOGIN-SETUP.md)');
+    if (appConfig.isProduction) {
+        console.warn('   Production requires ADMIN_PASSWORD_HASH — login is disabled until configured.');
+    } else {
+        console.warn('   Local dev: set ADMIN_DEV_PASSWORD in .env, or generate a hash with:');
+        console.warn('   node scripts/generate-admin-password-hash.mjs "your-password"');
+    }
+}
+
 async function prepareServer() {
     await ensureFilesDir();
+    logAdminAuthStartup();
     logCommercialValidation(validateCommercialConfig(readCommercialConfig()));
     await logStartupSiteRouting();
 }
