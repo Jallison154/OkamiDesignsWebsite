@@ -17,6 +17,14 @@
         return Math.min(100, Math.max(50, Math.round(value)));
     }
 
+    function clampCircuitSafeLoadPercent(value, fallback = C.DEFAULTS.circuitSafeLoadPercent) {
+        if (!Number.isFinite(value)) {
+            return fallback;
+        }
+        // Cap at 80% so circuit plans always retain at least 20% headroom.
+        return Math.min(80, Math.max(1, Math.round(value)));
+    }
+
     function isMmCabinetPreset(presetKey) {
         return presetKey === '500x500' || presetKey === '500x1000';
     }
@@ -300,6 +308,39 @@
     }
 
     /**
+     * Estimated power draw and circuit count from panel count and circuit settings.
+     */
+    function calculatePowerRequirements(inputs = {}) {
+        const wattsPerPanel = Math.max(0, Number(inputs.wattsPerPanel) || C.DEFAULTS.wattsPerPanel);
+        const circuitAmperage = Math.max(0, Number(inputs.circuitAmperage) || C.DEFAULTS.circuitAmperage);
+        const circuitVoltage = Math.max(0, Number(inputs.circuitVoltage) || C.DEFAULTS.circuitVoltage);
+        const circuitSafeLoadPercent = clampCircuitSafeLoadPercent(inputs.circuitSafeLoadPercent);
+        const totalPanels = Math.max(0, Math.round(Number(inputs.totalPanels) || 0));
+
+        const totalEstimatedWatts = totalPanels * wattsPerPanel;
+        const totalEstimatedAmps = circuitVoltage > 0 ? totalEstimatedWatts / circuitVoltage : 0;
+        const rawWattsPerCircuit = circuitVoltage * circuitAmperage;
+        const usableWattsPerCircuit = rawWattsPerCircuit * (circuitSafeLoadPercent / 100);
+        const circuitHeadroomPercent = 100 - circuitSafeLoadPercent;
+        const circuitsRequired = usableWattsPerCircuit > 0
+            ? Math.ceil(totalEstimatedWatts / usableWattsPerCircuit)
+            : 0;
+
+        return {
+            wattsPerPanel,
+            circuitAmperage,
+            circuitVoltage,
+            circuitSafeLoadPercent,
+            circuitHeadroomPercent,
+            rawWattsPerCircuit,
+            totalEstimatedWatts,
+            totalEstimatedAmps,
+            usableWattsPerCircuit,
+            circuitsRequired
+        };
+    }
+
+    /**
      * Resolve cabinet pixels (auto or manual) then compute full wall metrics.
      * Input object is serializable — suitable for save/load and export later.
      */
@@ -351,12 +392,21 @@
             })
             : null;
 
+        const power = calculatePowerRequirements({
+            totalPanels: wall.totalPanels,
+            wattsPerPanel: rawInputs.wattsPerPanel,
+            circuitAmperage: rawInputs.circuitAmperage,
+            circuitVoltage: rawInputs.circuitVoltage,
+            circuitSafeLoadPercent: rawInputs.circuitSafeLoadPercent
+        });
+
         return {
             ...wall,
             ...physical,
             aspectRatio: aspect.ratio,
             closestRatio: aspect.closestRatio,
             ...processor,
+            ...power,
             overlayFormat: rawInputs.overlayFormat ?? 'none',
             overlayFormatLabel: overlayTarget ? overlayTarget.label : null,
             overlayActive: overlayTarget !== null,
@@ -373,6 +423,7 @@
     Object.assign(global.OkamiLedWallCalculator, {
         clampPanelCount,
         clampPortFillThreshold,
+        clampCircuitSafeLoadPercent,
         isCustomSpacingDisplayType,
         calculateCabinetResolution,
         calculateWallResolution,
@@ -383,6 +434,7 @@
         calculateContentOverlay,
         calculatePortFill,
         calculateProcessorPorts,
+        calculatePowerRequirements,
         calculateCabinetArtworkType,
         computeWallProject
     });

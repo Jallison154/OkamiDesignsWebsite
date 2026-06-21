@@ -305,6 +305,46 @@ const cases = [
         }
     },
     {
+        name: 'estimated power — default 10×6 wall',
+        fn: () => {
+            const r = Calc.computeWallProject({
+                panelsWide: 10,
+                panelsTall: 6,
+                cabinetPreset: '500x500',
+                pitchPreset: '2.6',
+                displayType: 'standard',
+                autoCalculateResolution: true,
+                wattsPerPanel: 200,
+                circuitAmperage: 20,
+                circuitVoltage: 120,
+                circuitSafeLoadPercent: 80,
+                overlayFormat: 'none'
+            });
+            assertEqual(r.totalEstimatedWatts, 12000, 'totalEstimatedWatts');
+            assertNear(r.totalEstimatedAmps, 100, 0.01, 'totalEstimatedAmps');
+            assertEqual(r.rawWattsPerCircuit, 2400, 'rawWattsPerCircuit');
+            assertEqual(r.circuitSafeLoadPercent, 80, 'circuitSafeLoadPercent');
+            assertEqual(r.circuitHeadroomPercent, 20, 'circuitHeadroomPercent');
+            assertEqual(r.usableWattsPerCircuit, 1920, 'usableWattsPerCircuit');
+            assertEqual(r.circuitsRequired, 7, 'circuitsRequired');
+        }
+    },
+    {
+        name: 'safe load capped at 80% — minimum 20% headroom',
+        fn: () => {
+            const fill = Calc.calculatePowerRequirements({
+                totalPanels: 10,
+                wattsPerPanel: 200,
+                circuitAmperage: 20,
+                circuitVoltage: 120,
+                circuitSafeLoadPercent: 100
+            });
+            assertEqual(fill.circuitSafeLoadPercent, 80, 'circuitSafeLoadPercent capped');
+            assertEqual(fill.circuitHeadroomPercent, 20, 'circuitHeadroomPercent');
+            assertEqual(fill.usableWattsPerCircuit, 1920, 'usableWattsPerCircuit');
+        }
+    },
+    {
         name: 'build sheet port mapping — 4 ports @ 90% fill',
         fn: () => {
             const ctx = { OkamiLedWallCalculator: {} };

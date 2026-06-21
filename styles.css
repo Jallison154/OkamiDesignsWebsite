@@ -3600,11 +3600,13 @@ html {
     box-shadow: 0 0 0 3px rgba(255, 106, 45, 0.15);
 }
 
-.led-resolution-note {
+.led-resolution-note,
+.led-power-note {
     font-size: 0.78rem;
     font-style: italic;
     color: var(--secondary-text);
     margin: 14px 0 0;
+    line-height: 1.45;
 }
 
 .led-advanced-content {
@@ -4733,12 +4735,12 @@ html {
     }
 
     .led-result-cards {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
         gap: 8px;
     }
 
     .led-result-cards:not(:has(#result-content-fit-card:not([hidden]))) {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     }
 
     .led-grid-results .led-result-card {

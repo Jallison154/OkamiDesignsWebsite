@@ -6,6 +6,7 @@
         Constants,
         clampPanelCount,
         clampPortFillThreshold,
+        clampCircuitSafeLoadPercent,
         calculateCabinetResolution,
         calculateContentOverlay,
         calculateCabinetArtworkType,
@@ -87,6 +88,20 @@
             }
             updateAll();
         });
+
+        ['watts-per-panel', 'circuit-amperage', 'circuit-voltage', 'circuit-safe-load'].forEach((id) => {
+            document.getElementById(id)?.addEventListener('input', updateAll);
+            if (id === 'circuit-safe-load') {
+                document.getElementById(id)?.addEventListener('blur', () => {
+                    const input = document.getElementById(id);
+                    if (input) {
+                        input.value = readCircuitSafeLoadPercent();
+                    }
+                    updateAll();
+                });
+            }
+        });
+
         document.getElementById('custom-spacing-horizontal-mm')?.addEventListener('input', onCustomSpacingChange);
         document.getElementById('custom-spacing-vertical-mm')?.addEventListener('input', onCustomSpacingChange);
 
@@ -623,6 +638,10 @@
         setInputValue('pixel-height', DEFAULTS.pixelHeight);
         setInputValue('port-capacity', DEFAULTS.portCapacity);
         setInputValue('port-fill-threshold', DEFAULTS.portFillThreshold);
+        setInputValue('watts-per-panel', DEFAULTS.wattsPerPanel);
+        setInputValue('circuit-amperage', DEFAULTS.circuitAmperage);
+        setInputValue('circuit-voltage', DEFAULTS.circuitVoltage);
+        setInputValue('circuit-safe-load', DEFAULTS.circuitSafeLoadPercent);
         setInputValue('custom-format-width', DEFAULTS.customFormatWidth);
         setInputValue('custom-format-height', DEFAULTS.customFormatHeight);
         setOverlayFormat(DEFAULTS.overlayFormat);
@@ -664,6 +683,11 @@
         return clampPortFillThreshold(value);
     }
 
+    function readCircuitSafeLoadPercent() {
+        const value = parseInt(document.getElementById('circuit-safe-load')?.value, 10);
+        return clampCircuitSafeLoadPercent(value);
+    }
+
     function gatherInputs() {
         return {
             displayType: getDisplayType(),
@@ -681,6 +705,10 @@
             autoCalculateResolution: isAutoCalculateEnabled(),
             portCapacity: readInt('port-capacity', DEFAULTS.portCapacity),
             portFillThreshold: readPortFillThreshold(),
+            wattsPerPanel: readInt('watts-per-panel', DEFAULTS.wattsPerPanel),
+            circuitAmperage: readInt('circuit-amperage', DEFAULTS.circuitAmperage),
+            circuitVoltage: readInt('circuit-voltage', DEFAULTS.circuitVoltage),
+            circuitSafeLoadPercent: readCircuitSafeLoadPercent(),
             projectName: document.getElementById('project-name')?.value?.trim() || '',
             ...overlayInputsFromDom()
         };
@@ -766,6 +794,10 @@
         setInputValue('pixel-height', data.pixelHeight ?? DEFAULTS.pixelHeight);
         setInputValue('port-capacity', data.portCapacity ?? DEFAULTS.portCapacity);
         setInputValue('port-fill-threshold', data.portFillThreshold ?? DEFAULTS.portFillThreshold);
+        setInputValue('watts-per-panel', data.wattsPerPanel ?? DEFAULTS.wattsPerPanel);
+        setInputValue('circuit-amperage', data.circuitAmperage ?? DEFAULTS.circuitAmperage);
+        setInputValue('circuit-voltage', data.circuitVoltage ?? DEFAULTS.circuitVoltage);
+        setInputValue('circuit-safe-load', data.circuitSafeLoadPercent ?? DEFAULTS.circuitSafeLoadPercent);
         setInputValue('custom-format-width', data.customFormatWidth ?? DEFAULTS.customFormatWidth);
         setInputValue('custom-format-height', data.customFormatHeight ?? DEFAULTS.customFormatHeight);
         setOverlayFormat(data.overlayFormat ?? DEFAULTS.overlayFormat);
@@ -965,6 +997,44 @@
             `${state.portFillThreshold}% max fill`,
             `${formatPortCapacity(state.usablePixelsPerPort)} usable/port`,
             `${formatPortCapacity(state.portCapacity)} max/port`
+        ]);
+        updatePowerResults(state);
+    }
+
+    function formatWatts(watts) {
+        if (!Number.isFinite(watts)) {
+            return '—';
+        }
+        return `${Math.round(watts).toLocaleString()} W`;
+    }
+
+    function formatAmps(amps) {
+        if (!Number.isFinite(amps)) {
+            return '—';
+        }
+        return `${amps.toFixed(1)} A`;
+    }
+
+    function updatePowerResults(state) {
+        const title = document.getElementById('result-power-card-title');
+        const ampLabel = Number.isFinite(state.circuitAmperage) && state.circuitAmperage > 0
+            ? `${state.circuitAmperage}A`
+            : 'Circuit';
+
+        if (title) {
+            title.textContent = `Power · ${ampLabel}`;
+        }
+
+        const headroom = Number.isFinite(state.circuitHeadroomPercent)
+            ? state.circuitHeadroomPercent
+            : (100 - (state.circuitSafeLoadPercent || 80));
+
+        setText('result-power-primary', formatWatts(state.totalEstimatedWatts));
+        setMultilineText('result-power-secondary', [
+            `${formatAmps(state.totalEstimatedAmps)} total`,
+            `${state.circuitsRequired} estimated circuits required`,
+            `${Math.round(state.usableWattsPerCircuit || 0).toLocaleString()} W usable/circuit (${state.circuitSafeLoadPercent}% safe load)`,
+            `${headroom}% headroom included`
         ]);
     }
 

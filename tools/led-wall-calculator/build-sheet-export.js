@@ -116,6 +116,103 @@
         return 'Square orientation';
     }
 
+    function formatAmpsValue(amps) {
+        if (!hasValue(amps)) {
+            return null;
+        }
+        return `${Number(amps).toFixed(1)} A`;
+    }
+
+    /**
+     * Scalable SVG wall diagram with optional content overlay.
+     */
+    function buildWallDiagramSvg(state, inputs) {
+        if (!state?.panelsWide || !state?.panelsTall) {
+            return '';
+        }
+
+        const pad = 12;
+        const captionH = 52;
+        const maxDiagramW = 520;
+        const maxDiagramH = 190;
+        const wallAspect = state.physicalWidthMM / state.physicalHeightMM;
+        let diagramW;
+        let diagramH;
+
+        if (wallAspect >= maxDiagramW / maxDiagramH) {
+            diagramW = maxDiagramW;
+            diagramH = maxDiagramW / wallAspect;
+        } else {
+            diagramH = maxDiagramH;
+            diagramW = maxDiagramH * wallAspect;
+        }
+
+        const x0 = pad;
+        const y0 = pad;
+        const cellW = diagramW / state.panelsWide;
+        const cellH = diagramH / state.panelsTall;
+        const svgW = pad * 2 + diagramW;
+        const svgH = pad * 2 + diagramH + captionH;
+        const parts = [];
+
+        parts.push(`<rect x="${x0}" y="${y0}" width="${diagramW}" height="${diagramH}" rx="4" fill="#2a2a2a" stroke="#666" stroke-width="1.2"/>`);
+
+        for (let col = 1; col < state.panelsWide; col += 1) {
+            const x = x0 + col * cellW;
+            parts.push(`<line x1="${x}" y1="${y0}" x2="${x}" y2="${y0 + diagramH}" stroke="rgba(255,255,255,0.14)" stroke-width="0.75"/>`);
+        }
+
+        for (let row = 1; row < state.panelsTall; row += 1) {
+            const y = y0 + row * cellH;
+            parts.push(`<line x1="${x0}" y1="${y}" x2="${x0 + diagramW}" y2="${y}" stroke="rgba(255,255,255,0.14)" stroke-width="0.75"/>`);
+        }
+
+        if (state.overlay) {
+            const { leftPercent, topPercent, widthPercent, heightPercent } = state.overlay;
+            const overlayX = x0 + (leftPercent / 100) * diagramW;
+            const overlayY = y0 + (topPercent / 100) * diagramH;
+            const overlayW = (widthPercent / 100) * diagramW;
+            const overlayH = (heightPercent / 100) * diagramH;
+
+            if (topPercent > 0) {
+                parts.push(`<rect x="${x0}" y="${y0}" width="${diagramW}" height="${(topPercent / 100) * diagramH}" fill="rgba(0,0,0,0.45)"/>`);
+            }
+            if (topPercent + heightPercent < 100) {
+                const shadeY = y0 + ((topPercent + heightPercent) / 100) * diagramH;
+                const shadeH = diagramH - ((topPercent + heightPercent) / 100) * diagramH;
+                parts.push(`<rect x="${x0}" y="${shadeY}" width="${diagramW}" height="${shadeH}" fill="rgba(0,0,0,0.45)"/>`);
+            }
+            if (leftPercent > 0) {
+                parts.push(`<rect x="${x0}" y="${overlayY}" width="${(leftPercent / 100) * diagramW}" height="${overlayH}" fill="rgba(0,0,0,0.45)"/>`);
+            }
+            if (leftPercent + widthPercent < 100) {
+                const shadeX = x0 + ((leftPercent + widthPercent) / 100) * diagramW;
+                const shadeW = diagramW - ((leftPercent + widthPercent) / 100) * diagramW;
+                parts.push(`<rect x="${shadeX}" y="${overlayY}" width="${shadeW}" height="${overlayH}" fill="rgba(0,0,0,0.45)"/>`);
+            }
+
+            parts.push(`<rect x="${overlayX}" y="${overlayY}" width="${overlayW}" height="${overlayH}" fill="none" stroke="#ff6a2d" stroke-width="2"/>`);
+            parts.push(`<text x="${overlayX + overlayW / 2}" y="${overlayY - 4}" text-anchor="middle" fill="#ff6a2d" font-size="10" font-weight="700" font-family="Montserrat, Arial, sans-serif">${escapeHtml(state.overlayFormatLabel || 'Overlay')}</text>`);
+        }
+
+        const widthFt = formatFeetInches(state.physicalWidthFt);
+        const heightFt = formatFeetInches(state.physicalHeightFt);
+        const widthM = formatMeters(state.physicalWidthMM);
+        const heightM = formatMeters(state.physicalHeightMM);
+        const captionY = y0 + diagramH + 18;
+        const captionLine1 = `${state.panelsWide} × ${state.panelsTall} cabinets · ${formatNumber(state.totalPixelWidth)} × ${formatNumber(state.totalPixelHeight)} px`;
+        const captionLine2 = widthFt && heightFt && widthM && heightM
+            ? `${widthFt} × ${heightFt} (${widthM} × ${heightM})`
+            : '';
+
+        parts.push(`<text x="${svgW / 2}" y="${captionY}" text-anchor="middle" fill="#cccccc" font-size="10.5" font-weight="600" font-family="Montserrat, Arial, sans-serif">${escapeHtml(captionLine1)}</text>`);
+        if (captionLine2) {
+            parts.push(`<text x="${svgW / 2}" y="${captionY + 16}" text-anchor="middle" fill="#999999" font-size="9.5" font-weight="500" font-family="Montserrat, Arial, sans-serif">${escapeHtml(captionLine2)}</text>`);
+        }
+
+        return `<svg class="build-sheet-wall-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${svgW} ${svgH}" role="img" aria-label="LED wall layout diagram">${parts.join('')}</svg>`;
+    }
+
     /**
      * Pixel-based port load plan for build sheet display.
      */
@@ -206,6 +303,14 @@
             ? Math.round(portMapping.reduce((sum, entry) => sum + entry.cabinetsEstimate, 0) / portMapping.length)
             : null;
 
+        const circuitAmperage = state.circuitAmperage;
+        const circuitsLabel = hasValue(circuitAmperage)
+            ? `Estimated ${circuitAmperage}A circuits required`
+            : 'Estimated circuits required';
+        const headroomPercent = hasValue(state.circuitHeadroomPercent)
+            ? state.circuitHeadroomPercent
+            : (hasValue(state.circuitSafeLoadPercent) ? 100 - state.circuitSafeLoadPercent : null);
+
         const model = {
             exportedAt,
             projectName: options.projectName?.trim() || null,
@@ -213,6 +318,8 @@
             websiteUrl: options.websiteUrl || WEBSITE_URL,
             warnings,
             portMapping,
+            wallDiagramSvg: buildWallDiagramSvg(state, inputs),
+            wallState: state,
             sections: {
                 overview: buildDetailRows([
                     { label: 'Wall grid (W × H)', value: `${state.panelsWide} × ${state.panelsTall} cabinets` },
@@ -239,6 +346,18 @@
                     { label: 'Total ports required', value: hasValue(state.portsRequired) ? formatNumber(state.portsRequired) : null },
                     { label: 'Avg. cabinets per port (est.)', value: avgCabinetsPerPort ? `~${avgCabinetsPerPort}` : null },
                     { label: 'Sending hardware', value: 'Confirm processor / sending card model with manufacturer — capacity settings above are user-defined.' }
+                ]),
+                power: buildDetailRows([
+                    { label: 'Watts per panel', value: hasValue(state.wattsPerPanel) ? `${formatNumber(state.wattsPerPanel)} W` : null },
+                    { label: 'Total panel count', value: hasValue(state.totalPanels) ? formatNumber(state.totalPanels) : null },
+                    { label: 'Total estimated watts', value: hasValue(state.totalEstimatedWatts) ? `${formatNumber(state.totalEstimatedWatts)} W` : null },
+                    { label: 'Total estimated amps', value: formatAmpsValue(state.totalEstimatedAmps) },
+                    { label: 'Circuit size', value: hasValue(circuitAmperage) && hasValue(state.circuitVoltage) ? `${circuitAmperage}A @ ${state.circuitVoltage}V` : null },
+                    { label: 'Raw circuit capacity', value: hasValue(state.rawWattsPerCircuit) ? `${formatNumber(Math.round(state.rawWattsPerCircuit))} W` : null },
+                    { label: 'Safe load', value: hasValue(state.circuitSafeLoadPercent) ? `${state.circuitSafeLoadPercent}%` : null },
+                    { label: '20% headroom included', value: hasValue(headroomPercent) ? `${headroomPercent}% reserved` : null },
+                    { label: 'Usable watts per circuit', value: hasValue(state.usableWattsPerCircuit) ? `${formatNumber(Math.round(state.usableWattsPerCircuit))} W` : null },
+                    { label: circuitsLabel, value: hasValue(state.circuitsRequired) ? formatNumber(state.circuitsRequired) : null }
                 ]),
                 buildNotes: buildDetailRows([
                     { label: 'Cabinet orientation', value: formatCabinetOrientation(state) },
@@ -322,6 +441,24 @@
         `;
     }
 
+    function renderWallVisualSection(wallDiagramSvg, state) {
+        if (!wallDiagramSvg) {
+            return '';
+        }
+
+        const overlayNote = state.overlay && state.overlayFormatLabel
+            ? `<p class="build-sheet-note">Content overlay: ${escapeHtml(state.overlayFormatLabel)} active area shown in orange.</p>`
+            : '';
+
+        return `
+            <section class="build-sheet-section build-sheet-section--visual wall-visual-print">
+                <h2 class="build-sheet-section-title">Wall Layout</h2>
+                <div class="build-sheet-wall-visual">${wallDiagramSvg}</div>
+                ${overlayNote}
+            </section>
+        `;
+    }
+
     function renderWarningsSection(warnings) {
         if (!warnings.length) {
             return '';
@@ -336,11 +473,32 @@
         `;
     }
 
-    function renderPowerSection() {
+    function renderPowerSection(powerRows) {
+        const headroomNote = 'Circuit estimates include 20% headroom by default for safer planning. Verify final power requirements with manufacturer specs and a qualified electrician.';
+        const disclaimer = 'Power estimates are for planning only. Confirm actual cabinet power draw, distribution, and cabling with manufacturer specifications.';
+
+        if (!powerRows?.length) {
+            return `
+                <section class="build-sheet-section">
+                    <h2 class="build-sheet-section-title">Estimated Power Requirements</h2>
+                    <p class="build-sheet-note build-sheet-note--disclaimer">${escapeHtml(headroomNote)}</p>
+                </section>
+            `;
+        }
+
+        const items = powerRows.map((row) => `
+            <div class="build-sheet-row">
+                <dt>${escapeHtml(row.label)}</dt>
+                <dd>${escapeHtml(row.value)}</dd>
+            </div>
+        `).join('');
+
         return `
             <section class="build-sheet-section">
-                <h2 class="build-sheet-section-title">Power / Prep</h2>
-                <p class="build-sheet-note">Power draw, circuit count, and rigging requirements are not calculated by this tool. Confirm amperage, breaker layout, and mounting with cabinet manufacturer specifications before install.</p>
+                <h2 class="build-sheet-section-title">Estimated Power Requirements</h2>
+                <dl class="build-sheet-details">${items}</dl>
+                <p class="build-sheet-note build-sheet-note--disclaimer">${escapeHtml(headroomNote)}</p>
+                <p class="build-sheet-note">${escapeHtml(disclaimer)}</p>
             </section>
         `;
     }
@@ -365,6 +523,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
+        /* Screen preview — Okami dark theme */
         :root {
             --okami-bg: #121212;
             --okami-card: #1a1a1a;
@@ -402,8 +561,6 @@
             padding-bottom: 18px;
             border-bottom: 2px solid rgba(255, 106, 45, 0.45);
             margin-bottom: 22px;
-            break-inside: avoid;
-            page-break-inside: avoid;
         }
 
         .build-sheet-brand img {
@@ -443,8 +600,6 @@
             border-radius: 12px;
             padding: 16px 18px;
             margin-bottom: 16px;
-            break-inside: avoid;
-            page-break-inside: avoid;
         }
 
         .build-sheet-section-title {
@@ -497,6 +652,26 @@
             color: #ffb089;
         }
 
+        .build-sheet-note--disclaimer {
+            margin-top: 12px;
+            margin-bottom: 0;
+            font-size: 0.82rem;
+            font-style: italic;
+        }
+
+        .build-sheet-wall-visual {
+            display: flex;
+            justify-content: center;
+            margin: 4px 0 8px;
+        }
+
+        .build-sheet-wall-svg {
+            display: block;
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+        }
+
         .build-sheet-table-wrap {
             overflow-x: auto;
         }
@@ -538,21 +713,27 @@
             border-top: 1px solid var(--okami-border);
             color: var(--okami-muted);
             font-size: 0.78rem;
-            break-inside: avoid;
-            page-break-inside: avoid;
         }
 
         .build-sheet-footer strong {
             color: var(--okami-text);
         }
 
-        .build-sheet-actions {
+        .export-actions {
             display: flex;
-            gap: 10px;
-            justify-content: flex-end;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
             margin: 0 0 18px;
         }
 
+        .export-actions-row {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .print-button,
         .build-sheet-btn {
             appearance: none;
             border: 1px solid rgba(255, 106, 45, 0.55);
@@ -566,56 +747,253 @@
             cursor: pointer;
         }
 
+        .print-button:hover,
         .build-sheet-btn:hover {
             background: rgba(255, 106, 45, 0.24);
         }
 
+        .print-hint {
+            margin: 0;
+            max-width: 22rem;
+            text-align: right;
+            font-size: 0.78rem;
+            line-height: 1.4;
+            color: var(--okami-muted);
+        }
+
+        .build-sheet-page-one {
+            break-inside: avoid-page;
+            page-break-inside: avoid;
+        }
+
+        /* ── Printer-friendly stylesheet ── */
         @page {
             size: letter;
-            margin: 0.55in;
+            margin: 0.5in;
         }
 
         @media print {
+            :root {
+                --okami-bg: #ffffff;
+                --okami-card: #ffffff;
+                --okami-border: #dddddd;
+                --okami-text: #111111;
+                --okami-muted: #444444;
+                --okami-accent: #f97316;
+            }
+
+            html,
             body {
-                padding: 0;
-                background: #121212;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #ffffff !important;
+                color: #111111 !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
 
-            .build-sheet-actions {
+            .export-actions,
+            .print-button,
+            .print-hint,
+            button {
                 display: none !important;
             }
 
             .build-sheet-page {
-                max-width: none;
+                background: #ffffff !important;
+                color: #111111 !important;
+                width: 100% !important;
+                max-width: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+            }
+
+            .build-sheet-page-one {
+                break-inside: avoid-page;
+                page-break-inside: avoid;
+            }
+
+            .build-sheet-header,
+            .build-sheet-section,
+            .build-sheet-footer,
+            .build-sheet-table-wrap {
+                background: #ffffff !important;
+                color: #111111 !important;
+                border: 1px solid #dddddd !important;
+                border-radius: 6px !important;
+                box-shadow: none !important;
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+
+            .build-sheet-header {
+                display: flex !important;
+                padding: 12px 14px !important;
+                margin-bottom: 12px !important;
+                border-bottom: 2px solid #f97316 !important;
+            }
+
+            .build-sheet-brand img {
+                max-width: 140px !important;
+                filter: brightness(0) !important;
+            }
+
+            .build-sheet-title {
+                color: #111111 !important;
+                font-size: 1.25rem !important;
+            }
+
+            .build-sheet-subtitle,
+            .build-sheet-exported,
+            .build-sheet-project {
+                color: #444444 !important;
+            }
+
+            .build-sheet-project {
+                color: #c44f1a !important;
+            }
+
+            .build-sheet-section {
+                padding: 12px 14px !important;
+                margin-bottom: 12px !important;
+            }
+
+            .build-sheet-section-title {
+                color: #f97316 !important;
+                border-bottom: 1px solid #f97316;
+                padding-bottom: 6px;
+            }
+
+            .build-sheet-row {
+                border-bottom-color: #eeeeee !important;
+            }
+
+            .build-sheet-row dt {
+                color: #444444 !important;
+            }
+
+            .build-sheet-row dd {
+                color: #111111 !important;
+            }
+
+            .build-sheet-lead,
+            .build-sheet-note,
+            .build-sheet-note--disclaimer {
+                color: #444444 !important;
+            }
+
+            .build-sheet-note--warn,
+            .build-sheet-warnings {
+                color: #8a3b12 !important;
+            }
+
+            .build-sheet-table th {
+                color: #f97316 !important;
+                border-bottom: 1px solid #dddddd !important;
+            }
+
+            .build-sheet-table td {
+                color: #111111 !important;
+                border-bottom: 1px solid #eeeeee !important;
+            }
+
+            .build-sheet-table thead {
+                display: table-header-group;
+            }
+
+            .build-sheet-table tr {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+
+            .build-sheet-footer {
+                border-top: 1px solid #dddddd !important;
+                color: #444444 !important;
+                margin-top: 16px !important;
+                padding-top: 12px !important;
+            }
+
+            .build-sheet-footer strong {
+                color: #111111 !important;
+            }
+
+            .build-sheet-section--visual,
+            .build-sheet-wall-visual,
+            .wall-visual-print,
+            .build-sheet-wall-svg,
+            svg {
+                break-inside: avoid !important;
+                page-break-inside: avoid !important;
+                max-width: 100% !important;
+            }
+
+            .build-sheet-section--visual {
+                max-height: 3in;
+            }
+
+            .build-sheet-wall-svg {
+                max-height: 2.4in !important;
+            }
+
+            .build-sheet-wall-svg rect[fill="#2a2a2a"] {
+                fill: #e8e8e8 !important;
+                stroke: #999999 !important;
+            }
+
+            .build-sheet-wall-svg line {
+                stroke: #bbbbbb !important;
+            }
+
+            .build-sheet-wall-svg rect[fill="rgba(0,0,0,0.45)"] {
+                fill: #dddddd !important;
+            }
+
+            .build-sheet-wall-svg rect[stroke="#ff6a2d"] {
+                stroke: #f97316 !important;
+            }
+
+            .build-sheet-wall-svg text {
+                fill: #333333 !important;
+            }
+
+            .build-sheet-wall-svg text[fill="#ff6a2d"] {
+                fill: #f97316 !important;
             }
         }
     </style>
 </head>
 <body>
-    <div class="build-sheet-page">
-        <div class="build-sheet-actions">
-            <button type="button" class="build-sheet-btn" onclick="window.print()">Print / Save as PDF</button>
+    <div class="build-sheet build-sheet-page">
+        <div class="export-actions">
+            <div class="export-actions-row">
+                <button type="button" class="print-button build-sheet-btn" onclick="window.print()">Print / Save as PDF</button>
+            </div>
+            <p class="print-hint">In the print dialog, turn off <strong>Headers and Footers</strong> for a cleaner PDF.</p>
         </div>
 
-        <header class="build-sheet-header">
-            <div class="build-sheet-brand">
-                <img src="${escapeHtml(model.logoUrl)}" alt="Okami Designs">
-            </div>
-            <div class="build-sheet-header-meta">
-                <h1 class="build-sheet-title">LED Wall Configuration</h1>
-                <p class="build-sheet-subtitle">Build Sheet</p>
-                <p class="build-sheet-exported">Exported ${escapeHtml(exportLabel)}</p>
-                ${projectLine}
-            </div>
-        </header>
+        <div class="build-sheet-page-one">
+            <header class="build-sheet-header">
+                <div class="build-sheet-brand">
+                    <img src="${escapeHtml(model.logoUrl)}" alt="Okami Designs">
+                </div>
+                <div class="build-sheet-header-meta">
+                    <h1 class="build-sheet-title">LED Wall Configuration</h1>
+                    <p class="build-sheet-subtitle">Build Sheet</p>
+                    <p class="build-sheet-exported">Exported ${escapeHtml(exportLabel)}</p>
+                    ${projectLine}
+                </div>
+            </header>
 
-        ${renderDetailSection('Wall Overview', model.sections.overview)}
+            ${renderWallVisualSection(model.wallDiagramSvg, model.wallState)}
+            ${renderDetailSection('Wall Overview', model.sections.overview)}
+        </div>
+
         ${renderDetailSection('Resolution', model.sections.resolution)}
         ${renderDetailSection('Processor / Sending Card', model.sections.processor)}
         ${renderPortMappingSection(model.portMapping, model.warnings)}
-        ${renderPowerSection()}
+        ${renderPowerSection(model.sections.power)}
         ${renderDetailSection('Build Notes', model.sections.buildNotes)}
         ${renderWarningsSection(model.warnings)}
 
@@ -632,15 +1010,18 @@
     function openPrintView(inputs, state, options = {}) {
         const model = buildBuildSheetModel(inputs, state, options);
         const html = buildBuildSheetHtml(model);
-        const printWindow = window.open('', '_blank');
+        const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+        const blobUrl = URL.createObjectURL(blob);
+        const printWindow = window.open(blobUrl, '_blank');
 
         if (!printWindow) {
+            URL.revokeObjectURL(blobUrl);
             throw new Error('Pop-up blocked. Allow pop-ups for this site to export the build sheet.');
         }
 
-        printWindow.document.open();
-        printWindow.document.write(html);
-        printWindow.document.close();
+        const revokeUrl = () => URL.revokeObjectURL(blobUrl);
+        printWindow.addEventListener('load', revokeUrl, { once: true });
+        printWindow.addEventListener('unload', revokeUrl, { once: true });
         printWindow.focus();
 
         return model;
@@ -649,6 +1030,7 @@
     const api = {
         buildBuildSheetModel,
         buildBuildSheetHtml,
+        buildWallDiagramSvg,
         calculatePortMapping,
         openPrintView
     };

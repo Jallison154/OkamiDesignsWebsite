@@ -27,7 +27,11 @@
         portFillThreshold: 90,
         customFormatWidth: 32,
         customFormatHeight: 9,
-        showCabinetNumbers: false
+        showCabinetNumbers: false,
+        wattsPerPanel: 200,
+        circuitAmperage: 20,
+        circuitVoltage: 120,
+        circuitSafeLoadPercent: 80
     };
 
     const COMMON_PITCHES = [1.9, 2.6, 2.9, 3.9, 5.9];

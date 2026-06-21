@@ -71,7 +71,18 @@
             `  Port capacity: ${state.portCapacity?.toLocaleString?.() || inputs.portCapacity}`,
             `  Fill threshold: ${state.portFillThreshold ?? inputs.portFillThreshold}%`,
             `  Usable pixels/port: ${state.usablePixelsPerPort?.toLocaleString?.() || '—'}`
-        ];
+        );
+
+        if (state.totalEstimatedWatts != null) {
+            lines.push(
+                '',
+                'POWER (ESTIMATED)',
+                `  Watts per panel: ${state.wattsPerPanel ?? inputs.wattsPerPanel} W`,
+                `  Total watts: ${Math.round(state.totalEstimatedWatts).toLocaleString()} W`,
+                `  Total amps: ${state.totalEstimatedAmps?.toFixed?.(1) ?? '—'} A`,
+                `  Circuits required: ${state.circuitsRequired ?? '—'}`
+            );
+        }
 
         if (state.overlay && state.overlayFormatLabel) {
             lines.push(
