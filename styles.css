@@ -5269,11 +5269,53 @@ html {
     .preview-column {
         grid-area: preview-col;
         display: grid;
-        grid-template-rows: minmax(0, 1fr) auto;
-        gap: 10px;
+        grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+        grid-template-rows: minmax(0, 1fr);
+        grid-template-areas: "summary preview";
+        gap: clamp(10px, 1.2vw, 14px);
         min-height: 0;
         align-self: stretch;
-        overflow: visible;
+        overflow: hidden;
+    }
+
+    .preview-column .wall-preview-card {
+        grid-area: preview;
+    }
+
+    .preview-column .led-project-summary {
+        grid-area: summary;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        min-width: 0;
+        overflow: hidden;
+    }
+
+    .preview-column .led-project-summary .led-result-cards--project-summary {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        grid-template-columns: 1fr;
+        gap: 8px;
+        align-content: start;
+    }
+
+    .preview-column .led-result-card--summary {
+        min-height: clamp(96px, 11vh, 118px);
+    }
+
+    .preview-column .led-result-card--summary .led-result-primary {
+        font-size: clamp(1.1rem, 1.5vw, 1.45rem);
+    }
+
+    .preview-column .led-result-card--summary .led-result-secondary {
+        font-size: clamp(10px, 0.9vw, 12px);
+        margin-top: 6px;
+    }
+
+    .preview-column .led-project-summary .led-panel-title {
+        flex-shrink: 0;
     }
 
     .led-grid-summary,
@@ -5313,7 +5355,7 @@ html {
         min-height: 0;
         display: flex;
         flex-direction: column;
-        overflow: visible;
+        overflow: hidden;
     }
 
     .led-preview-panel {
@@ -5389,11 +5431,6 @@ html {
     .led-result-cards {
         grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
         gap: 8px;
-    }
-
-    .led-result-cards--project-summary {
-        grid-template-columns: 1fr;
-        gap: 10px;
     }
 
     .led-result-card--summary {
@@ -5502,7 +5539,9 @@ html {
         height: auto;
         min-height: 0;
         align-self: start;
-        grid-template-rows: auto auto;
+        grid-template-columns: minmax(260px, 300px) minmax(0, 1fr);
+        grid-template-rows: minmax(320px, 55vh);
+        grid-template-areas: "summary preview";
         overflow: visible;
     }
 
