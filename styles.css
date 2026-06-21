@@ -3276,18 +3276,75 @@ html {
 }
 
 /* Homepage — tools-first hero & featured tools */
-.home-page .hero-section {
+.home-page .main {
     min-height: auto;
-    padding: clamp(48px, 8vh, 80px) 0 clamp(32px, 5vh, 48px);
+}
+
+.home-page .hero-section {
+    min-height: 0;
+    max-height: none;
+    padding: clamp(16px, 2.5vh, 28px) 0 clamp(12px, 2vh, 20px);
+    overflow: hidden;
+}
+
+.home-page .hero-content {
+    max-width: 760px;
+}
+
+.home-page .hero-badge {
+    margin-bottom: 10px;
+    padding: 6px 14px;
+    font-size: 11px;
+}
+
+.home-page .hero-tagline {
+    margin-bottom: 14px;
+    font-size: clamp(0.95rem, 1.8vw, 1.05rem);
+    line-height: 1.5;
+    max-width: 640px;
+}
+
+.home-page .hero-actions {
+    gap: 12px;
+}
+
+.home-page .hero-stats {
+    gap: clamp(20px, 4vw, 36px);
+    margin-bottom: 2px;
+}
+
+.home-page .stat-number {
+    font-size: clamp(1.35rem, 2.5vw, 1.65rem);
+}
+
+.home-page .stat-label {
+    font-size: 11px;
+    line-height: 1.35;
+    max-width: 88px;
+    text-wrap: balance;
+}
+
+.home-page .hero-visual {
+    opacity: 0.72;
+}
+
+.home-page .tech-element {
+    padding: 8px 11px;
+    font-size: 0.78rem;
+}
+
+.home-page .tech-element .element-text {
+    font-size: 10px;
+    letter-spacing: 0.6px;
 }
 
 .hero-headline {
     font-family: 'Montserrat', sans-serif;
-    font-size: clamp(1.65rem, 3.8vw, 2.85rem);
+    font-size: clamp(1.5rem, 3.2vw, 2.35rem);
     font-weight: 800;
-    line-height: 1.2;
+    line-height: 1.18;
     color: var(--primary-text);
-    margin: 0 auto 22px;
+    margin: 0 auto 12px;
     max-width: 820px;
     letter-spacing: -0.5px;
 }
@@ -3300,10 +3357,77 @@ html {
 .hero-cta-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 14px;
+    gap: 10px;
     justify-content: center;
     align-items: center;
     width: 100%;
+}
+
+.home-page .hero-cta-row .cta-button {
+    padding: 12px 22px;
+    font-size: 13px;
+}
+
+.hero-flagship {
+    width: 100%;
+    max-width: 520px;
+    margin: 4px auto 0;
+}
+
+.hero-flagship-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 14px 18px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 106, 45, 0.28);
+    background: linear-gradient(135deg, rgba(255, 106, 45, 0.1) 0%, rgba(22, 22, 22, 0.85) 55%);
+    backdrop-filter: blur(10px);
+}
+
+.hero-flagship-eyebrow {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--accent-color);
+}
+
+.hero-flagship-title {
+    margin: 0;
+    font-family: 'Montserrat', sans-serif;
+    font-size: clamp(1rem, 2vw, 1.15rem);
+    font-weight: 800;
+    color: var(--primary-text);
+    line-height: 1.25;
+}
+
+.hero-flagship-meta {
+    margin: 0;
+    font-size: 0.78rem;
+    color: var(--secondary-text);
+    letter-spacing: 0.2px;
+}
+
+.hero-flagship-btn {
+    display: inline-block;
+    margin-top: 4px;
+    padding: 8px 16px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.55px;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--primary-bg);
+    background: var(--gradient-primary);
+    border-radius: 5px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hero-flagship-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(255, 106, 45, 0.35);
 }
 
 .cta-button-secondary {
@@ -3327,49 +3451,78 @@ html {
 .featured-tools {
     position: relative;
     z-index: 10;
-    padding: clamp(24px, 4vh, 40px) 0 clamp(64px, 10vh, 96px);
+    padding: clamp(8px, 1.5vh, 16px) 0 clamp(48px, 6vh, 72px);
     text-align: left;
+}
+
+.featured-tools-panel {
+    padding: clamp(24px, 3.5vw, 36px);
+    border-radius: 18px;
+    border: 1px solid rgba(255, 106, 45, 0.18);
+    background:
+        linear-gradient(165deg, rgba(255, 106, 45, 0.06) 0%, transparent 42%),
+        linear-gradient(180deg, rgba(28, 28, 28, 0.92) 0%, rgba(14, 14, 14, 0.98) 100%);
+    box-shadow:
+        0 4px 24px rgba(0, 0, 0, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .featured-tools-header {
     max-width: 720px;
-    margin: 0 auto 32px;
+    margin: 0 auto 24px;
     text-align: center;
 }
 
 .featured-tools-title {
     font-family: 'Montserrat', sans-serif;
-    font-size: clamp(1.5rem, 3vw, 2rem);
+    font-size: clamp(1.45rem, 2.8vw, 1.85rem);
     font-weight: 800;
     color: var(--primary-text);
-    margin: 0 0 12px;
+    margin: 0 0 10px;
     letter-spacing: -0.5px;
+}
+
+.featured-tools-title::after {
+    content: '';
+    display: block;
+    width: 48px;
+    height: 3px;
+    margin: 12px auto 0;
+    border-radius: 2px;
+    background: var(--gradient-primary);
 }
 
 .featured-tools-intro {
     margin: 0;
-    font-size: 1rem;
-    line-height: 1.6;
+    font-size: 0.96rem;
+    line-height: 1.55;
     color: var(--secondary-text);
 }
 
 .featured-tools-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
-    gap: clamp(16px, 2.5vw, 24px);
-    margin-bottom: 36px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(14px, 2vw, 20px);
+    margin-bottom: 28px;
 }
 
 .featured-tool-card {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: clamp(20px, 3vw, 28px);
+    gap: 10px;
+    padding: clamp(18px, 2.5vw, 24px);
     border-radius: 14px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(22, 22, 22, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    background: rgba(12, 12, 12, 0.65);
     backdrop-filter: blur(8px);
-    min-height: 220px;
+    min-height: 200px;
+    transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.featured-tool-card:hover {
+    border-color: rgba(255, 106, 45, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
 }
 
 .featured-tool-tag {
@@ -3436,9 +3589,20 @@ html {
     text-decoration: underline;
 }
 
+@media (max-width: 960px) {
+    .featured-tools-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 @media (max-width: 768px) {
     .home-page .hero-stats {
-        gap: 24px;
+        gap: 16px;
+    }
+
+    .home-page .stat-label {
+        max-width: 72px;
+        font-size: 10px;
     }
 
     .hero-cta-row {
@@ -3451,6 +3615,10 @@ html {
     .hero-cta-row .cta-button {
         width: 100%;
         text-align: center;
+    }
+
+    .hero-flagship {
+        max-width: 100%;
     }
 }
 
