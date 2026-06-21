@@ -5285,11 +5285,12 @@ html {
 .led-preview-wall--curved {
     display: block;
     transform-style: preserve-3d;
+    overflow: hidden;
 }
 
 .led-preview-stage--curved {
-    perspective: 1100px;
-    perspective-origin: 50% 35%;
+    perspective: 1400px;
+    perspective-origin: 50% 28%;
 }
 
 .led-preview-wall-container.has-curved-preview {

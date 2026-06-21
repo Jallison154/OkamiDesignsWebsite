@@ -230,7 +230,10 @@
         const widthMM = state.curvedWallActive && state.chordWidthMM
             ? state.chordWidthMM
             : state.physicalWidthMM;
-        const wallAspect = widthMM / state.physicalHeightMM;
+        const heightMM = state.curvedWallActive && state.physicalHeightMM
+            ? state.physicalHeightMM + (state.curveDepthMM || 0)
+            : state.physicalHeightMM;
+        const wallAspect = widthMM / heightMM;
         let diagramW;
         let diagramH;
 
@@ -259,8 +262,8 @@
         for (let row = 0; row < state.panelsTall; row += 1) {
             for (let col = 0; col < state.panelsWide; col += 1) {
                 const pos = layout.positions[col];
-                const x = x0 + pos.xPx - layout.cabinetWidthPx / 2;
-                const y = y0 + row * layout.rowHeightPx + pos.depthPx;
+                const x = x0 + pos.leftPx;
+                const y = y0 + layout.padY + row * layout.rowHeightPx + pos.depthPx;
                 doc.roundedRect(x, y, layout.cabinetWidthPx, layout.rowHeightPx, 0.4, 0.4, 'FD');
             }
         }

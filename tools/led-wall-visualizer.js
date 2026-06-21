@@ -1048,7 +1048,8 @@
 
     function getWallPhysicalAspect(state) {
         if (state.curvedWallActive && state.chordWidthMM && state.physicalHeightMM) {
-            return state.chordWidthMM / state.physicalHeightMM;
+            const totalHeightMM = state.physicalHeightMM + (state.curveDepthMM || 0);
+            return state.chordWidthMM / totalHeightMM;
         }
         if (state.physicalWidthMM && state.physicalHeightMM) {
             return state.physicalWidthMM / state.physicalHeightMM;
@@ -1460,14 +1461,14 @@
             const col = index % state.panelsWide;
             const row = Math.floor(index / state.panelsWide);
             const pos = layout.positions[col];
-            const left = pos.xPx - layout.cabinetWidthPx / 2;
-            const top = row * layout.rowHeightPx + pos.depthPx;
+            const left = pos.leftPx;
+            const top = layout.padY + row * layout.rowHeightPx + pos.depthPx;
 
             cell.style.width = `${layout.cabinetWidthPx}px`;
             cell.style.height = `${layout.rowHeightPx}px`;
             cell.style.left = `${left}px`;
             cell.style.top = `${top}px`;
-            cell.style.transform = `rotateY(${pos.rotateY}deg)`;
+            cell.style.transform = Math.abs(pos.rotateY) > 0.05 ? `rotateY(${pos.rotateY}deg)` : '';
             cell.classList.add('led-cabinet--arc');
         });
 

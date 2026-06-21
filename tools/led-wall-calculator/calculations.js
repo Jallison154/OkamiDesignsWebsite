@@ -516,51 +516,68 @@
     }
 
     /**
-     * Layout positions for curved wall preview (front view with perspective).
+     * Layout positions for curved wall preview.
+     * Each column shares one horizontal arc offset and one depth offset (all rows in that column match).
      */
     function computeCurvedCabinetLayout(state, layoutWidthPx, layoutHeightPx) {
         const panelsWide = clampPanelCount(Number(state.panelsWide) || C.DEFAULTS.panelsWide);
         const panelsTall = clampPanelCount(Number(state.panelsTall) || C.DEFAULTS.panelsTall);
-        const totalRad = Number(state.totalCurveAngleRadians) || 0;
-        const radiusFeet = Number(state.radiusFeet) || 0;
-        const surfaceWidthFeet = Number(state.surfaceWidthFeet) || 0;
-        const curveDepthFeet = Number(state.curveDepthFeet) || 0;
 
-        if (!state.curvedWallActive || totalRad <= 0 || radiusFeet <= 0 || panelsWide <= 1) {
+        if (!state.curvedWallActive || panelsWide <= 1) {
             return null;
         }
 
-        const startRad = -totalRad / 2;
-        const angularStep = totalRad / panelsWide;
-        const cabinetWidthFeet = surfaceWidthFeet / panelsWide;
-        const footPositions = [];
+        const cabinetAngleRadians = (Number(state.cabinetAngleDegrees) || 0) * Math.PI / 180;
+        const radiusFeet = Number(state.radiusFeet) || 0;
+        const surfaceWidthFeet = Number(state.surfaceWidthFeet) || 0;
+        const physicalHeightFeet = Number(state.physicalHeightFt) || 0;
 
+        if (cabinetAngleRadians <= 0 || radiusFeet <= 0 || surfaceWidthFeet <= 0 || physicalHeightFeet <= 0) {
+            return null;
+        }
+
+        const centerColumn = (panelsWide - 1) / 2;
+        const cabinetWidthFeet = surfaceWidthFeet / panelsWide;
+        const rowHeightFeet = physicalHeightFeet / panelsTall;
+        const halfCabinetFeet = cabinetWidthFeet / 2;
+
+        const columns = [];
         for (let col = 0; col < panelsWide; col += 1) {
-            const theta = startRad + (col + 0.5) * angularStep;
-            footPositions.push({
-                x: radiusFeet * Math.sin(theta),
-                depth: radiusFeet * (1 - Math.cos(theta)),
-                rotateY: (theta * 180) / Math.PI
+            const columnOffset = col - centerColumn;
+            const angle = columnOffset * cabinetAngleRadians;
+            columns.push({
+                xCenterFeet: radiusFeet * Math.sin(angle),
+                curveDepthFeet: radiusFeet * (1 - Math.cos(angle)),
+                rotateY: (angle * 180) / Math.PI
             });
         }
 
-        const minX = Math.min(...footPositions.map((p) => p.x - cabinetWidthFeet / 2));
-        const maxX = Math.max(...footPositions.map((p) => p.x + cabinetWidthFeet / 2));
-        const spanXFt = Math.max(maxX - minX, state.chordWidthFeet || surfaceWidthFeet);
-        const scale = layoutWidthPx / spanXFt;
+        const minXFeet = Math.min(...columns.map((c) => c.xCenterFeet - halfCabinetFeet));
+        const maxXFeet = Math.max(...columns.map((c) => c.xCenterFeet + halfCabinetFeet));
+        const spanXFeet = Math.max(maxXFeet - minXFeet, state.chordWidthFeet || surfaceWidthFeet);
+        const maxDepthFeet = Math.max(...columns.map((c) => c.curveDepthFeet));
+        const spanYFeet = physicalHeightFeet + maxDepthFeet;
+
+        const scale = Math.min(layoutWidthPx / spanXFeet, layoutHeightPx / spanYFeet);
+        const contentWidthPx = spanXFeet * scale;
+        const contentHeightPx = spanYFeet * scale;
+        const padX = (layoutWidthPx - contentWidthPx) / 2;
+        const padY = (layoutHeightPx - contentHeightPx) / 2;
         const cabinetWidthPx = cabinetWidthFeet * scale;
-        const rowHeightPx = layoutHeightPx / panelsTall;
-        const depthScale = curveDepthFeet > 0 ? Math.min(scale, (layoutHeightPx * 0.12) / curveDepthFeet) : 0;
+        const rowHeightPx = rowHeightFeet * scale;
 
         return {
             panelsWide,
             panelsTall,
             cabinetWidthPx,
             rowHeightPx,
-            positions: footPositions.map((p) => ({
-                xPx: (p.x - minX) * scale,
-                depthPx: p.depth * depthScale,
-                rotateY: p.rotateY
+            padX,
+            padY,
+            scale,
+            positions: columns.map((col) => ({
+                leftPx: padX + (col.xCenterFeet - halfCabinetFeet - minXFeet) * scale,
+                depthPx: col.curveDepthFeet * scale,
+                rotateY: col.rotateY
             }))
         };
     }

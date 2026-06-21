@@ -636,11 +636,13 @@ const cases = [
             if (!layout || layout.positions.length !== 6) {
                 throw new Error('layout: expected 6 cabinet positions');
             }
-            if (Math.abs(layout.positions[0].xPx - layout.positions[1].xPx) < 1) {
-                throw new Error('layout: expected distinct x positions along arc');
+            if (Math.abs(layout.positions[0].leftPx - layout.positions[1].leftPx) < 1) {
+                throw new Error('layout: expected distinct column positions along arc');
             }
-            if (layout.positions[0].rotateY === layout.positions[1].rotateY) {
-                throw new Error('layout: expected rotation to change along arc');
+            const centerCol = Math.floor((state.panelsWide - 1) / 2);
+            const edgeCol = state.panelsWide - 1;
+            if (layout.positions[edgeCol].depthPx <= layout.positions[centerCol].depthPx) {
+                throw new Error('layout: edge columns should have greater depth than center');
             }
         }
     }
