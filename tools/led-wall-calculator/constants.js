@@ -31,8 +31,18 @@
         wattsPerPanel: 200,
         circuitAmperage: 20,
         circuitVoltage: 120,
-        circuitSafeLoadPercent: 80
+        circuitSafeLoadPercent: 80,
+        curvedWallMode: false,
+        cabinetAnglePreset: '0',
+        customCabinetAngleDegrees: 2.5
     };
+
+    const CABINET_ANGLE_PRESETS = [
+        { value: '0', label: '0° Flat', degrees: 0 },
+        { value: '2.5', label: '2.5°', degrees: 2.5 },
+        { value: '5', label: '5°', degrees: 5 },
+        { value: 'custom', label: 'Custom', degrees: null }
+    ];
 
     const COMMON_PITCHES = [1.9, 2.6, 2.9, 3.9, 5.9];
     const EXTENDED_PITCHES = [1.2, 1.5, 1.8, 2.0, 2.5, 4.8];
@@ -98,6 +108,7 @@
         STANDARD_RATIOS,
         OVERLAY_FORMAT_RATIOS,
         MIN_PANEL_COUNT,
-        MAX_PANEL_COUNT
+        MAX_PANEL_COUNT,
+        CABINET_ANGLE_PRESETS
     };
 })(typeof window !== 'undefined' ? window : globalThis);

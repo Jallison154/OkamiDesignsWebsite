@@ -415,6 +415,74 @@
     }
 
     /**
+     * Per-cabinet bend angle when curved wall mode is enabled.
+     */
+    function resolveCabinetAngleDegrees(rawInputs = {}) {
+        const curvedWallMode = rawInputs.curvedWallMode === true
+            || rawInputs.curvedWallMode === 'true';
+        if (!curvedWallMode) {
+            return 0;
+        }
+
+        const preset = String(rawInputs.cabinetAnglePreset ?? '0');
+        if (preset === 'custom') {
+            const custom = Number(rawInputs.customCabinetAngleDegrees);
+            return Number.isFinite(custom) && custom >= 0 ? custom : 0;
+        }
+
+        const angle = parseFloat(preset);
+        return Number.isFinite(angle) && angle >= 0 ? angle : 0;
+    }
+
+    /**
+     * Arc width, chord width, depth, and total curve angle for angled cabinets.
+     * Does not affect pixel resolution or processor math.
+     */
+    function calculateCurvedWallPhysical(inputs = {}) {
+        const mmPerFoot = Number(inputs.mmPerFoot) || C.MM_PER_FOOT;
+        const cabinetWidthMM = Number(inputs.cabinetWidthMM) || C.DEFAULTS.cabinetWidthMM;
+        const panelsWide = clampPanelCount(Number(inputs.panelsWide) || C.DEFAULTS.panelsWide);
+        const curvedWallMode = inputs.curvedWallMode === true
+            || inputs.curvedWallMode === 'true';
+        const cabinetAngleDegrees = resolveCabinetAngleDegrees(inputs);
+
+        const cabinetWidthFeet = cabinetWidthMM / mmPerFoot;
+        const arcWidthFeet = cabinetWidthFeet * panelsWide;
+
+        if (!curvedWallMode || cabinetAngleDegrees === 0) {
+            return {
+                curvedWallMode,
+                curvedWallActive: false,
+                cabinetAngleDegrees: 0,
+                arcWidthFeet,
+                chordWidthFeet: arcWidthFeet,
+                depthFeet: 0,
+                totalCurveAngle: 0,
+                radiusFeet: null
+            };
+        }
+
+        const angleRadians = cabinetAngleDegrees * Math.PI / 180;
+        const radiusFeet = cabinetWidthFeet / angleRadians;
+        const totalAngleRadians = angleRadians * panelsWide;
+        const chordWidthFeet = 2 * radiusFeet * Math.sin(totalAngleRadians / 2);
+        const totalCurveAngle = cabinetAngleDegrees * panelsWide;
+        const halfChord = chordWidthFeet / 2;
+        const depthFeet = radiusFeet - Math.sqrt(Math.max(0, (radiusFeet * radiusFeet) - (halfChord * halfChord)));
+
+        return {
+            curvedWallMode,
+            curvedWallActive: true,
+            cabinetAngleDegrees,
+            arcWidthFeet,
+            chordWidthFeet,
+            depthFeet,
+            totalCurveAngle,
+            radiusFeet
+        };
+    }
+
+    /**
      * Resolve cabinet pixels (auto or manual) then compute full wall metrics.
      * Input object is serializable — suitable for save/load and export later.
      */
@@ -485,9 +553,19 @@
             circuitSafeLoadPercent: resolvedInputs.circuitSafeLoadPercent
         });
 
+        const curvedWall = calculateCurvedWallPhysical({
+            curvedWallMode: resolvedInputs.curvedWallMode,
+            cabinetAnglePreset: resolvedInputs.cabinetAnglePreset,
+            customCabinetAngleDegrees: resolvedInputs.customCabinetAngleDegrees,
+            cabinetWidthMM: cabinetDimensions.cabinetWidthMM,
+            panelsWide: wall.panelsWide,
+            mmPerFoot: resolvedInputs.mmPerFoot
+        });
+
         return {
             ...wall,
             ...physical,
+            ...curvedWall,
             aspectRatio: aspect.ratio,
             closestRatio: aspect.closestRatio,
             ...processor,
@@ -524,6 +602,8 @@
         summarizePortLoading,
         calculatePowerRequirements,
         calculateCabinetArtworkType,
+        resolveCabinetAngleDegrees,
+        calculateCurvedWallPhysical,
         computeWallProject
     });
 })(typeof window !== 'undefined' ? window : globalThis);

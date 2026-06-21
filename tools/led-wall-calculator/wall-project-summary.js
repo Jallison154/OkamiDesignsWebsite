@@ -210,27 +210,53 @@
         };
     }
 
-    /**
-     * Shared project summary for the calculator UI and PDF build sheet.
-     */
-    function buildProjectSummary(state, inputs = {}) {
+    function formatDegreeLabel(degrees) {
+        if (!hasValue(degrees)) {
+            return '0°';
+        }
+        const rounded = Math.round(Number(degrees) * 10) / 10;
+        return Number.isInteger(rounded) ? `${rounded}°` : `${rounded.toFixed(1)}°`;
+    }
+
+    function buildWallSummarySection(state) {
         const widthFt = formatFeetInches(state.physicalWidthFt);
         const heightFt = formatFeetInches(state.physicalHeightFt);
         const physicalPrimary = widthFt && heightFt ? `${widthFt} × ${heightFt}` : '—';
 
+        const lines = [
+            `${state.panelsWide} × ${state.panelsTall} cabinets`,
+            `${formatNumber(state.totalPanels)} total`
+        ];
+
+        const curvedActive = state.curvedWallActive === true;
+        if (curvedActive) {
+            const arcWidthFt = state.arcWidthFeet ?? state.physicalWidthFt;
+            lines.unshift(
+                `Curve: ${formatDegreeLabel(state.cabinetAngleDegrees)} per cabinet · ${formatDegreeLabel(state.totalCurveAngle)} total`,
+                `Depth: ${formatFeetInches(state.depthFeet)}`,
+                `Curved Width: ${formatFeetInches(state.chordWidthFeet)}`,
+                `Flat Width: ${formatFeetInches(arcWidthFt)}`
+            );
+        }
+
+        return {
+            title: 'Wall',
+            primary: physicalPrimary,
+            lines,
+            badge: curvedActive ? 'Curved' : null
+        };
+    }
+
+    /**
+     * Shared project summary for the calculator UI and PDF build sheet.
+     */
+    function buildProjectSummary(state, inputs = {}) {
         const processor = buildProcessorSummarySection(state);
         const power = buildPowerSummarySection(state);
         const contentFit = buildContentFitSection(state, inputs);
 
         return {
-            wall: {
-                title: 'Wall',
-                primary: physicalPrimary,
-                lines: [
-                    `${state.panelsWide} × ${state.panelsTall} cabinets`,
-                    `${formatNumber(state.totalPanels)} total`
-                ]
-            },
+            wall: buildWallSummarySection(state),
             resolution: {
                 title: 'Resolution',
                 primary: formatPixelPair(state.totalPixelWidth, state.totalPixelHeight),

@@ -20,7 +20,7 @@
     <meta name="twitter:description" content="Calculate LED video wall resolution, cabinet layouts, processor ports, aspect ratios, and content fit with the free Okami Designs LED Video Wall Calculator.">
     <meta name="twitter:image" content="https://okamidesigns.com/images/led-cabinet-square.png">
     <link rel="icon" href="../images/Okami_Designs_HeadWhite.png" type="image/png">
-    <link rel="stylesheet" href="../styles.css?v=20260625">
+    <link rel="stylesheet" href="../styles.css?v=20260712">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -249,6 +249,38 @@
                                     <div class="led-advanced-divider"></div>
 
                                     <div class="led-advanced-section">
+                                        <h4 class="led-advanced-section-title">Curved Wall</h4>
+                                        <label class="led-advanced-toggle" for="curved-wall-mode">
+                                            <input type="checkbox" id="curved-wall-mode">
+                                            <span class="led-advanced-toggle-card">
+                                                <span class="led-advanced-toggle-label">Enable Curved Wall Mode</span>
+                                                <span class="led-advanced-toggle-state" id="curved-wall-mode-state">Off</span>
+                                            </span>
+                                        </label>
+                                        <div id="led-curved-wall-settings" hidden>
+                                            <div class="led-advanced-field">
+                                                <label class="led-stepper-label" for="cabinet-angle-preset">Cabinet Angle</label>
+                                                <select id="cabinet-angle-preset" class="led-select">
+                                                    <option value="0">0° Flat</option>
+                                                    <option value="2.5">2.5°</option>
+                                                    <option value="5">5°</option>
+                                                    <option value="custom">Custom</option>
+                                                </select>
+                                            </div>
+                                            <div class="led-advanced-field" id="led-custom-cabinet-angle-field" hidden>
+                                                <label class="led-stepper-label" for="custom-cabinet-angle-degrees">Custom Angle</label>
+                                                <div class="led-advanced-input">
+                                                    <input type="number" id="custom-cabinet-angle-degrees" min="0" max="45" step="0.1" value="2.5">
+                                                    <span class="led-advanced-unit">°</span>
+                                                </div>
+                                            </div>
+                                            <p class="led-advanced-help">Curved width is the straight-line distance across the front of the curved wall. Flat width is the total cabinet width along the curve.</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="led-advanced-divider"></div>
+
+                                    <div class="led-advanced-section">
                                         <h4 class="led-advanced-section-title">Custom Cabinet Dimensions</h4>
                                         <div class="led-advanced-grid">
                                             <div class="led-advanced-field">
@@ -461,6 +493,7 @@
                     <div class="led-result-cards led-result-cards--project-summary" aria-live="polite">
                         <div class="led-result-card led-result-card--summary" id="result-wall-card">
                             <h3 class="led-result-card-title" id="result-wall-title">Wall</h3>
+                            <span class="led-result-badge" id="result-wall-badge" hidden></span>
                             <div class="led-result-body">
                                 <p class="led-result-primary" id="result-wall-primary">—</p>
                                 <p class="led-result-secondary led-result-secondary--stacked" id="result-wall-secondary">—</p>
@@ -500,7 +533,10 @@
 
                 <section class="led-panel led-grid-preview wall-preview-card led-preview-panel" aria-labelledby="led-preview-title">
                         <div class="led-preview-header">
-                            <h2 id="led-preview-title" class="led-panel-title">Wall Preview</h2>
+                            <div class="led-preview-header-title">
+                                <h2 id="led-preview-title" class="led-panel-title">Wall Preview</h2>
+                                <span class="led-preview-curved-badge" id="led-curved-wall-badge" hidden>Curved</span>
+                            </div>
                             <label class="led-preview-number-toggle led-preview-header-toggle" for="show-cabinet-numbers">
                                 <input type="checkbox" id="show-cabinet-numbers">
                                 <span>Show Cabinet Numbers</span>
@@ -568,14 +604,14 @@
     <script src="../client/commercial/commercial-gate.js"></script>
     <script src="../client/commercial/license-panel.js"></script>
     <script src="../client/desktop/shell-bridge.js"></script>
-    <script src="led-wall-calculator/constants.js?v=20260711"></script>
-    <script src="led-wall-calculator/calculations.js?v=20260711"></script>
-    <script src="led-wall-calculator/metrics.js?v=20260711"></script>
-    <script src="led-wall-calculator/project-io.js?v=20260711"></script>
-    <script src="led-wall-calculator/build-sheet-export.js?v=20260711"></script>
-    <script src="led-wall-calculator/wall-project-summary.js?v=20260711"></script>
-    <script src="vendor/jspdf.umd.min.js?v=20260711"></script>
-    <script src="led-wall-calculator/build-sheet-pdf.js?v=20260711"></script>
-    <script src="led-wall-visualizer.js?v=20260711"></script>
+    <script src="led-wall-calculator/constants.js?v=20260712"></script>
+    <script src="led-wall-calculator/calculations.js?v=20260712"></script>
+    <script src="led-wall-calculator/metrics.js?v=20260712"></script>
+    <script src="led-wall-calculator/project-io.js?v=20260712"></script>
+    <script src="led-wall-calculator/build-sheet-export.js?v=20260712"></script>
+    <script src="led-wall-calculator/wall-project-summary.js?v=20260712"></script>
+    <script src="vendor/jspdf.umd.min.js?v=20260712"></script>
+    <script src="led-wall-calculator/build-sheet-pdf.js?v=20260712"></script>
+    <script src="led-wall-visualizer.js?v=20260712"></script>
 </body>
 </html>

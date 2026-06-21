@@ -78,6 +78,7 @@
 
         initQuickStart();
         initPanelCountControls();
+        initCurvedWallControls();
         syncPanelCountFields();
         initShowCabinetNumbers();
         initCabinetArtWhenVisible();
@@ -721,6 +722,13 @@
         setInputValue('custom-format-height', DEFAULTS.customFormatHeight);
         setOverlayFormat(DEFAULTS.overlayFormat);
         setInputValue('project-name', '');
+        const curvedWallMode = document.getElementById('curved-wall-mode');
+        if (curvedWallMode) {
+            curvedWallMode.checked = DEFAULTS.curvedWallMode;
+        }
+        setInputValue('cabinet-angle-preset', DEFAULTS.cabinetAnglePreset);
+        setInputValue('custom-cabinet-angle-degrees', DEFAULTS.customCabinetAngleDegrees);
+        updateCurvedWallControls();
         const showNumbers = document.getElementById('show-cabinet-numbers');
         if (showNumbers) {
             showNumbers.checked = DEFAULTS.showCabinetNumbers;
@@ -773,6 +781,50 @@
         return clampCircuitSafeLoadPercent(value);
     }
 
+    function readCurvedWallMode() {
+        return document.getElementById('curved-wall-mode')?.checked === true;
+    }
+
+    function readCabinetAnglePreset() {
+        return document.getElementById('cabinet-angle-preset')?.value || DEFAULTS.cabinetAnglePreset;
+    }
+
+    function readCustomCabinetAngleDegrees() {
+        const value = parseFloat(document.getElementById('custom-cabinet-angle-degrees')?.value);
+        return Number.isFinite(value) && value >= 0 ? value : DEFAULTS.customCabinetAngleDegrees;
+    }
+
+    function updateCurvedWallControls() {
+        const modeOn = readCurvedWallMode();
+        const settings = document.getElementById('led-curved-wall-settings');
+        const modeState = document.getElementById('curved-wall-mode-state');
+        const customField = document.getElementById('led-custom-cabinet-angle-field');
+        const preset = readCabinetAnglePreset();
+
+        if (settings) {
+            settings.hidden = !modeOn;
+        }
+        if (modeState) {
+            modeState.textContent = modeOn ? 'On' : 'Off';
+        }
+        if (customField) {
+            customField.hidden = !modeOn || preset !== 'custom';
+        }
+    }
+
+    function initCurvedWallControls() {
+        document.getElementById('curved-wall-mode')?.addEventListener('change', () => {
+            updateCurvedWallControls();
+            updateAll();
+        });
+        document.getElementById('cabinet-angle-preset')?.addEventListener('change', () => {
+            updateCurvedWallControls();
+            updateAll();
+        });
+        document.getElementById('custom-cabinet-angle-degrees')?.addEventListener('input', updateAll);
+        updateCurvedWallControls();
+    }
+
     function gatherInputs() {
         return {
             displayType: getDisplayType(),
@@ -795,6 +847,9 @@
             circuitVoltage: readInt('circuit-voltage', DEFAULTS.circuitVoltage),
             circuitSafeLoadPercent: readCircuitSafeLoadPercent(),
             projectName: document.getElementById('project-name')?.value?.trim() || '',
+            curvedWallMode: readCurvedWallMode(),
+            cabinetAnglePreset: readCabinetAnglePreset(),
+            customCabinetAngleDegrees: readCustomCabinetAngleDegrees(),
             ...overlayInputsFromDom()
         };
     }
@@ -902,6 +957,14 @@
         setInputValue('custom-format-height', data.customFormatHeight ?? DEFAULTS.customFormatHeight);
         setOverlayFormat(data.overlayFormat ?? DEFAULTS.overlayFormat);
 
+        const curvedWallMode = document.getElementById('curved-wall-mode');
+        if (curvedWallMode) {
+            curvedWallMode.checked = data.curvedWallMode === true || data.curvedWallMode === 'true';
+        }
+        setInputValue('cabinet-angle-preset', data.cabinetAnglePreset ?? DEFAULTS.cabinetAnglePreset);
+        setInputValue('custom-cabinet-angle-degrees', data.customCabinetAngleDegrees ?? DEFAULTS.customCabinetAngleDegrees);
+        updateCurvedWallControls();
+
         const autoCalculate = document.getElementById('auto-calculate-resolution');
         if (autoCalculate) {
             autoCalculate.checked = data.autoCalculateResolution !== false
@@ -1007,6 +1070,7 @@
 
         toggleCustomFormatFields();
         applyAutoCalculateMode();
+        updateCurvedWallControls();
     }
 
     function updateQuickStartUI(state) {
@@ -1471,7 +1535,15 @@
         const inputs = gatherInputs();
         updateQuickStartUI(state);
         updateProjectSummary(state, inputs);
+        updateCurvedWallBadge(state);
         renderPreview(state);
+    }
+
+    function updateCurvedWallBadge(state) {
+        const badge = document.getElementById('led-curved-wall-badge');
+        if (badge) {
+            badge.hidden = !state.curvedWallActive;
+        }
     }
 
     function runOverlayTests() {

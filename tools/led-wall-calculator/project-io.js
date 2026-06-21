@@ -46,12 +46,32 @@
             `  Resolution: ${state.totalPixelWidth.toLocaleString()} × ${state.totalPixelHeight.toLocaleString()} px`,
             `  Total pixels: ${state.totalPixels.toLocaleString()}`,
             `  Physical size: ${state.physicalWidthFt.toFixed(2)}' × ${state.physicalHeightFt.toFixed(2)}'`,
-            `  Aspect ratio: ${state.closestRatio?.label || state.aspectRatio.toFixed(4)}`,
+            `  Aspect ratio: ${state.closestRatio?.label || state.aspectRatio.toFixed(4)}`
+        ];
+
+        if (state.curvedWallActive) {
+            const Summary = global.OkamiLedWallCalculator?.WallProjectSummary;
+            const formatFeetInches = Summary?.formatFeetInches;
+            const formatDegree = (degrees) => {
+                const rounded = Math.round(Number(degrees) * 10) / 10;
+                return Number.isInteger(rounded) ? `${rounded}°` : `${rounded.toFixed(1)}°`;
+            };
+            lines.push(
+                '',
+                'CURVED WALL',
+                `  Flat width (arc): ${formatFeetInches?.(state.arcWidthFeet) || `${state.arcWidthFeet.toFixed(2)}'`}`,
+                `  Curved width (chord): ${formatFeetInches?.(state.chordWidthFeet) || `${state.chordWidthFeet.toFixed(2)}'`}`,
+                `  Curve depth: ${formatFeetInches?.(state.depthFeet) || `${state.depthFeet.toFixed(2)}'`}`,
+                `  Curve: ${formatDegree(state.cabinetAngleDegrees)} per cabinet · ${formatDegree(state.totalCurveAngle)} total`
+            );
+        }
+
+        lines.push(
             '',
             'CABINET',
             `  Preset: ${inputs.cabinetPreset || 'custom'}`,
             `  Size: ${inputs.cabinetWidthMM} × ${inputs.cabinetHeightMM} mm`
-        ];
+        );
 
         const Calc = global.OkamiLedWallCalculator;
         const isCustomSpacing = Calc?.isCustomSpacingDisplayType?.(inputs.displayType);

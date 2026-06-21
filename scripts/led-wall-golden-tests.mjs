@@ -522,6 +522,76 @@ const cases = [
             assertEqual(mapping[0].port, 1, 'first port number');
             assertEqual(mapping[3].pixels, state.totalPixels - (585000 * 3), 'last port remainder pixels');
         }
+    },
+    {
+        name: 'Curved wall off — flat physical size unchanged',
+        fn: () => {
+            const base = {
+                panelsWide: 10,
+                panelsTall: 6,
+                cabinetPreset: '500x500',
+                pitchPreset: '3.9',
+                displayType: 'standard',
+                autoCalculateResolution: true,
+                portCapacity: 650000,
+                portFillThreshold: 90,
+                overlayFormat: '16:9'
+            };
+            const flat = Calc.computeWallProject(base);
+            const withAngleSaved = Calc.computeWallProject({
+                ...base,
+                curvedWallMode: false,
+                cabinetAnglePreset: '2.5'
+            });
+            assertEqual(withAngleSaved.totalPixelWidth, flat.totalPixelWidth, 'totalPixelWidth');
+            assertEqual(withAngleSaved.portsRequired, flat.portsRequired, 'portsRequired');
+            assertNear(withAngleSaved.physicalWidthFt, flat.physicalWidthFt, 0.001, 'physicalWidthFt');
+            assertEqual(withAngleSaved.curvedWallActive, false, 'curvedWallActive');
+        }
+    },
+    {
+        name: 'Curved wall 10 wide @ 2.5° — chord, depth, and total angle',
+        fn: () => {
+            const r = Calc.computeWallProject({
+                panelsWide: 10,
+                panelsTall: 6,
+                cabinetWidthMM: 500,
+                cabinetHeightMM: 500,
+                cabinetPreset: '500x500',
+                pitchPreset: '3.9',
+                displayType: 'standard',
+                autoCalculateResolution: true,
+                portCapacity: 650000,
+                portFillThreshold: 90,
+                overlayFormat: '16:9',
+                curvedWallMode: true,
+                cabinetAnglePreset: '2.5'
+            });
+            assertEqual(r.curvedWallActive, true, 'curvedWallActive');
+            assertNear(r.physicalWidthFt, r.arcWidthFeet, 0.001, 'physicalWidth equals arc');
+            assertNear(r.arcWidthFeet, 16 + 5 / 12, 0.05, 'arcWidthFeet ~16\'5"');
+            assertNear(r.chordWidthFeet, 16 + 3 / 12, 0.05, 'chordWidthFeet ~16\'3"');
+            assertNear(r.depthFeet, 0.891, 0.02, 'depthFeet');
+            assertNear(r.totalCurveAngle, 25, 0.01, 'totalCurveAngle');
+            assertNear(r.cabinetAngleDegrees, 2.5, 0.01, 'cabinetAngleDegrees');
+            assertEqual(r.totalPixelWidth, 1280, 'pixels unchanged');
+            assertEqual(r.portsRequired, 2, 'ports unchanged');
+        }
+    },
+    {
+        name: 'Curved wall custom angle resolves from inputs',
+        fn: () => {
+            const curved = Calc.calculateCurvedWallPhysical({
+                curvedWallMode: true,
+                cabinetAnglePreset: 'custom',
+                customCabinetAngleDegrees: 5,
+                cabinetWidthMM: 500,
+                panelsWide: 4
+            });
+            assertEqual(curved.curvedWallActive, true, 'curvedWallActive');
+            assertNear(curved.cabinetAngleDegrees, 5, 0.01, 'custom angle');
+            assertNear(curved.totalCurveAngle, 20, 0.01, 'totalCurveAngle');
+        }
     }
 ];
 
