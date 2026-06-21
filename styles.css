@@ -71,7 +71,8 @@ body {
 }
 
 .full-height-tool > .signal-lab-app,
-.full-height-tool > .led-app {
+.full-height-tool > .led-app,
+.calculator-app-section > .led-app {
     flex: 1 1 auto;
     min-height: 0;
     overflow: hidden;
@@ -3143,7 +3144,8 @@ html {
 
 /* LED Video Wall Calculator */
 .led-calculator-page {
-    --calculator-sidebar-width: minmax(340px, 380px);
+    --calculator-sidebar-width: minmax(300px, 360px);
+    --calculator-results-width: minmax(280px, 340px);
     --calculator-layout-gap: clamp(12px, 2vw, 16px);
     overflow-x: hidden;
 }
@@ -3171,17 +3173,44 @@ html {
     max-width: min(95vw, 2200px);
     margin-left: auto;
     margin-right: auto;
-    padding: clamp(12px, 2vh, 18px) clamp(16px, 3vw, 24px) clamp(16px, 2vh, 24px);
+    padding: 0;
     box-sizing: border-box;
+    display: block;
+}
+
+.calculator-app-section {
     display: flex;
     flex-direction: column;
-    gap: var(--calculator-layout-gap);
+    width: 100%;
+    min-height: calc(100dvh - var(--okami-header-height, 0px));
+    height: calc(100dvh - var(--okami-header-height, 0px));
+    max-height: calc(100dvh - var(--okami-header-height, 0px));
+    overflow: hidden;
+    box-sizing: border-box;
+    padding: clamp(12px, 2vh, 18px) clamp(16px, 3vw, 24px) clamp(12px, 1.5vh, 16px);
+}
+
+.led-calculator-page .calculator-app-section > .led-app {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.calculator-seo-section {
+    width: min(95vw, 820px);
+    max-width: 820px;
+    margin: 0 auto;
+    padding: clamp(32px, 5vh, 48px) clamp(16px, 3vw, 24px) clamp(48px, 6vh, 72px);
+    box-sizing: border-box;
 }
 
 .led-calculator-page .calculator-page.full-height-tool {
     min-height: 0;
     overflow-x: hidden;
-    overflow-y: auto;
+    overflow-y: visible;
+    height: auto;
+    max-height: none;
+    display: block;
 }
 
 .led-calculator-page .calculator-page.full-height-tool > .led-app {
@@ -3228,14 +3257,17 @@ html {
 }
 
 .led-seo-content {
-    flex-shrink: 0;
     width: 100%;
-    max-width: 820px;
-    margin: clamp(8px, 2vh, 16px) auto 0;
+    margin: 0;
     padding: clamp(20px, 3vw, 28px);
     border-radius: 12px;
     border: 1px solid rgba(255, 255, 255, 0.08);
     background: rgba(22, 22, 22, 0.72);
+    position: static;
+}
+
+.calculator-seo-section.led-seo-content {
+    max-width: none;
 }
 
 .led-seo-content-inner {
@@ -3691,18 +3723,17 @@ html {
     display: grid;
     grid-template-columns: 1fr;
     grid-template-areas:
-        "preview"
-        "results"
+        "summary"
         "config"
-        "summary";
+        "results"
+        "preview";
     gap: var(--calculator-layout-gap);
     align-items: start;
     min-width: 0;
     min-height: 0;
 }
 
-.sidebar,
-.preview-column {
+.sidebar {
     display: contents;
 }
 
@@ -5162,12 +5193,19 @@ html {
 
 /* Tablet: 768–1199px */
 @media (min-width: 768px) and (max-width: 1199px) {
+    .calculator-app-section {
+        height: auto;
+        max-height: none;
+        min-height: calc(100dvh - var(--okami-header-height, 0px));
+        overflow: visible;
+    }
+
     .calculator-layout {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         grid-template-areas:
-            "preview preview"
+            "summary config"
             "results results"
-            "summary config";
+            "preview preview";
     }
 
     .led-preview-stage {
@@ -5198,13 +5236,20 @@ html {
 /* Desktop: 1200–1799px */
 @media (min-width: 1200px) {
     body.led-calculator-page {
-        overflow: hidden;
+        overflow-x: hidden;
+        overflow-y: auto;
     }
 
     .led-calculator-page .calculator-page {
-        overflow: hidden;
-        padding-top: 12px;
-        padding-bottom: 16px;
+        overflow: visible;
+        height: auto;
+        max-height: none;
+    }
+
+    .calculator-app-section {
+        min-height: calc(100dvh - var(--okami-header-height, 0px));
+        height: calc(100dvh - var(--okami-header-height, 0px));
+        max-height: calc(100dvh - var(--okami-header-height, 0px));
     }
 
     .led-calculator-page .led-app {
@@ -5233,9 +5278,9 @@ html {
         flex: 1;
         min-height: 0;
         height: 100%;
-        grid-template-columns: var(--calculator-sidebar-width) minmax(0, 1fr);
+        grid-template-columns: var(--calculator-sidebar-width) var(--calculator-results-width) minmax(0, 1fr);
         grid-template-rows: minmax(0, 1fr);
-        grid-template-areas: "sidebar preview-col";
+        grid-template-areas: "sidebar results preview";
         gap: var(--calculator-layout-gap);
         overflow: hidden;
     }
@@ -5266,32 +5311,17 @@ html {
         -webkit-overflow-scrolling: touch;
     }
 
-    .preview-column {
-        grid-area: preview-col;
-        display: grid;
-        grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
-        grid-template-rows: minmax(0, 1fr);
-        grid-template-areas: "summary preview";
-        gap: clamp(10px, 1.2vw, 14px);
-        min-height: 0;
-        align-self: stretch;
-        overflow: hidden;
-    }
-
-    .preview-column .wall-preview-card {
-        grid-area: preview;
-    }
-
-    .preview-column .led-project-summary {
-        grid-area: summary;
+    .results-row.led-project-summary {
+        grid-area: results;
         display: flex;
         flex-direction: column;
         min-height: 0;
         min-width: 0;
         overflow: hidden;
+        align-self: stretch;
     }
 
-    .preview-column .led-project-summary .led-result-cards--project-summary {
+    .results-row.led-project-summary .led-result-cards--project-summary {
         flex: 1 1 auto;
         min-height: 0;
         overflow-y: auto;
@@ -5301,27 +5331,34 @@ html {
         align-content: start;
     }
 
-    .preview-column .led-result-card--summary {
+    .results-row.led-project-summary .led-result-card--summary {
         min-height: clamp(96px, 11vh, 118px);
     }
 
-    .preview-column .led-result-card--summary .led-result-primary {
+    .results-row.led-project-summary .led-result-card--summary .led-result-primary {
         font-size: clamp(1.1rem, 1.5vw, 1.45rem);
     }
 
-    .preview-column .led-result-card--summary .led-result-secondary {
+    .results-row.led-project-summary .led-result-card--summary .led-result-secondary {
         font-size: clamp(10px, 0.9vw, 12px);
         margin-top: 6px;
     }
 
-    .preview-column .led-project-summary .led-panel-title {
+    .results-row.led-project-summary .led-panel-title {
         flex-shrink: 0;
     }
 
+    .wall-preview-card {
+        grid-area: preview;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        align-self: stretch;
+    }
+
     .led-grid-summary,
-    .wall-configuration-card,
-    .wall-preview-card,
-    .results-row {
+    .wall-configuration-card {
         grid-area: auto;
     }
 
@@ -5330,11 +5367,11 @@ html {
         display: flex;
         flex-direction: column;
         overflow: visible;
+        padding: clamp(8px, 1vw, 12px);
         padding-bottom: 12px;
         position: relative;
         z-index: 2;
         pointer-events: auto;
-        padding: clamp(8px, 1vw, 12px);
     }
 
     .wall-configuration-card .led-panel-title {
@@ -5351,19 +5388,12 @@ html {
         min-height: 0;
     }
 
-    .wall-preview-card {
-        min-height: 0;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-    }
-
     .led-preview-panel {
         flex: 1 1 auto;
         min-height: 0;
     }
 
-    .results-row {
+    .results-row.led-project-summary {
         padding: clamp(8px, 1vw, 12px);
     }
 
@@ -5500,6 +5530,13 @@ html {
         overflow-y: auto;
     }
 
+    .calculator-app-section {
+        height: auto;
+        max-height: none;
+        min-height: calc(100dvh - var(--okami-header-height, 0px));
+        overflow: visible;
+    }
+
     .led-calculator-page .calculator-page {
         height: auto;
         max-height: none;
@@ -5535,16 +5572,6 @@ html {
         overflow: visible;
     }
 
-    .preview-column {
-        height: auto;
-        min-height: 0;
-        align-self: start;
-        grid-template-columns: minmax(260px, 300px) minmax(0, 1fr);
-        grid-template-rows: minmax(320px, 55vh);
-        grid-template-areas: "summary preview";
-        overflow: visible;
-    }
-
     .wall-configuration-card {
         height: auto;
         min-height: 0;
@@ -5577,8 +5604,9 @@ html {
         max-height: none;
     }
 
-    .results-row {
+    .results-row.led-project-summary {
         flex: 0 0 auto;
+        overflow: visible;
     }
 }
 
@@ -5589,10 +5617,18 @@ html {
         overflow-y: auto;
     }
 
+    .calculator-app-section {
+        height: auto;
+        max-height: none;
+        min-height: 0;
+        overflow: visible;
+        padding: clamp(12px, 2vh, 18px) 16px clamp(16px, 2vh, 24px);
+    }
+
     .led-calculator-page .calculator-page.full-height-tool {
         height: auto;
         max-height: none;
-        min-height: calc(100dvh - var(--okami-header-height, 0px));
+        min-height: 0;
         overflow: visible;
     }
 

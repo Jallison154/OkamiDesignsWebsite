@@ -20,7 +20,7 @@
     <meta name="twitter:description" content="Calculate LED video wall resolution, cabinet layouts, processor ports, aspect ratios, and content fit with the free Okami Designs LED Video Wall Calculator.">
     <meta name="twitter:image" content="https://okamidesigns.com/images/led-cabinet-square.png">
     <link rel="icon" href="../images/Okami_Designs_HeadWhite.png" type="image/png">
-    <link rel="stylesheet" href="../styles.css?v=20260622">
+    <link rel="stylesheet" href="../styles.css?v=20260623">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -95,7 +95,9 @@
         <div class="header-divider"></div>
     </header>
 
-    <main class="main calculator-page full-height-tool tool-page">
+    <main class="main calculator-page tool-page">
+
+        <section class="calculator-app-section" aria-label="LED Video Wall Calculator">
         <div id="led-wall-app" class="led-app">
             <header class="tool-header led-app-header">
                 <h1 class="tool-title">LED Video Wall Calculator</h1>
@@ -454,8 +456,49 @@
                     </section>
                 </aside>
 
-                <div class="preview-column">
-                    <section class="led-panel led-grid-preview wall-preview-card led-preview-panel" aria-labelledby="led-preview-title">
+                <section class="led-panel led-grid-results results-row led-project-summary" aria-labelledby="led-results-title">
+                    <h2 id="led-results-title" class="led-panel-title">Project Summary</h2>
+                    <div class="led-result-cards led-result-cards--project-summary" aria-live="polite">
+                        <div class="led-result-card led-result-card--summary" id="result-wall-card">
+                            <h3 class="led-result-card-title" id="result-wall-title">Wall</h3>
+                            <div class="led-result-body">
+                                <p class="led-result-primary" id="result-wall-primary">—</p>
+                                <p class="led-result-secondary led-result-secondary--stacked" id="result-wall-secondary">—</p>
+                            </div>
+                        </div>
+                        <div class="led-result-card led-result-card--summary" id="result-resolution-card">
+                            <h3 class="led-result-card-title" id="result-resolution-title">Resolution</h3>
+                            <div class="led-result-body">
+                                <p class="led-result-primary" id="result-resolution-primary">—</p>
+                                <p class="led-result-secondary led-result-secondary--stacked" id="result-resolution-secondary">—</p>
+                            </div>
+                        </div>
+                        <div class="led-result-card led-result-card--summary" id="result-processor-card">
+                            <h3 class="led-result-card-title" id="result-processor-title">Processor</h3>
+                            <span class="led-result-badge" id="result-processor-badge" hidden></span>
+                            <div class="led-result-body">
+                                <p class="led-result-primary" id="result-processor-primary">—</p>
+                                <p class="led-result-secondary led-result-secondary--stacked" id="result-processor-secondary">—</p>
+                            </div>
+                        </div>
+                        <div class="led-result-card led-result-card--summary" id="result-power-card">
+                            <h3 class="led-result-card-title" id="result-power-title">Power</h3>
+                            <div class="led-result-body">
+                                <p class="led-result-primary" id="result-power-primary">—</p>
+                                <p class="led-result-secondary led-result-secondary--stacked" id="result-power-secondary">—</p>
+                            </div>
+                        </div>
+                        <div class="led-result-card led-result-card--summary" id="result-content-fit-card">
+                            <h3 class="led-result-card-title" id="result-content-fit-title">16:9 Reference Fit</h3>
+                            <div class="led-result-body">
+                                <p class="led-result-primary" id="result-content-fit-primary">—</p>
+                                <p class="led-result-secondary led-result-secondary--stacked" id="result-content-fit-secondary">—</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="led-panel led-grid-preview wall-preview-card led-preview-panel" aria-labelledby="led-preview-title">
                         <div class="led-preview-header">
                             <h2 id="led-preview-title" class="led-panel-title">Wall Preview</h2>
                             <label class="led-preview-number-toggle led-preview-header-toggle" for="show-cabinet-numbers">
@@ -480,53 +523,11 @@
                             <p>Overlay Position: <span id="debug-overlay-position">—</span></p>
                         </div>
                     </section>
-
-                    <section class="led-panel led-grid-results results-row led-project-summary" aria-labelledby="led-results-title">
-                        <h2 id="led-results-title" class="led-panel-title">Project Summary</h2>
-                        <div class="led-result-cards led-result-cards--project-summary" aria-live="polite">
-                            <div class="led-result-card led-result-card--summary" id="result-wall-card">
-                                <h3 class="led-result-card-title" id="result-wall-title">Wall</h3>
-                                <div class="led-result-body">
-                                    <p class="led-result-primary" id="result-wall-primary">—</p>
-                                    <p class="led-result-secondary led-result-secondary--stacked" id="result-wall-secondary">—</p>
-                                </div>
-                            </div>
-                            <div class="led-result-card led-result-card--summary" id="result-resolution-card">
-                                <h3 class="led-result-card-title" id="result-resolution-title">Resolution</h3>
-                                <div class="led-result-body">
-                                    <p class="led-result-primary" id="result-resolution-primary">—</p>
-                                    <p class="led-result-secondary led-result-secondary--stacked" id="result-resolution-secondary">—</p>
-                                </div>
-                            </div>
-                            <div class="led-result-card led-result-card--summary" id="result-processor-card">
-                                <h3 class="led-result-card-title" id="result-processor-title">Processor</h3>
-                                <span class="led-result-badge" id="result-processor-badge" hidden></span>
-                                <div class="led-result-body">
-                                    <p class="led-result-primary" id="result-processor-primary">—</p>
-                                    <p class="led-result-secondary led-result-secondary--stacked" id="result-processor-secondary">—</p>
-                                </div>
-                            </div>
-                            <div class="led-result-card led-result-card--summary" id="result-power-card">
-                                <h3 class="led-result-card-title" id="result-power-title">Power</h3>
-                                <div class="led-result-body">
-                                    <p class="led-result-primary" id="result-power-primary">—</p>
-                                    <p class="led-result-secondary led-result-secondary--stacked" id="result-power-secondary">—</p>
-                                </div>
-                            </div>
-                            <div class="led-result-card led-result-card--summary" id="result-content-fit-card">
-                                <h3 class="led-result-card-title" id="result-content-fit-title">16:9 Reference Fit</h3>
-                                <div class="led-result-body">
-                                    <p class="led-result-primary" id="result-content-fit-primary">—</p>
-                                    <p class="led-result-secondary led-result-secondary--stacked" id="result-content-fit-secondary">—</p>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-                </div>
             </div>
         </div>
+        </section>
 
-        <section class="led-seo-content" aria-labelledby="led-seo-title">
+        <section class="calculator-seo-section led-seo-content" aria-labelledby="led-seo-title">
             <div class="led-seo-content-inner">
                 <h2 id="led-seo-title" class="led-seo-title">About the LED Video Wall Calculator</h2>
                 <p>The Okami Designs LED video wall calculator helps production teams, integrators, and designers plan real-world LED walls before equipment hits the truck. Enter cabinet size and pixel pitch, set your wall grid, and the tool calculates total resolution, physical dimensions, and how your content will fit on screen.</p>
