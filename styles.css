@@ -3104,6 +3104,10 @@ html {
     overflow-x: hidden;
 }
 
+.led-calculator-page #particles-js {
+    display: none !important;
+}
+
 .led-calculator-page .main {
     min-height: 0;
     padding: 0;
@@ -3182,9 +3186,9 @@ html {
     display: grid;
     grid-template-columns: 1fr;
     grid-template-areas:
+        "preview"
         "summary"
         "config"
-        "preview"
         "results";
     gap: var(--calculator-layout-gap);
     align-items: start;
@@ -3286,6 +3290,16 @@ html {
     margin-top: 8px;
     padding-top: 8px;
     border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.led-config-footer-primary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.led-config-footer-primary .led-btn {
+    width: 100%;
 }
 
 .led-config-footer-actions {
@@ -3694,6 +3708,7 @@ html {
     font-family: inherit;
     font-size: 0.95rem;
     font-weight: 600;
+    color-scheme: dark;
 }
 
 .led-advanced-input input:focus {
@@ -3959,10 +3974,10 @@ html {
 .led-result-secondary {
     flex-shrink: 0;
     margin: 8px 0 0;
-    font-size: clamp(12px, 1.15vw, 14px);
+    font-size: clamp(11px, 1vw, 13px);
     font-weight: 500;
-    line-height: 1.4;
-    color: rgba(255, 255, 255, 0.52);
+    line-height: 1.45;
+    color: rgba(255, 255, 255, 0.48);
 }
 
 .led-result-secondary--stacked {
@@ -4365,12 +4380,21 @@ html {
     overflow: hidden;
 }
 
+.led-cabinet.led-cabinet--fallback {
+    background: linear-gradient(145deg, #3a3a3a 0%, #2a2a2a 100%);
+}
+
 .led-cabinet.has-cabinet-art--square,
 .led-cabinet.has-cabinet-art--tall {
     background-color: #1c1c1c;
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+}
+
+.led-cabinet.has-cabinet-art--square.led-cabinet--fallback,
+.led-cabinet.has-cabinet-art--tall.led-cabinet--fallback {
+    background-image: none;
 }
 
 .led-cabinet.has-cabinet-art--square {
@@ -4489,13 +4513,13 @@ html {
     .calculator-layout {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         grid-template-areas:
-            "summary config"
             "preview preview"
+            "summary config"
             "results results";
     }
 
     .led-preview-stage {
-        min-height: clamp(280px, 42vw, 520px);
+        min-height: clamp(300px, 44vw, 540px);
     }
 
     .led-result-cards {
@@ -4579,11 +4603,18 @@ html {
         min-height: 0;
     }
 
+    .sidebar > .wall-configuration-card.is-advanced-open {
+        overflow-x: hidden;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+
     .preview-column {
         grid-area: preview-col;
         display: grid;
         grid-template-rows: minmax(0, 1fr) auto;
-        gap: 12px;
+        gap: 10px;
         min-height: 0;
         align-self: stretch;
         overflow: visible;
@@ -4600,11 +4631,8 @@ html {
         min-height: 0;
         display: flex;
         flex-direction: column;
-        overflow-x: hidden;
-        overflow-y: auto;
-        overscroll-behavior: contain;
-        -webkit-overflow-scrolling: touch;
-        padding-bottom: 24px;
+        overflow: visible;
+        padding-bottom: 12px;
         position: relative;
         z-index: 2;
         pointer-events: auto;
@@ -4687,7 +4715,7 @@ html {
 
     .led-preview-stage {
         flex: 1 1 auto;
-        min-height: clamp(220px, 38vh, 560px);
+        min-height: clamp(260px, 42vh, 620px);
         height: auto;
         max-height: none;
         padding: clamp(8px, 1vw, 12px);
@@ -4707,12 +4735,17 @@ html {
     }
 
     .led-grid-results .led-result-card {
-        min-height: clamp(96px, 11vh, 120px);
+        min-height: clamp(88px, 10vh, 112px);
         padding: 10px;
     }
 
     .led-grid-results .led-result-primary {
-        font-size: clamp(1.15rem, 1.6vw, 1.55rem);
+        font-size: clamp(1.2rem, 1.75vw, 1.65rem);
+    }
+
+    .led-grid-results .led-result-secondary {
+        font-size: clamp(10px, 0.85vw, 12px);
+        margin-top: 6px;
     }
 
     .led-config-footer {
@@ -4810,9 +4843,8 @@ html {
     .wall-configuration-card {
         height: auto;
         min-height: 0;
-        overflow-x: hidden;
-        overflow-y: auto;
-        padding-bottom: 24px;
+        overflow: visible;
+        padding-bottom: 12px;
     }
 
     .led-config-swap {
@@ -4852,11 +4884,25 @@ html {
         overflow-y: auto;
     }
 
+    .led-calculator-page .calculator-page.full-height-tool {
+        height: auto;
+        max-height: none;
+        min-height: calc(100dvh - var(--okami-header-height, 0px));
+        overflow: visible;
+    }
+
+    .led-calculator-page .led-app {
+        overflow: visible;
+        flex: 0 1 auto;
+        min-height: 0;
+    }
+
     .led-calculator-page .calculator-page {
         width: 100%;
         max-width: 100%;
         padding-left: 16px;
         padding-right: 16px;
+        scroll-margin-top: var(--okami-header-height, 0px);
     }
 
     .led-calculator-page .led-app-header {
@@ -4873,7 +4919,11 @@ html {
     }
 
     .led-preview-stage {
-        min-height: clamp(240px, 58vw, 400px);
+        min-height: clamp(260px, 62vw, 440px);
+    }
+
+    .led-config-footer-primary {
+        grid-template-columns: 1fr;
     }
 
     .led-stepper-btn {

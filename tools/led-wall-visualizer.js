@@ -94,12 +94,6 @@
         document.getElementById('custom-format-width')?.addEventListener('input', updateAll);
         document.getElementById('custom-format-height')?.addEventListener('input', updateAll);
 
-        document.getElementById('led-clear-overlay')?.addEventListener('click', () => {
-            setOverlayFormat('none');
-            toggleCustomFormatFields();
-            updateAll();
-        });
-
         document.getElementById('led-reset')?.addEventListener('click', () => {
             resetCalculator();
             updateAll();
@@ -201,7 +195,7 @@
         wall.querySelectorAll('.led-cabinet').forEach((cell) => {
             cell.classList.toggle('has-cabinet-art--square', useSquare);
             cell.classList.toggle('has-cabinet-art--tall', useTall);
-            cell.classList.remove('has-cabinet-art');
+            cell.classList.toggle('led-cabinet--fallback', !useSquare && !useTall);
         });
     }
 
@@ -540,6 +534,7 @@
     function openAdvancedView() {
         advancedViewOpen = true;
         document.getElementById('led-config-swap')?.classList.add('is-advanced');
+        document.querySelector('.wall-configuration-card')?.classList.add('is-advanced-open');
         const quickStart = document.getElementById('led-quick-start');
         const advancedPanel = document.getElementById('led-advanced-panel');
         const advancedOpen = document.getElementById('led-advanced-open');
@@ -557,6 +552,7 @@
     function closeAdvancedView() {
         advancedViewOpen = false;
         document.getElementById('led-config-swap')?.classList.remove('is-advanced');
+        document.querySelector('.wall-configuration-card')?.classList.remove('is-advanced-open');
         const quickStart = document.getElementById('led-quick-start');
         const advancedPanel = document.getElementById('led-advanced-panel');
         const advancedOpen = document.getElementById('led-advanced-open');
@@ -827,7 +823,6 @@
 
         toggleCustomFormatFields();
         applyAutoCalculateMode();
-        updateDeveloperDebug(state);
     }
 
     function updateQuickStartUI(state) {
@@ -914,24 +909,6 @@
         const el = document.getElementById(id);
         if (el) {
             el.textContent = lines.join('\n');
-        }
-    }
-
-    function updateDeveloperDebug(state) {
-        setText('adv-wall-pixel-width', String(state.totalPixelWidth));
-        setText('adv-wall-pixel-height', String(state.totalPixelHeight));
-        setText('adv-wall-ratio', state.aspectRatio.toFixed(4));
-
-        if (state.overlay) {
-            setText('adv-overlay-pixel-width', String(state.overlay.overlayPixelWidth));
-            setText('adv-overlay-pixel-height', String(state.overlay.overlayPixelHeight));
-            setText('adv-overlay-left-percent', `${state.overlay.leftPercent.toFixed(3)}%`);
-            setText('adv-overlay-top-percent', `${state.overlay.topPercent.toFixed(3)}%`);
-        } else {
-            setText('adv-overlay-pixel-width', '—');
-            setText('adv-overlay-pixel-height', '—');
-            setText('adv-overlay-left-percent', '—');
-            setText('adv-overlay-top-percent', '—');
         }
     }
 
@@ -1306,7 +1283,6 @@
         updateQuickStartUI(state);
         updateResults(state);
         updateContentFit(state);
-        updateDeveloperDebug(state);
         renderPreview(state);
     }
 
@@ -1346,6 +1322,7 @@
             }
         ];
 
+        const failures = [];
         let passed = 0;
         tests.forEach((test) => {
             const overlay = calculateContentOverlay({
@@ -1363,16 +1340,15 @@
 
             if (ok) {
                 passed += 1;
-                console.info(`[overlay test] PASS ${test.name}`);
             } else {
-                console.error(`[overlay test] FAIL ${test.name}`, {
-                    expected: test,
-                    actual: overlay
-                });
+                failures.push(test.name);
             }
         });
 
-        console.info(`[overlay test] ${passed}/${tests.length} passed`);
+        if (failures.length && OVERLAY_DEBUG) {
+            window.__ledOverlayTestFailures = failures;
+        }
+
         return passed === tests.length;
     }
 
