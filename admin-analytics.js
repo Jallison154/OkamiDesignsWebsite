@@ -1,7 +1,6 @@
 (function() {
     'use strict';
 
-    const SESSION_TIMEOUT = 30 * 60 * 1000;
     let sessionTimeoutInterval = null;
     let analyticsRows = [];
     let modalElements = {};
@@ -118,23 +117,12 @@
         });
     }
 
-    function requireAuth() {
-        const authTime = sessionStorage.getItem('adminAuthTime');
-        const isAuthenticated = sessionStorage.getItem('adminAuthenticated') === 'true';
-
-        if (!isAuthenticated || !authTime) {
+    async function requireAuth() {
+        const session = await checkAdminSession();
+        if (!session?.authenticated) {
             window.location.href = 'admin.html';
             return false;
         }
-
-        const timeElapsed = Date.now() - parseInt(authTime, 10);
-        if (timeElapsed >= SESSION_TIMEOUT) {
-            sessionStorage.removeItem('adminAuthenticated');
-            sessionStorage.removeItem('adminAuthTime');
-            window.location.href = 'admin.html';
-            return false;
-        }
-
         return true;
     }
 
@@ -143,23 +131,21 @@
             clearInterval(sessionTimeoutInterval);
         }
 
-        sessionTimeoutInterval = setInterval(() => {
-            const authTime = sessionStorage.getItem('adminAuthTime');
-            if (!authTime) {
-                return;
-            }
-
-            const timeElapsed = Date.now() - parseInt(authTime, 10);
-            if (timeElapsed >= SESSION_TIMEOUT) {
+        sessionTimeoutInterval = setInterval(async () => {
+            const session = await checkAdminSession();
+            if (!session?.authenticated) {
                 handleLogout();
             }
         }, 60000);
     }
 
-    function handleLogout() {
-        sessionStorage.removeItem('adminAuthenticated');
-        sessionStorage.removeItem('adminAuthTime');
-        document.cookie = 'okami_admin=; path=/; max-age=0; SameSite=Strict';
+    async function handleLogout() {
+        try {
+            await adminLogout();
+        } catch (error) {
+            console.warn('Admin logout request failed:', error.message || error);
+        }
+
         if (sessionTimeoutInterval) {
             clearInterval(sessionTimeoutInterval);
             sessionTimeoutInterval = null;
@@ -318,8 +304,8 @@
         });
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-        if (!requireAuth()) {
+    document.addEventListener('DOMContentLoaded', async () => {
+        if (!(await requireAuth())) {
             return;
         }
 

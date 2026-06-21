@@ -82,7 +82,7 @@
         }
 
         if (pathValue === '') {
-            return { allowed: true, reason: null };
+            return { allowed: false, reason: 'home' };
         }
 
         if (pathValue.startsWith('tools/') && settings.pages?.tools === false) {
@@ -99,6 +99,9 @@
 
     function buildVisibilityRedirect(pathValue, reason) {
         const inTools = pathValue.startsWith('tools/');
+        if (reason === 'home') {
+            return inTools ? '/home.html' : '/home.html';
+        }
         if (reason === 'construction') {
             return inTools ? '/index.html' : '/index.html';
         }

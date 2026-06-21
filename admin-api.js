@@ -212,3 +212,51 @@ async function checkAPIHealth() {
     }
 }
 
+async function checkAdminSession() {
+    try {
+        const response = await fetch(`${API_BASE}/admin/session`, {
+            credentials: 'same-origin',
+            cache: 'no-store'
+        });
+        if (!response.ok) {
+            return { authenticated: false };
+        }
+        return await response.json();
+    } catch (error) {
+        console.warn('Admin session check failed:', error.message || error);
+        return { authenticated: false };
+    }
+}
+
+async function adminLogin(password) {
+    const response = await fetch(`${API_BASE}/admin/login`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        cache: 'no-store',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ password })
+    });
+
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        const message = body.error === 'invalid_credentials'
+            ? 'Incorrect password. Please try again.'
+            : body.error === 'admin_auth_not_configured'
+                ? 'Admin login is not configured on the server.'
+                : 'Login failed. Please try again.';
+        throw new Error(message);
+    }
+
+    return body;
+}
+
+async function adminLogout() {
+    await fetch(`${API_BASE}/admin/logout`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        cache: 'no-store'
+    });
+}
+

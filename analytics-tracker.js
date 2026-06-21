@@ -4,8 +4,29 @@
     const DEBOUNCE_MS = 5000;
     const STORAGE_KEY = 'okami-analytics-last-view';
 
+    let adminSessionActive = false;
+
+    async function refreshAdminSessionState() {
+        try {
+            const response = await fetch('/api/admin/session', {
+                credentials: 'include',
+                cache: 'no-store'
+            });
+            if (!response.ok) {
+                adminSessionActive = false;
+                return false;
+            }
+            const data = await response.json();
+            adminSessionActive = data.authenticated === true;
+            return adminSessionActive;
+        } catch {
+            adminSessionActive = false;
+            return false;
+        }
+    }
+
     function isAdminSession() {
-        return sessionStorage.getItem('adminAuthenticated') === 'true';
+        return adminSessionActive;
     }
 
     function getPageMeta(pathname) {
@@ -106,13 +127,41 @@
         }
     }
 
+    async function trackToolUsage(toolId, action, label) {
+        if (isAdminSession()) {
+            return;
+        }
+
+        const path = `/tools/${toolId}/usage/${action}`;
+        const title = label || `${toolId}: ${action}`;
+
+        try {
+            const response = await fetch('/api/analytics/view', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path, title }),
+                keepalive: true
+            });
+
+            if (!response.ok) {
+                console.warn('Tool usage not recorded:', response.status);
+            }
+        } catch (error) {
+            console.warn('Analytics tracker unavailable:', error.message || error);
+        }
+    }
+
     window.OkamiAnalytics = {
-        trackPageView
+        trackPageView,
+        trackToolUsage
     };
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => trackPageView());
+        document.addEventListener('DOMContentLoaded', async () => {
+            await refreshAdminSessionState();
+            trackPageView();
+        });
     } else {
-        trackPageView();
+        refreshAdminSessionState().then(() => trackPageView());
     }
 })();

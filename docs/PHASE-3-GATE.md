@@ -27,7 +27,7 @@ Restart your dev server after pulling so admin protection is active.
 
 ## Admin API
 
-Mutating admin routes require the `okami_admin=1` cookie set by admin login. Public site reads (settings, files, analytics view recording) stay open.
+Mutating admin routes require a valid `okami_admin_session` httpOnly cookie from `POST /api/admin/login`. Public site reads (settings, files, analytics view recording) stay open.
 
 ## Environment
 

@@ -2,29 +2,7 @@
 (function() {
     'use strict';
 
-    // Admin password hash (SHA-256 hash of 'okami2025')
-    // The password is stored as a hash instead of plain text for security
-    // To change password: hash your new password using SHA-256 and replace this value
-    // You can generate a hash at: https://emn178.github.io/online-tools/sha256.html
-    // Or run this in browser console after page loads:
-    // hashPassword('yourpassword').then(h => console.log(h))
-    // Note: This hash will be generated on first login attempt - see initialization code below
-    let ADMIN_PASSWORD_HASH = null;
-    
-    // Session timeout configuration (30 minutes in milliseconds)
-    const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
-    const ADMIN_COOKIE_MAX_AGE = 30 * 60;
     let sessionTimeoutInterval = null;
-
-    function setAdminAccessCookie() {
-        document.cookie = `okami_admin=1; path=/; max-age=${ADMIN_COOKIE_MAX_AGE}; SameSite=Strict`;
-    }
-
-    function clearAdminAccessCookie() {
-        document.cookie = 'okami_admin=; path=/; max-age=0; SameSite=Strict';
-    }
-
-    // Track selected files
     let selectedLogo = null;
     let selectedFile = null;
     let manualNameInput = null;
@@ -66,6 +44,8 @@
 
     const TOAST_DURATION = 5000;
     const SITE_SETTINGS_STORAGE_KEY = 'okami-site-settings';
+    let lastLoadedSettingsSource = 'config';
+    let lastLoadedSettingsUpdatedAt = null;
 
     function getSettingsApi() {
         return window.OkamiShared?.Settings || null;
@@ -355,17 +335,6 @@
         });
     }
 
-    // Hash a string using SHA-256
-    async function hashPassword(password) {
-        const encoder = new TextEncoder();
-        const data = encoder.encode(password);
-        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-        return hashHex;
-    }
-    
-    // Initialize IndexedDB
     function initDB() {
         return new Promise((resolve, reject) => {
             const request = indexedDB.open(DB_NAME, DB_VERSION);
@@ -387,9 +356,6 @@
 
     // Initialize on page load
     document.addEventListener('DOMContentLoaded', async function() {
-        // Generate password hash on initialization (so it's not stored in plain text)
-        ADMIN_PASSWORD_HASH = await hashPassword('okami2025');
-        
         initModalElements();
         manualNameInput = document.getElementById('manual-name');
         manualLinkInput = document.getElementById('manual-link');
@@ -408,25 +374,12 @@
             loginForm.addEventListener('submit', handleLogin);
         }
         
-        // Check if already authenticated and session hasn't expired
-        const authTime = sessionStorage.getItem('adminAuthTime');
-        const isAuthenticated = sessionStorage.getItem('adminAuthenticated') === 'true';
-        
-        if (isAuthenticated && authTime) {
-            const timeElapsed = Date.now() - parseInt(authTime, 10);
-            if (timeElapsed < SESSION_TIMEOUT) {
-                // Session still valid
-                showAdminPanel();
-                startSessionTimeout(); // Restart timeout timer
-                loadFiles();
-            } else {
-                // Session expired
-                sessionStorage.removeItem('adminAuthenticated');
-                sessionStorage.removeItem('adminAuthTime');
-                showLoginScreen();
-            }
+        const session = await checkAdminSession();
+        if (session?.authenticated) {
+            showAdminPanel();
+            startSessionTimeout();
+            await loadFiles();
         } else {
-            // Not authenticated
             showLoginScreen();
         }
 
@@ -487,7 +440,6 @@
     }
 
     function showAdminPanel() {
-        setAdminAccessCookie();
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('admin-panel').style.display = 'block';
         loadSiteVisibilitySettings();
@@ -533,6 +485,49 @@
         state.textContent = toggle.checked ? (state.dataset.on || 'On') : (state.dataset.off || 'Off');
     }
 
+    function updateVisibilitySettingsDebug(settings, source = lastLoadedSettingsSource) {
+        lastLoadedSettingsSource = source;
+        lastLoadedSettingsUpdatedAt = settings?.updatedAt || null;
+
+        const modeEl = document.getElementById('debug-construction-mode');
+        const sourceEl = document.getElementById('debug-settings-source');
+        const updatedEl = document.getElementById('debug-settings-updated');
+
+        if (modeEl) {
+            modeEl.textContent = String(Boolean(settings?.constructionMode));
+        }
+        if (sourceEl) {
+            sourceEl.textContent = source;
+        }
+        if (updatedEl) {
+            updatedEl.textContent = settings?.updatedAt
+                ? new Date(settings.updatedAt).toLocaleString()
+                : '—';
+        }
+    }
+
+    async function updateVisibilityServerDebug() {
+        const serverEl = document.getElementById('debug-settings-server');
+        if (!serverEl) {
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/health', { cache: 'no-store' });
+            if (!response.ok) {
+                serverEl.textContent = 'unavailable';
+                return;
+            }
+
+            const health = await response.json();
+            serverEl.textContent = health.status === 'ok'
+                ? `connected (${health.environment || 'unknown'})`
+                : 'unavailable';
+        } catch (error) {
+            serverEl.textContent = 'unavailable (tunnel may not point at Node server)';
+        }
+    }
+
     async function loadSiteVisibilitySettings() {
         const section = document.getElementById('site-visibility-section');
         if (!section) {
@@ -540,11 +535,13 @@
         }
 
         let settings = null;
+        let source = 'config';
 
         try {
             const apiAvailable = await checkAPIHealth();
             if (apiAvailable) {
                 settings = normalizeSiteSettings(await getSiteSettings());
+                source = 'server';
             }
         } catch (error) {
             console.warn('Failed to load site settings from API:', error.message || error);
@@ -555,6 +552,7 @@
                 const response = await fetch(`files/site-settings.json?t=${Date.now()}`, { cache: 'no-store' });
                 if (response.ok) {
                     settings = normalizeSiteSettings(await response.json());
+                    source = 'static';
                 }
             } catch (error) {
                 console.warn('Failed to load static site settings:', error.message || error);
@@ -566,13 +564,29 @@
             if (stored) {
                 try {
                     settings = normalizeSiteSettings(JSON.parse(stored));
+                    source = 'local';
                 } catch (error) {
                     console.warn('Failed to parse stored site settings:', error.message || error);
                 }
             }
         }
 
-        applySiteVisibilityForm(settings || getDefaultSiteSettings());
+        const resolved = settings || getDefaultSiteSettings();
+        if (!settings) {
+            source = 'config';
+        }
+
+        applySiteVisibilityForm(resolved);
+        updateVisibilitySettingsDebug(resolved, source);
+        await updateVisibilityServerDebug();
+
+        console.info('[Okami Admin Site Settings]', {
+            constructionMode: Boolean(resolved.constructionMode),
+            settingsSource: source,
+            updatedAt: resolved.updatedAt || null,
+            path: window.location.pathname,
+            isAdmin: Boolean((await checkAdminSession())?.authenticated)
+        });
     }
 
     function setVisibilitySaveStatus(message, isError = false) {
@@ -600,22 +614,22 @@
         try {
             const apiAvailable = await checkAPIHealth();
             if (apiAvailable) {
-                await saveSiteSettings(settings);
-                localStorage.setItem(SITE_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+                const result = await saveSiteSettings(settings);
+                const saved = normalizeSiteSettings(result?.settings || settings);
+                updateVisibilitySettingsDebug(saved, 'server');
+                await updateVisibilityServerDebug();
                 localStorage.setItem('okami-site-settings-updated', Date.now().toString());
-                setVisibilitySaveStatus('Settings saved successfully.');
+                setVisibilitySaveStatus('Settings saved to server.');
                 showToast('Site visibility settings saved.', 'success');
                 return;
             }
 
-            localStorage.setItem(SITE_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
-            setVisibilitySaveStatus('API unavailable. Settings saved locally only and will not affect public visitors until the API is running.', true);
-            showToast('Saved locally only. Start the API to apply site-wide.', 'info');
+            setVisibilitySaveStatus('API unavailable. Settings were not saved — start the Node server so public visitors receive updates.', true);
+            showToast('Could not save. API server is unavailable.', 'info');
         } catch (error) {
             console.error('Site settings save failed:', error);
-            localStorage.setItem(SITE_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
-            setVisibilitySaveStatus('API unavailable. Settings saved locally only and will not affect public visitors until the API is running.', true);
-            showToast('Saved locally only. Start the API to apply site-wide.', 'info');
+            setVisibilitySaveStatus('Save failed. Verify the Cloudflare Tunnel targets the Node server running this site.', true);
+            showToast('Save failed. Check server connection.', 'info');
         } finally {
             if (saveButton) {
                 saveButton.disabled = false;
@@ -647,7 +661,6 @@
         const errorMsg = document.getElementById('login-error');
         
         try {
-            // Trim whitespace from password
             const password = passwordInput.value.trim();
 
             if (!password) {
@@ -655,42 +668,16 @@
                 return;
             }
 
-            // Ensure password hash is set (in case DOMContentLoaded hasn't finished)
-            if (!ADMIN_PASSWORD_HASH) {
-                ADMIN_PASSWORD_HASH = await hashPassword('okami2025');
-            }
-
-            // Hash the entered password and compare with stored hash
-            const enteredPasswordHash = await hashPassword(password);
-            
-            // Debug logging (remove in production)
-            console.log('Password check:', {
-                enteredLength: password.length,
-                enteredHash: enteredPasswordHash.substring(0, 16) + '...',
-                expectedHash: ADMIN_PASSWORD_HASH ? ADMIN_PASSWORD_HASH.substring(0, 16) + '...' : 'null',
-                match: enteredPasswordHash === ADMIN_PASSWORD_HASH
-            });
-            
-            if (enteredPasswordHash === ADMIN_PASSWORD_HASH) {
-                // Store authentication state and timestamp
-                sessionStorage.setItem('adminAuthenticated', 'true');
-                sessionStorage.setItem('adminAuthTime', Date.now().toString());
-                setAdminAccessCookie();
-                showAdminPanel();
-                errorMsg.textContent = '';
-                // Start session timeout
-                startSessionTimeout();
-                // Load files after successful login
-                await loadFiles();
-            } else {
-                errorMsg.textContent = 'Incorrect password. Please try again.';
-                passwordInput.value = '';
-                passwordInput.focus();
-            }
+            await adminLogin(password);
+            showAdminPanel();
+            errorMsg.textContent = '';
+            startSessionTimeout();
+            await loadFiles();
         } catch (error) {
             console.error('Login error:', error);
-            errorMsg.textContent = 'Login failed. Please try again.';
+            errorMsg.textContent = error.message || 'Login failed. Please try again.';
             passwordInput.value = '';
+            passwordInput.focus();
         }
     }
     
@@ -700,37 +687,32 @@
             clearInterval(sessionTimeoutInterval);
         }
         
-        // Check every minute if session has expired
-        sessionTimeoutInterval = setInterval(() => {
-            const authTime = sessionStorage.getItem('adminAuthTime');
-            if (authTime) {
-                const timeElapsed = Date.now() - parseInt(authTime, 10);
-                if (timeElapsed >= SESSION_TIMEOUT) {
-                    // Session expired - logout
-                    handleLogout();
-                }
+        // Re-check server session periodically
+        sessionTimeoutInterval = setInterval(async () => {
+            const session = await checkAdminSession();
+            if (!session?.authenticated) {
+                handleLogout();
             }
-        }, 60000); // Check every minute
+        }, 60000);
     }
 
-    function handleLogout(e) {
+    async function handleLogout(e) {
         if (e) {
             e.preventDefault();
             e.stopPropagation();
         }
         
-        // Clear session data
-        sessionStorage.removeItem('adminAuthenticated');
-        sessionStorage.removeItem('adminAuthTime');
-        clearAdminAccessCookie();
-        
-        // Clear timeout interval
+        try {
+            await adminLogout();
+        } catch (error) {
+            console.warn('Admin logout request failed:', error.message || error);
+        }
+
         if (sessionTimeoutInterval) {
             clearInterval(sessionTimeoutInterval);
             sessionTimeoutInterval = null;
         }
         
-        // Force reload to show login screen
         window.location.href = 'admin.html';
     }
     

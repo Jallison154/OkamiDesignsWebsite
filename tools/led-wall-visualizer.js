@@ -80,7 +80,7 @@
         initPanelCountControls();
         syncPanelCountFields();
         initShowCabinetNumbers();
-        initCabinetArt();
+        initCabinetArtWhenVisible();
 
         document.getElementById('auto-calculate-resolution')?.addEventListener('change', () => {
             applyAutoCalculateMode();
@@ -175,6 +175,42 @@
 
         void window.OkamiCommercialGate?.initForProduct?.('okami-led-wall-calculator');
         void window.OkamiDesktopShell?.initDesktopShell?.({ productId: 'okami-led-wall-calculator' });
+    }
+
+    function initCabinetArtWhenVisible() {
+        if (cabinetArtInitialized) {
+            return;
+        }
+
+        const stage = document.getElementById('led-preview-stage');
+        if (!stage) {
+            return;
+        }
+
+        const startLoading = () => {
+            if (!cabinetArtInitialized) {
+                initCabinetArt();
+            }
+        };
+
+        if ('IntersectionObserver' in window) {
+            const observer = new IntersectionObserver((entries) => {
+                if (entries.some((entry) => entry.isIntersecting)) {
+                    observer.disconnect();
+                    startLoading();
+                }
+            }, { rootMargin: '120px' });
+
+            observer.observe(stage);
+            return;
+        }
+
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(startLoading, { timeout: 2000 });
+            return;
+        }
+
+        setTimeout(startLoading, 500);
     }
 
     function initCabinetArt() {
@@ -784,6 +820,7 @@
         }
 
         ProjectIO.downloadProject(gatherInputs(), getState());
+        trackCalculatorUsage('save-project', 'LED Calculator: save project');
     }
 
     async function exportProjectReport() {
@@ -803,6 +840,7 @@
         }
 
         ProjectIO.downloadReport(gatherInputs(), getState());
+        trackCalculatorUsage('export-report', 'LED Calculator: export report');
     }
 
     function buildSheetExportOptions() {
@@ -818,6 +856,10 @@
         };
     }
 
+    function trackCalculatorUsage(action, label) {
+        window.OkamiAnalytics?.trackToolUsage?.('led-wall-calculator', action, label);
+    }
+
     function downloadBuildSheetPdf() {
         try {
             const PdfExport = window.OkamiLedWallCalculator?.BuildSheetPdf;
@@ -827,6 +869,7 @@
 
             const { inputs, state, options } = buildSheetExportOptions();
             PdfExport.downloadPdf(inputs, state, options);
+            trackCalculatorUsage('pdf-download', 'LED Calculator: PDF build sheet');
         } catch (error) {
             window.alert(error.message || 'Could not download build sheet PDF. Please try again.');
         }

@@ -13,12 +13,14 @@ const productVersion = require('./shared/commercial/product-version');
 const { readCommercialConfig, validateCommercialConfig, logCommercialValidation } = require('./server/commercial/config');
 const { readAppConfig } = require('./server/config/app-config');
 const { createCorsMiddleware } = require('./server/middleware/cors');
-const { isAdminRequest, requireAdmin } = require('./server/middleware/admin-auth');
+const { isAdminRequest, requireAdmin, initAdminAuth, getAdminSession, getAdminAuthConfig } = require('./server/middleware/admin-auth');
+const adminAuthService = require('./server/admin/auth-service');
 const { createRateLimiter } = require('./server/middleware/rate-limit');
 
 const appConfig = readAppConfig();
 const app = express();
 const PORT = appConfig.port;
+initAdminAuth(appConfig);
 const FILES_DIR = path.join(__dirname, 'files');
 const MANIFEST_PATH = path.join(FILES_DIR, 'manifest.json');
 const SITE_SETTINGS_PATH = path.join(FILES_DIR, 'site-settings.json');
@@ -57,6 +59,28 @@ app.use(express.json());
 app.set('trust proxy', 1);
 
 const { normalizeVisibilityPath, getAccessDecision, buildVisibilityRedirect: sharedBuildVisibilityRedirect } = accessPolicy;
+
+function setNoCacheHeaders(res) {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    res.set('Surrogate-Control', 'no-store');
+}
+
+function setAdminSecurityHeaders(res) {
+    setNoCacheHeaders(res);
+    res.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+}
+
+const ADMIN_PAGE_PATTERN = /^\/admin(-analytics)?\.html$/i;
+
+app.use((req, res, next) => {
+    const pathLower = req.path.toLowerCase();
+    if (ADMIN_PAGE_PATTERN.test(pathLower) || pathLower.startsWith('/api/admin')) {
+        setAdminSecurityHeaders(res);
+    }
+    next();
+});
 
 function getServerAccessDecision(pathValue, settings, isAdmin) {
     return getAccessDecision({ pathValue, settings, isAdmin });
@@ -118,6 +142,13 @@ async function siteVisibilityMiddleware(req, res, next) {
 
 app.use(siteVisibilityMiddleware);
 
+const LED_CALCULATOR_HTML = path.join(__dirname, 'tools/led-wall-visualizer.html');
+
+app.get('/tools/led-video-wall-calculator', (req, res) => {
+    setNoCacheHeaders(res);
+    res.sendFile(LED_CALCULATOR_HTML);
+});
+
 // Chrome DevTools probes this automatically; avoid 404 + strict CSP console noise.
 app.get('/.well-known/appspecific/com.chrome.devtools.json', (_req, res) => {
     res.type('application/json').send('{}');
@@ -126,7 +157,9 @@ app.get('/.well-known/appspecific/com.chrome.devtools.json', (_req, res) => {
 const STATIC_CACHE_PATTERN = /\.(?:css|js|png|jpe?g|gif|webp|svg|ico|woff2?)$/i;
 app.use(express.static('.', {
     setHeaders: (res, filePath) => {
-        if (STATIC_CACHE_PATTERN.test(filePath)) {
+        if (/\.html$/i.test(filePath)) {
+            setNoCacheHeaders(res);
+        } else if (STATIC_CACHE_PATTERN.test(filePath)) {
             res.set('Cache-Control', 'public, max-age=31536000, immutable');
         }
     }
@@ -136,9 +169,7 @@ app.use('/files', express.static(FILES_DIR, {
     maxAge: 0,
     lastModified: true,
     setHeaders: (res) => {
-        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-        res.set('Pragma', 'no-cache');
-        res.set('Expires', '0');
+        setNoCacheHeaders(res);
     }
 }));
 
@@ -681,18 +712,81 @@ app.put('/api/files/:id', requireAdmin, async (req, res) => {
 // Site visibility settings
 app.get('/api/site-settings', async (req, res) => {
     try {
+        setNoCacheHeaders(res);
         const settings = await readSiteSettings();
-        res.json(settings);
+        res.json({
+            constructionMode: settings.constructionMode,
+            pages: settings.pages,
+            updatedAt: settings.updatedAt || null
+        });
     } catch (error) {
         console.error('Error reading site settings:', error);
         res.status(500).json({ error: 'Failed to read site settings' });
     }
 });
 
+app.post('/api/admin/login', async (req, res) => {
+    setAdminSecurityHeaders(res);
+
+    const config = getAdminAuthConfig();
+    if (!adminAuthService.isAdminAuthConfigured(config)) {
+        return res.status(503).json({ error: 'admin_auth_not_configured' });
+    }
+
+    const password = typeof req.body?.password === 'string' ? req.body.password : '';
+    if (!password.trim()) {
+        return res.status(400).json({ error: 'password_required' });
+    }
+
+    try {
+        const valid = await adminAuthService.verifyAdminPassword(password, config);
+        if (!valid) {
+            return res.status(401).json({ error: 'invalid_credentials' });
+        }
+
+        const token = adminAuthService.createSessionToken(config);
+        res.setHeader('Set-Cookie', adminAuthService.buildSessionCookie(token, config));
+        return res.json({
+            success: true,
+            expiresAt: new Date(Date.now() + config.sessionMaxAgeMs).toISOString()
+        });
+    } catch (error) {
+        console.error('Admin login error:', error);
+        return res.status(500).json({ error: 'login_failed' });
+    }
+});
+
+app.post('/api/admin/logout', (req, res) => {
+    setAdminSecurityHeaders(res);
+    res.setHeader('Set-Cookie', adminAuthService.buildClearSessionCookie(getAdminAuthConfig()));
+    res.json({ success: true });
+});
+
+app.get('/api/admin/session', (req, res) => {
+    setAdminSecurityHeaders(res);
+    const session = getAdminSession(req);
+    if (!session) {
+        return res.json({ authenticated: false });
+    }
+
+    return res.json({
+        authenticated: true,
+        expiresAt: new Date(session.exp).toISOString()
+    });
+});
+
 app.put('/api/site-settings', requireAdmin, async (req, res) => {
     try {
+        setNoCacheHeaders(res);
         const settings = await writeSiteSettings(req.body || {});
-        res.json({ success: true, settings });
+        res.json({
+            success: true,
+            settings: {
+                constructionMode: settings.constructionMode,
+                pages: settings.pages,
+                updatedAt: settings.updatedAt || null
+            }
+        });
     } catch (error) {
         console.error('Error saving site settings:', error);
         res.status(500).json({ error: 'Failed to save site settings' });
@@ -747,6 +841,7 @@ app.use('/api/commercial', commercialRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
+    setNoCacheHeaders(res);
     const commercial = readCommercialConfig();
     res.json({
         status: 'ok',
@@ -769,7 +864,9 @@ function startServer() {
         const server = app.listen(PORT, '0.0.0.0', () => {
             console.log(`🚀 Okami Designs API server running on port ${PORT}`);
             console.log(`📁 Files directory: ${FILES_DIR}`);
+            console.log(`⚙️  Site settings: ${SITE_SETTINGS_PATH}`);
             console.log(`✅ Server ready and listening on 0.0.0.0:${PORT}`);
+            console.log(`   Cloudflare Tunnel should target http://127.0.0.1:${PORT} (not a static-only host)`);
             resolve(server);
         });
         server.on('error', reject);

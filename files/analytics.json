@@ -2,16 +2,17 @@
   "pages": {
     "/home.html": {
       "title": "Home",
-      "totalViews": 27,
+      "totalViews": 29,
       "dailyViews": {
         "2026-06-14": 1,
         "2026-06-15": 13,
-        "2026-06-16": 13
+        "2026-06-16": 13,
+        "2026-06-21": 2
       },
       "monthlyViews": {
-        "2026-06": 27
+        "2026-06": 29
       },
-      "lastViewedAt": "2026-06-16T04:59:39.624Z"
+      "lastViewedAt": "2026-06-21T02:31:33.619Z"
     },
     "/services.html": {
       "title": "Services",
@@ -93,5 +94,5 @@
       "lastViewedAt": "2026-06-16T00:41:33.969Z"
     }
   },
-  "updatedAt": "2026-06-16T06:00:38.333Z"
+  "updatedAt": "2026-06-21T02:31:33.619Z"
 }

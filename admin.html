@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow, noarchive">
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
     <title>Admin - Okami Designs</title>
     <meta name="description" content="Okami Designs Admin Panel">
     <link rel="icon" href="images/Okami_Designs_HeadWhite.png" type="image/png">
@@ -81,6 +84,28 @@
                                 <span class="visibility-toggle-state" data-off="Off" data-on="On">Off</span>
                             </span>
                         </label>
+
+                        <div class="visibility-settings-debug" id="visibility-settings-debug" aria-live="polite">
+                            <p class="visibility-settings-debug-title">Settings Debug</p>
+                            <dl class="visibility-settings-debug-list">
+                                <div class="visibility-settings-debug-row">
+                                    <dt>constructionMode</dt>
+                                    <dd id="debug-construction-mode">—</dd>
+                                </div>
+                                <div class="visibility-settings-debug-row">
+                                    <dt>settings source</dt>
+                                    <dd id="debug-settings-source">—</dd>
+                                </div>
+                                <div class="visibility-settings-debug-row">
+                                    <dt>last updated</dt>
+                                    <dd id="debug-settings-updated">—</dd>
+                                </div>
+                                <div class="visibility-settings-debug-row">
+                                    <dt>API server</dt>
+                                    <dd id="debug-settings-server">—</dd>
+                                </div>
+                            </dl>
+                        </div>
 
                         <div class="visibility-page-list" id="visibility-page-list" aria-live="polite"></div>
 

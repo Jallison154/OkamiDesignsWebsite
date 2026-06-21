@@ -42,9 +42,32 @@
     let settingsPromise = null;
     let settingsPollTimer = null;
     let lastAppliedSettingsSignature = null;
+    let lastSettingsSource = 'config';
+
+    let adminSessionActive = false;
+
+    async function refreshAdminSession() {
+        try {
+            const response = await fetch('/api/admin/session', {
+                credentials: 'include',
+                cache: 'no-store'
+            });
+            if (!response.ok) {
+                adminSessionActive = false;
+                return false;
+            }
+
+            const data = await response.json();
+            adminSessionActive = data.authenticated === true;
+            return adminSessionActive;
+        } catch {
+            adminSessionActive = false;
+            return false;
+        }
+    }
 
     function isAdminUser() {
-        return sessionStorage.getItem('adminAuthenticated') === 'true';
+        return adminSessionActive;
     }
 
     function getUserRole() {
@@ -146,6 +169,7 @@
                 try {
                     const response = await fetch('/api/site-settings', { cache: 'no-store' });
                     if (response.ok) {
+                        lastSettingsSource = 'server';
                         settingsCache = mergeSettings(await response.json());
                         return settingsCache;
                     }
@@ -159,6 +183,7 @@
                         : 'files/site-settings.json';
                     const response = await fetch(`${staticPrefix}?t=${Date.now()}`, { cache: 'no-store' });
                     if (response.ok) {
+                        lastSettingsSource = 'static';
                         settingsCache = mergeSettings(await response.json());
                         return settingsCache;
                     }
@@ -166,12 +191,27 @@
                     console.warn('Static site settings unavailable:', error.message || error);
                 }
 
+                lastSettingsSource = 'config';
                 settingsCache = mergeSettings(DEFAULT_SITE_SETTINGS);
                 return settingsCache;
             })();
         }
 
         return settingsPromise;
+    }
+
+    function getLastSettingsSource() {
+        return lastSettingsSource;
+    }
+
+    function logVisibilityDebug(settings, context = 'init') {
+        console.info('[Okami Site Visibility]', {
+            context,
+            constructionMode: Boolean(settings?.constructionMode),
+            settingsSource: lastSettingsSource,
+            path: window.location.pathname,
+            isAdmin: isAdminUser()
+        });
     }
 
     function mergeSettings(raw) {
@@ -225,6 +265,10 @@
             return { allowed: false, reason: 'construction' };
         }
 
+        if (!settings.constructionMode && isSplashPage(pathname)) {
+            return { allowed: false, reason: 'home' };
+        }
+
         if (isToolsPath(pathname) && settings.pages.tools === false) {
             return { allowed: false, reason: 'hidden' };
         }
@@ -243,6 +287,11 @@
     }
 
     function redirectForReason(reason, settings) {
+        if (reason === 'home') {
+            window.location.replace(getHomeUrl());
+            return;
+        }
+
         if (reason === 'construction') {
             window.location.replace(getSplashUrl());
             return;
@@ -432,12 +481,14 @@
         hidePageUntilCheck();
 
         try {
+            await refreshAdminSession();
             const allowed = await enforceCurrentPage();
             if (!allowed) {
                 return;
             }
 
             const settings = await fetchSiteSettings();
+            logVisibilityDebug(settings, 'init');
             lastAppliedSettingsSignature = getSettingsSignature(settings);
             applyNavigation(settings);
             startSettingsPolling();
@@ -462,11 +513,14 @@
         canAccessUrl,
         enforceUrlAccess,
         refreshSiteVisibility,
+        refreshAdminSession,
         isAdminUser,
         getUserRole,
         getPageKeyFromUrl,
         isAdminRoute,
-        isSplashPage
+        isSplashPage,
+        getLastSettingsSource,
+        logVisibilityDebug
     };
 
     initSiteVisibility();

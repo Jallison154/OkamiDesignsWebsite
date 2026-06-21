@@ -4,11 +4,14 @@
  */
 import http from 'http';
 import { createRequire } from 'module';
+import bcrypt from 'bcrypt';
+
+const TEST_ADMIN_PASSWORD = 'test-admin-password';
+process.env.ADMIN_PASSWORD_HASH = bcrypt.hashSync(TEST_ADMIN_PASSWORD, 4);
+process.env.ADMIN_SESSION_SECRET = 'integration-test-admin-session-secret';
 
 const require = createRequire(import.meta.url);
 const { app, prepareServer } = require('../server.js');
-
-const ADMIN_COOKIE = 'okami_admin=1';
 
 const results = [];
 
@@ -42,7 +45,26 @@ async function request(baseUrl, path, options = {}) {
     } else {
         body = await response.text();
     }
-    return { status: response.status, body };
+    return { status: response.status, body, headers: response.headers };
+}
+
+function extractAdminSessionCookie(response) {
+    const setCookie = response.headers.get('set-cookie') || '';
+    const match = setCookie.match(/okami_admin_session=[^;]+/);
+    return match ? match[0] : '';
+}
+
+async function loginAdmin(baseUrl) {
+    const response = await request(baseUrl, '/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: TEST_ADMIN_PASSWORD })
+    });
+
+    return {
+        response,
+        cookie: extractAdminSessionCookie(response)
+    };
 }
 
 async function run() {
@@ -107,6 +129,47 @@ async function run() {
             fail('GET /api/site-settings (public read)', `status ${settingsGet.status}`);
         }
 
+        const loginFail = await request(baseUrl, '/api/admin/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: 'wrong-password' })
+        });
+        if (loginFail.status === 401) {
+            pass('POST /api/admin/login rejects invalid password');
+        } else {
+            fail('POST /api/admin/login rejects invalid password', `status ${loginFail.status}`);
+        }
+
+        const legacyCookieDenied = await request(baseUrl, '/api/site-settings', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                Cookie: 'okami_admin=1'
+            },
+            body: JSON.stringify({ constructionMode: false, pages: settingsGet.body.pages })
+        });
+        if (legacyCookieDenied.status === 401) {
+            pass('Legacy okami_admin cookie is rejected');
+        } else {
+            fail('Legacy okami_admin cookie is rejected', `status ${legacyCookieDenied.status}`);
+        }
+
+        const { response: loginOk, cookie: adminCookie } = await loginAdmin(baseUrl);
+        if (loginOk.status === 200 && loginOk.body?.success && adminCookie) {
+            pass('POST /api/admin/login creates session cookie');
+        } else {
+            fail('POST /api/admin/login creates session cookie', JSON.stringify(loginOk.body));
+        }
+
+        const sessionCheck = await request(baseUrl, '/api/admin/session', {
+            headers: { Cookie: adminCookie }
+        });
+        if (sessionCheck.status === 200 && sessionCheck.body?.authenticated === true) {
+            pass('GET /api/admin/session validates cookie');
+        } else {
+            fail('GET /api/admin/session validates cookie', JSON.stringify(sessionCheck.body));
+        }
+
         const settingsPutDenied = await request(baseUrl, '/api/site-settings', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
@@ -122,14 +185,14 @@ async function run() {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
-                Cookie: ADMIN_COOKIE
+                Cookie: adminCookie
             },
             body: JSON.stringify(settingsGet.body)
         });
         if (settingsPutOk.status === 200 && settingsPutOk.body?.success) {
-            pass('PUT /api/site-settings with admin cookie');
+            pass('PUT /api/site-settings with admin session');
         } else {
-            fail('PUT /api/site-settings with admin cookie', `status ${settingsPutOk.status}`);
+            fail('PUT /api/site-settings with admin session', `status ${settingsPutOk.status}`);
         }
 
         const analyticsDenied = await request(baseUrl, '/api/analytics');
@@ -137,6 +200,15 @@ async function run() {
             pass('GET /api/analytics requires admin');
         } else {
             fail('GET /api/analytics requires admin', `status ${analyticsDenied.status}`);
+        }
+
+        const analyticsAllowed = await request(baseUrl, '/api/analytics', {
+            headers: { Cookie: adminCookie }
+        });
+        if (analyticsAllowed.status === 200) {
+            pass('GET /api/analytics with admin session');
+        } else {
+            fail('GET /api/analytics with admin session', `status ${analyticsAllowed.status}`);
         }
 
         const analyticsView = await request(baseUrl, '/api/analytics/view', {
@@ -155,6 +227,16 @@ async function run() {
             pass('POST /api/upload requires admin');
         } else {
             fail('POST /api/upload requires admin', `status ${uploadDenied.status}`);
+        }
+
+        const uploadAllowed = await request(baseUrl, '/api/upload', {
+            method: 'POST',
+            headers: { Cookie: adminCookie }
+        });
+        if (uploadAllowed.status === 400 || uploadAllowed.status === 401) {
+            pass('POST /api/upload accepts admin session (missing file payload expected)');
+        } else {
+            fail('POST /api/upload accepts admin session', `status ${uploadAllowed.status}`);
         }
 
         const filesPublic = await request(baseUrl, '/api/files');

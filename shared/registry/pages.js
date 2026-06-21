@@ -10,8 +10,9 @@
         {
             key: 'ledVideoWallCalculator',
             title: 'LED Video Wall Calculator',
-            filePaths: ['tools/led-wall-visualizer.html'],
+            filePaths: ['tools/led-wall-visualizer.html', 'tools/led-video-wall-calculator'],
             analyticsPath: '/tools/led-wall-visualizer.html',
+            canonicalPath: '/tools/led-video-wall-calculator',
             trackAnalytics: true,
             productId: 'okami-led-wall-calculator'
         },
