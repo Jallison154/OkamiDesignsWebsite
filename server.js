@@ -971,7 +971,7 @@ function logAdminAuthStartup() {
         console.warn('   Production requires ADMIN_PASSWORD_HASH — login is disabled until configured.');
     } else {
         console.warn('   Local dev: set ADMIN_DEV_PASSWORD in .env, or generate a hash with:');
-        console.warn('   node scripts/generate-admin-password-hash.mjs "your-password"');
+        console.warn('   node scripts/generate-admin-password-hash.cjs "your-password"');
     }
 }
 

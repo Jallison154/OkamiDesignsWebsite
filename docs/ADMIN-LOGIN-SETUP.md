@@ -16,7 +16,7 @@ Optional: `ADMIN_SESSION_MAX_AGE_MS` (default `1800000` = 30 minutes).
 From the project root:
 
 ```bash
-node scripts/generate-admin-password-hash.mjs "your-secure-password"
+node scripts/generate-admin-password-hash.cjs "your-secure-password"
 ```
 
 Example output:

@@ -1,11 +1,12 @@
 /**
- * Generate a bcrypt hash for ADMIN_PASSWORD_HASH.
+ * ESM entry — runs the CommonJS generator (compatible with older Node on servers).
  *
  * Usage:
  *   node scripts/generate-admin-password-hash.mjs "your-secure-password"
  */
-import bcrypt from 'bcrypt';
-import crypto from 'crypto';
+import { spawnSync } from 'child_process';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 const password = process.argv[2];
 
@@ -14,15 +15,6 @@ if (!password) {
     process.exit(1);
 }
 
-const hash = await bcrypt.hash(password, 12);
-const sessionSecret = crypto.randomBytes(32).toString('hex');
-
-console.log('');
-console.log('Add these lines to .env in the project root (see docs/ADMIN-LOGIN-SETUP.md):');
-console.log('');
-console.log(`ADMIN_PASSWORD_HASH=${hash}`);
-console.log(`ADMIN_SESSION_SECRET=${sessionSecret}`);
-console.log('');
-console.log('Then restart the server: npm start');
-console.log('Sign in at /admin.html with the plain password you used above — not the hash.');
-console.log('');
+const script = path.join(path.dirname(fileURLToPath(import.meta.url)), 'generate-admin-password-hash.cjs');
+const result = spawnSync(process.execPath, [script, password], { stdio: 'inherit' });
+process.exit(result.status ?? 1);
