@@ -13,6 +13,11 @@ function initAdminAuth(appConfig) {
     adminAuthConfig = readAdminAuthConfig(appConfig);
 }
 
+function refreshAdminAuth(appConfig) {
+    adminAuthConfig = readAdminAuthConfig(appConfig);
+    return adminAuthConfig;
+}
+
 function parseRequestCookies(req) {
     const header = req.headers.cookie || '';
     return header.split(';').reduce((cookies, part) => {
@@ -61,6 +66,7 @@ function requireAdmin(req, res, next) {
 module.exports = {
     SESSION_COOKIE,
     initAdminAuth,
+    refreshAdminAuth,
     parseRequestCookies,
     getAdminSession,
     isAdminRequest,

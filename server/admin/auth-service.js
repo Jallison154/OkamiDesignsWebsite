@@ -8,6 +8,10 @@ const DEFAULT_SESSION_MAX_AGE_MS = 30 * 60 * 1000;
 
 const DEV_SESSION_FALLBACK = 'okami-local-dev-session-secret-not-for-production';
 
+function looksLikeBcryptHash(value) {
+    return typeof value === 'string' && /^\$2[aby]\$\d{2}\$.{53}$/.test(value);
+}
+
 function readAdminAuthConfig(appConfig = {}) {
     const isProduction = appConfig.isProduction ?? process.env.NODE_ENV === 'production';
     let passwordHash = (process.env.ADMIN_PASSWORD_HASH || '').trim();
@@ -41,6 +45,33 @@ function readAdminAuthConfig(appConfig = {}) {
 
 function isAdminAuthConfigured(config) {
     return Boolean(config?.passwordHash && config?.sessionSecret);
+}
+
+function getAdminAuthDiagnostics(config) {
+    const resolved = config || readAdminAuthConfig();
+    const missing = [];
+    const warnings = [];
+
+    if (!resolved.passwordHash) {
+        missing.push('ADMIN_PASSWORD_HASH');
+    } else if (!looksLikeBcryptHash(resolved.passwordHash)) {
+        warnings.push(
+            'ADMIN_PASSWORD_HASH looks corrupted — wrap the hash in single quotes in .env (bcrypt contains $)'
+        );
+        missing.push('ADMIN_PASSWORD_HASH');
+    }
+
+    if (!resolved.sessionSecret) {
+        missing.push('ADMIN_SESSION_SECRET');
+    }
+
+    return {
+        configured: isAdminAuthConfigured(resolved) && looksLikeBcryptHash(resolved.passwordHash || ''),
+        isProduction: Boolean(resolved.isProduction),
+        usingDevPasswordFallback: Boolean(resolved.usingDevPasswordFallback),
+        missing,
+        warnings
+    };
 }
 
 async function verifyAdminPassword(password, config) {
@@ -144,6 +175,8 @@ module.exports = {
     DEFAULT_SESSION_MAX_AGE_MS,
     readAdminAuthConfig,
     isAdminAuthConfigured,
+    looksLikeBcryptHash,
+    getAdminAuthDiagnostics,
     verifyAdminPassword,
     createSessionToken,
     verifySessionToken,

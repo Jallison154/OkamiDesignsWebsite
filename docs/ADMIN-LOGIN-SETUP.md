@@ -41,11 +41,25 @@ Edit `.env` and set at minimum:
 NODE_ENV=production
 PORT=3000
 
-ADMIN_PASSWORD_HASH=your_bcrypt_hash_here
-ADMIN_SESSION_SECRET=your_long_random_secret_here
+# Single quotes required — bcrypt hashes contain $ characters
+ADMIN_PASSWORD_HASH='$2b$12$paste_hash_from_generator_here'
+ADMIN_SESSION_SECRET=paste_secret_from_generator_here
 ```
 
-The server loads `.env` automatically on startup (`server/config/load-env.js`).
+The server loads `.env` from the project root inside Docker (`/app/.env` via volume mount).
+
+## Production server (`/opt/okami-designs`)
+
+```bash
+cd /opt/okami-designs
+node scripts/generate-admin-password-hash.cjs "your-secure-password"
+nano .env   # paste output — keep single quotes on ADMIN_PASSWORD_HASH
+docker compose restart okami-designs-api
+docker logs okami-designs-api --tail 20   # expect: Admin login configured
+curl -s https://www.okamidesigns.com/api/admin/setup-status
+```
+
+`setup-status` returns `configured: true` when ready (no secrets exposed).
 
 ## 3. Restart the server
 

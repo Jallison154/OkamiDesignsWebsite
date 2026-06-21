@@ -240,6 +240,20 @@ async function checkAdminSession() {
     }
 }
 
+async function getAdminSetupStatus() {
+    try {
+        const response = await fetch(`${API_BASE}/admin/setup-status`, {
+            cache: 'no-store'
+        });
+        if (!response.ok) {
+            return null;
+        }
+        return await response.json();
+    } catch {
+        return null;
+    }
+}
+
 async function adminLogin(password) {
     const response = await fetch(`${API_BASE}/admin/login`, {
         method: 'POST',
@@ -253,11 +267,18 @@ async function adminLogin(password) {
 
     const body = await response.json().catch(() => ({}));
     if (!response.ok) {
-        const message = body.error === 'invalid_credentials'
-            ? 'Incorrect password. Please try again.'
-            : body.error === 'admin_auth_not_configured'
-                ? 'Admin login is not configured on the server.'
-                : 'Login failed. Please try again.';
+        let message = 'Login failed. Please try again.';
+        if (body.error === 'invalid_credentials') {
+            message = 'Incorrect password. Please try again.';
+        } else if (body.error === 'admin_auth_not_configured') {
+            const missing = Array.isArray(body.missing) && body.missing.length
+                ? body.missing.join(', ')
+                : 'ADMIN_PASSWORD_HASH, ADMIN_SESSION_SECRET';
+            const envHint = body.envFileExists === false
+                ? ' No .env file found on the server.'
+                : '';
+            message = `Admin login is not configured on the server. Missing: ${missing}.${envHint} See docs/ADMIN-LOGIN-SETUP.md`;
+        }
         throw new Error(message);
     }
 

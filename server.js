@@ -1,5 +1,5 @@
 // Okami Designs - Backend API Server
-const { loadEnv, ENV_PATH } = require('./server/config/load-env');
+const { loadEnv, reloadEnv, getEnvFilePresence, ENV_PATH } = require('./server/config/load-env');
 const envLoadResult = loadEnv();
 
 const express = require('express');
@@ -16,7 +16,7 @@ const productVersion = require('./shared/commercial/product-version');
 const { readCommercialConfig, validateCommercialConfig, logCommercialValidation } = require('./server/commercial/config');
 const { readAppConfig } = require('./server/config/app-config');
 const { createCorsMiddleware } = require('./server/middleware/cors');
-const { isAdminRequest, requireAdmin, initAdminAuth, getAdminSession, getAdminAuthConfig } = require('./server/middleware/admin-auth');
+const { isAdminRequest, requireAdmin, initAdminAuth, refreshAdminAuth, getAdminSession, getAdminAuthConfig } = require('./server/middleware/admin-auth');
 const adminAuthService = require('./server/admin/auth-service');
 const { createRateLimiter } = require('./server/middleware/rate-limit');
 
@@ -828,12 +828,44 @@ async function handleSaveSiteSettings(req, res) {
     }
 }
 
+function syncAdminAuthFromEnvironment() {
+    reloadEnv();
+    return refreshAdminAuth(appConfig);
+}
+
+app.get('/api/admin/setup-status', (req, res) => {
+    setAdminSecurityHeaders(res);
+    syncAdminAuthFromEnvironment();
+    const config = getAdminAuthConfig();
+    const diagnostics = adminAuthService.getAdminAuthDiagnostics(config);
+    const envFile = getEnvFilePresence();
+
+    res.json({
+        configured: diagnostics.configured,
+        environment: appConfig.nodeEnv,
+        envFile: {
+            path: envFile.path,
+            exists: envFile.exists
+        },
+        missing: diagnostics.missing,
+        warnings: diagnostics.warnings,
+        usingDevPasswordFallback: diagnostics.usingDevPasswordFallback
+    });
+});
+
 app.post('/api/admin/login', async (req, res) => {
     setAdminSecurityHeaders(res);
 
+    syncAdminAuthFromEnvironment();
     const config = getAdminAuthConfig();
-    if (!adminAuthService.isAdminAuthConfigured(config)) {
-        return res.status(503).json({ error: 'admin_auth_not_configured' });
+    const diagnostics = adminAuthService.getAdminAuthDiagnostics(config);
+    if (!diagnostics.configured) {
+        return res.status(503).json({
+            error: 'admin_auth_not_configured',
+            missing: diagnostics.missing,
+            warnings: diagnostics.warnings,
+            envFileExists: getEnvFilePresence().exists
+        });
     }
 
     const password = typeof req.body?.password === 'string' ? req.body.password : '';
@@ -948,16 +980,20 @@ app.get('/api/health', (req, res) => {
 });
 
 function logAdminAuthStartup() {
+    syncAdminAuthFromEnvironment();
     const config = getAdminAuthConfig();
-    const configured = adminAuthService.isAdminAuthConfigured(config);
+    const diagnostics = adminAuthService.getAdminAuthDiagnostics(config);
+    const envFile = getEnvFilePresence();
 
     if (envLoadResult.loaded) {
         console.log(`🔐 Environment loaded from ${envLoadResult.path} (${envLoadResult.method || 'dotenv'})`);
+    } else if (envFile.exists) {
+        console.log(`🔐 Environment file present at ${envFile.path}`);
     } else {
         console.warn(`⚠️  No .env file at ${ENV_PATH} — using process environment only`);
     }
 
-    if (configured) {
+    if (diagnostics.configured) {
         console.log('✅ Admin login configured (ADMIN_PASSWORD_HASH or development fallback)');
         if (config.usingDevPasswordFallback) {
             console.warn('⚠️  Development mode: using ADMIN_DEV_PASSWORD — set ADMIN_PASSWORD_HASH before production');
@@ -966,7 +1002,14 @@ function logAdminAuthStartup() {
     }
 
     console.warn('⚠️  Admin login is NOT configured.');
-    console.warn('   Set ADMIN_PASSWORD_HASH and ADMIN_SESSION_SECRET in .env (see docs/ADMIN-LOGIN-SETUP.md)');
+    if (diagnostics.missing.length) {
+        console.warn(`   Missing: ${diagnostics.missing.join(', ')}`);
+    }
+    if (diagnostics.warnings?.length) {
+        diagnostics.warnings.forEach((warning) => console.warn(`   ${warning}`));
+    }
+    console.warn('   Add to /opt/okami-designs/.env (use single quotes around bcrypt hash — it contains $ characters)');
+    console.warn('   See docs/ADMIN-LOGIN-SETUP.md');
     if (appConfig.isProduction) {
         console.warn('   Production requires ADMIN_PASSWORD_HASH — login is disabled until configured.');
     } else {

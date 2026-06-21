@@ -29,9 +29,10 @@ bcrypt.hash(password, 12, (error, hash) => {
     console.log('');
     console.log('Add these lines to .env in the project root (see docs/ADMIN-LOGIN-SETUP.md):');
     console.log('');
-    console.log(`ADMIN_PASSWORD_HASH=${hash}`);
-    console.log(`ADMIN_SESSION_SECRET=${sessionSecret}`);
-    console.log('');
+console.log(`ADMIN_PASSWORD_HASH='${hash}'`);
+console.log(`ADMIN_SESSION_SECRET=${sessionSecret}`);
+console.log('');
+console.log('Use single quotes around ADMIN_PASSWORD_HASH — bcrypt hashes contain $ characters.');
     console.log('Then restart the server: npm start');
     console.log('Sign in at /admin.html with the plain password you used above — not the hash.');
     console.log('');
