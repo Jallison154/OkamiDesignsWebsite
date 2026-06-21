@@ -22,14 +22,6 @@
         return Number(value).toLocaleString('en-US');
     }
 
-    function formatMegapixels(totalPixels) {
-        if (!hasValue(totalPixels) || totalPixels <= 0) {
-            return null;
-        }
-        const mp = totalPixels / 1000000;
-        return mp >= 10 ? `${mp.toFixed(1)} MP` : `${mp.toFixed(2)} MP`;
-    }
-
     function formatFeetInches(feetDecimal) {
         if (!hasValue(feetDecimal)) {
             return null;
@@ -173,26 +165,10 @@
             const overlayY = y0 + (topPercent / 100) * diagramH;
             const overlayW = (widthPercent / 100) * diagramW;
             const overlayH = (heightPercent / 100) * diagramH;
+            const referenceLabel = `${escapeHtml(state.overlayFormatLabel || '16:9')} reference area`;
 
-            if (topPercent > 0) {
-                parts.push(`<rect x="${x0}" y="${y0}" width="${diagramW}" height="${(topPercent / 100) * diagramH}" fill="rgba(0,0,0,0.45)"/>`);
-            }
-            if (topPercent + heightPercent < 100) {
-                const shadeY = y0 + ((topPercent + heightPercent) / 100) * diagramH;
-                const shadeH = diagramH - ((topPercent + heightPercent) / 100) * diagramH;
-                parts.push(`<rect x="${x0}" y="${shadeY}" width="${diagramW}" height="${shadeH}" fill="rgba(0,0,0,0.45)"/>`);
-            }
-            if (leftPercent > 0) {
-                parts.push(`<rect x="${x0}" y="${overlayY}" width="${(leftPercent / 100) * diagramW}" height="${overlayH}" fill="rgba(0,0,0,0.45)"/>`);
-            }
-            if (leftPercent + widthPercent < 100) {
-                const shadeX = x0 + ((leftPercent + widthPercent) / 100) * diagramW;
-                const shadeW = diagramW - ((leftPercent + widthPercent) / 100) * diagramW;
-                parts.push(`<rect x="${shadeX}" y="${overlayY}" width="${shadeW}" height="${overlayH}" fill="rgba(0,0,0,0.45)"/>`);
-            }
-
-            parts.push(`<rect x="${overlayX}" y="${overlayY}" width="${overlayW}" height="${overlayH}" fill="none" stroke="#ff6a2d" stroke-width="2"/>`);
-            parts.push(`<text x="${overlayX + overlayW / 2}" y="${overlayY - 4}" text-anchor="middle" fill="#ff6a2d" font-size="10" font-weight="700" font-family="Montserrat, Arial, sans-serif">${escapeHtml(state.overlayFormatLabel || 'Overlay')}</text>`);
+            parts.push(`<rect x="${overlayX}" y="${overlayY}" width="${overlayW}" height="${overlayH}" fill="none" stroke="#ff6a2d" stroke-width="2" stroke-dasharray="6 4"/>`);
+            parts.push(`<text x="${overlayX + overlayW / 2}" y="${overlayY - 4}" text-anchor="middle" fill="#ff6a2d" font-size="10" font-weight="700" font-family="Montserrat, Arial, sans-serif">${referenceLabel}</text>`);
         }
 
         const widthFt = formatFeetInches(state.physicalWidthFt);
@@ -283,6 +259,13 @@
         return warnings;
     }
 
+    function formatPercent(value, digits = 1) {
+        if (!hasValue(value)) {
+            return null;
+        }
+        return `${Number(value).toFixed(digits)}%`;
+    }
+
     function buildDetailRows(rows) {
         return rows.filter((row) => hasValue(row.value));
     }
@@ -335,15 +318,16 @@
                     { label: 'Total resolution', value: `${formatNumber(state.totalPixelWidth)} × ${formatNumber(state.totalPixelHeight)} px` },
                     { label: 'Pixels per cabinet', value: `${formatNumber(state.pixelWidth)} × ${formatNumber(state.pixelHeight)} px` },
                     { label: 'Horizontal pixels', value: formatNumber(state.totalPixelWidth) },
-                    { label: 'Vertical pixels', value: formatNumber(state.totalPixelHeight) },
-                    { label: 'Total pixels', value: formatNumber(state.totalPixels) },
-                    { label: 'Megapixels', value: formatMegapixels(state.totalPixels) }
+                    { label: 'Vertical pixels', value: formatNumber(state.totalPixelHeight) }
                 ]),
                 processor: buildDetailRows([
                     { label: 'Port capacity setting', value: state.portCapacity ? `${formatNumber(state.portCapacity)} px max/port` : null },
                     { label: 'Fill threshold', value: hasValue(state.portFillThreshold) ? `${state.portFillThreshold}%` : null },
                     { label: 'Usable pixels per port', value: state.usablePixelsPerPort ? `${formatNumber(state.usablePixelsPerPort)} px` : null },
                     { label: 'Total ports required', value: hasValue(state.portsRequired) ? formatNumber(state.portsRequired) : null },
+                    { label: 'Avg. port utilization', value: formatPercent(state.avgPortUtilizationPercent) },
+                    { label: 'Peak port utilization', value: formatPercent(state.peakPortUtilizationPercent) },
+                    { label: 'Processor loading', value: formatPercent(state.processorLoadingPercent) },
                     { label: 'Avg. cabinets per port (est.)', value: avgCabinetsPerPort ? `~${avgCabinetsPerPort}` : null },
                     { label: 'Sending hardware', value: 'Confirm processor / sending card model with manufacturer — capacity settings above are user-defined.' }
                 ]),
@@ -447,7 +431,7 @@
         }
 
         const overlayNote = state.overlay && state.overlayFormatLabel
-            ? `<p class="build-sheet-note">Content overlay: ${escapeHtml(state.overlayFormatLabel)} active area shown in orange.</p>`
+            ? `<p class="build-sheet-note">Overlay shows ${escapeHtml(state.overlayFormatLabel)} content fit only. Full LED wall remains active.</p>`
             : '';
 
         return `

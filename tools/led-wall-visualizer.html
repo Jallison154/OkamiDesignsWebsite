@@ -89,8 +89,20 @@
                                 <span class="led-summary-value" id="summary-wall-resolution">—</span>
                             </div>
                             <div class="led-summary-line">
+                                <span class="led-summary-label">Physical</span>
+                                <span class="led-summary-value" id="summary-physical-size">—</span>
+                            </div>
+                            <div class="led-summary-line">
                                 <span class="led-summary-label">Ports</span>
                                 <span class="led-summary-value" id="summary-processor-ports">—</span>
+                            </div>
+                            <div class="led-summary-line">
+                                <span class="led-summary-label">Port Fill</span>
+                                <span class="led-summary-value" id="summary-port-utilization">—</span>
+                            </div>
+                            <div class="led-summary-line">
+                                <span class="led-summary-label">Power</span>
+                                <span class="led-summary-value" id="summary-power">—</span>
                             </div>
                         </div>
                     </div>
@@ -288,7 +300,8 @@
                                     <div class="led-advanced-divider"></div>
 
                                     <div class="led-advanced-section">
-                                        <h4 class="led-advanced-section-title">Content Format Overlay</h4>
+                                        <h4 class="led-advanced-section-title">Content Format Overlay (Reference)</h4>
+                                        <p class="led-advanced-help">Shows where content would fit inside the full wall. Set to None to hide the guide.</p>
                                         <div class="led-field">
                                             <label for="overlay-format">Overlay Format</label>
                                             <select id="overlay-format" class="led-select">
@@ -413,39 +426,39 @@
                         </div>
                     </section>
 
-                    <section class="led-panel led-grid-results results-row" aria-labelledby="led-results-title">
-                        <h2 id="led-results-title" class="led-panel-title">Results</h2>
-                        <div class="led-result-cards" aria-live="polite">
-                            <div class="led-result-card">
-                                <h3 class="led-result-card-title">Wall</h3>
+                    <section class="led-panel led-grid-results results-row led-project-summary" aria-labelledby="led-results-title">
+                        <h2 id="led-results-title" class="led-panel-title">Project Summary</h2>
+                        <div class="led-result-cards led-result-cards--project-summary" aria-live="polite">
+                            <div class="led-result-card led-result-card--summary" id="result-wall-card">
+                                <h3 class="led-result-card-title" id="result-wall-title">Wall</h3>
                                 <div class="led-result-body">
                                     <p class="led-result-primary" id="result-wall-primary">—</p>
                                     <p class="led-result-secondary led-result-secondary--stacked" id="result-wall-secondary">—</p>
                                 </div>
                             </div>
-                            <div class="led-result-card">
-                                <h3 class="led-result-card-title">Resolution</h3>
+                            <div class="led-result-card led-result-card--summary" id="result-resolution-card">
+                                <h3 class="led-result-card-title" id="result-resolution-title">Resolution</h3>
                                 <div class="led-result-body">
                                     <p class="led-result-primary" id="result-resolution-primary">—</p>
                                     <p class="led-result-secondary led-result-secondary--stacked" id="result-resolution-secondary">—</p>
                                 </div>
                             </div>
-                            <div class="led-result-card">
-                                <h3 class="led-result-card-title">Processor</h3>
+                            <div class="led-result-card led-result-card--summary" id="result-processor-card">
+                                <h3 class="led-result-card-title" id="result-processor-title">Processor</h3>
                                 <div class="led-result-body">
                                     <p class="led-result-primary" id="result-processor-primary">—</p>
                                     <p class="led-result-secondary led-result-secondary--stacked" id="result-processor-secondary">—</p>
                                 </div>
                             </div>
-                            <div class="led-result-card" id="result-power-card">
-                                <h3 class="led-result-card-title" id="result-power-card-title">Power</h3>
+                            <div class="led-result-card led-result-card--summary" id="result-power-card">
+                                <h3 class="led-result-card-title" id="result-power-title">Power</h3>
                                 <div class="led-result-body">
                                     <p class="led-result-primary" id="result-power-primary">—</p>
                                     <p class="led-result-secondary led-result-secondary--stacked" id="result-power-secondary">—</p>
                                 </div>
                             </div>
-                            <div class="led-result-card" id="result-content-fit-card" hidden>
-                                <h3 class="led-result-card-title">Content Fit</h3>
+                            <div class="led-result-card led-result-card--summary" id="result-content-fit-card">
+                                <h3 class="led-result-card-title" id="result-content-fit-title">16:9 Reference Fit</h3>
                                 <div class="led-result-body">
                                     <p class="led-result-primary" id="result-content-fit-primary">—</p>
                                     <p class="led-result-secondary led-result-secondary--stacked" id="result-content-fit-secondary">—</p>
@@ -476,13 +489,14 @@
     <script src="../client/commercial/commercial-gate.js"></script>
     <script src="../client/commercial/license-panel.js"></script>
     <script src="../client/desktop/shell-bridge.js"></script>
-    <script src="led-wall-calculator/constants.js?v=20260702"></script>
-    <script src="led-wall-calculator/calculations.js?v=20260702"></script>
-    <script src="led-wall-calculator/metrics.js?v=20260702"></script>
-    <script src="led-wall-calculator/project-io.js?v=20260702"></script>
-    <script src="led-wall-calculator/build-sheet-export.js?v=20260702"></script>
-    <script src="vendor/jspdf.umd.min.js?v=20260702"></script>
-    <script src="led-wall-calculator/build-sheet-pdf.js?v=20260702"></script>
-    <script src="led-wall-visualizer.js?v=20260702"></script>
+    <script src="led-wall-calculator/constants.js?v=20260707"></script>
+    <script src="led-wall-calculator/calculations.js?v=20260707"></script>
+    <script src="led-wall-calculator/metrics.js?v=20260707"></script>
+    <script src="led-wall-calculator/project-io.js?v=20260707"></script>
+    <script src="led-wall-calculator/build-sheet-export.js?v=20260707"></script>
+    <script src="led-wall-calculator/wall-project-summary.js?v=20260707"></script>
+    <script src="vendor/jspdf.umd.min.js?v=20260707"></script>
+    <script src="led-wall-calculator/build-sheet-pdf.js?v=20260707"></script>
+    <script src="led-wall-visualizer.js?v=20260707"></script>
 </body>
 </html>

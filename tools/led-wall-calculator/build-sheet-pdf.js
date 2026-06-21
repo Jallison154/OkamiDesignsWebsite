@@ -2,16 +2,19 @@
     'use strict';
 
     const BuildSheet = () => global.OkamiLedWallCalculator?.BuildSheetExport;
+    const Summary = () => global.OkamiLedWallCalculator?.WallProjectSummary;
 
     const COLORS = {
         orange: [255, 106, 45],
         text: [26, 26, 26],
         muted: [102, 102, 102],
         border: [210, 210, 210],
+        cardBg: [252, 252, 252],
         wallFill: [240, 240, 240],
         wallStroke: [120, 120, 120],
         gridLine: [190, 190, 190],
-        letterbox: [220, 220, 220]
+        letterbox: [220, 220, 220],
+        activeArea: [255, 248, 244]
     };
 
     const PAGE = {
@@ -53,20 +56,11 @@
     }
 
     function formatFeetInches(feetDecimal) {
-        if (!hasValue(feetDecimal)) {
-            return null;
-        }
-        const totalInches = Math.round(feetDecimal * 12);
-        const feet = Math.floor(totalInches / 12);
-        const inches = totalInches % 12;
-        return `${feet}' ${inches}"`;
+        return Summary()?.formatFeetInches?.(feetDecimal) ?? null;
     }
 
-    function formatMeters(mm) {
-        if (!hasValue(mm)) {
-            return null;
-        }
-        return `${(mm / 1000).toFixed(2)} m`;
+    function formatMetersCompact(mm) {
+        return Summary()?.formatMetersCompact?.(mm) ?? null;
     }
 
     function setTextColor(doc, rgb) {
@@ -91,57 +85,180 @@
         const rightX = PAGE.width - PAGE.margin;
 
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(13);
+        doc.setFontSize(12);
         setTextColor(doc, COLORS.text);
         doc.text('LED Wall Build Sheet', PAGE.margin, y);
 
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(8);
+        doc.setFontSize(7.5);
         setTextColor(doc, COLORS.muted);
-        const dateStr = formatExportDate(model.exportedAt);
-        doc.text(dateStr, rightX, y, { align: 'right' });
+        doc.text(formatExportDate(model.exportedAt), rightX, y, { align: 'right' });
 
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(8);
+        doc.setFontSize(7.5);
         setTextColor(doc, COLORS.orange);
-        doc.text('Okami Designs', rightX, y + 4, { align: 'right' });
+        doc.text('Okami Designs', rightX, y + 3.5, { align: 'right' });
 
-        let nextY = y + 7;
+        let nextY = y + 6;
 
         if (model.projectName) {
             doc.setFont('helvetica', 'italic');
-            doc.setFontSize(8.5);
+            doc.setFontSize(8);
             setTextColor(doc, COLORS.muted);
             doc.text(`Project: ${model.projectName}`, PAGE.margin, nextY);
-            nextY += 5;
+            nextY += 4.5;
         }
 
-        drawHorizontalRule(doc, nextY, PAGE.margin, rightX);
-        return nextY + 4;
+        return nextY + 1;
     }
 
-    /**
-     * Compact wall diagram drawn with PDF primitives (light theme for print).
-     */
-    function drawWallDiagram(doc, state, maxWidth, maxHeight, originX, originY) {
-        if (!state?.panelsWide || !state?.panelsTall) {
-            return originY;
+    function drawCenteredLines(doc, lines, x, y, width, options = {}) {
+        const fontSize = options.fontSize ?? 7;
+        const lineHeight = options.lineHeight ?? 3.4;
+        const fontStyle = options.fontStyle ?? 'normal';
+        const color = options.color ?? COLORS.muted;
+
+        doc.setFont('helvetica', fontStyle);
+        doc.setFontSize(fontSize);
+        setTextColor(doc, color);
+
+        let cursorY = y;
+        lines.filter(Boolean).forEach((line) => {
+            const wrapped = doc.splitTextToSize(String(line), width - 2);
+            wrapped.forEach((textLine) => {
+                doc.text(textLine, x + width / 2, cursorY, { align: 'center' });
+                cursorY += lineHeight;
+            });
+        });
+
+        return cursorY;
+    }
+
+    function drawKpiCard(doc, x, y, width, height, card) {
+        setFillColor(doc, COLORS.cardBg);
+        setDrawColor(doc, COLORS.border);
+        doc.setLineWidth(0.25);
+        doc.roundedRect(x, y, width, height, 1.5, 1.5, 'FD');
+
+        setFillColor(doc, COLORS.orange);
+        doc.rect(x, y, width, 1.4, 'F');
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(6);
+        setTextColor(doc, COLORS.muted);
+        doc.text(card.title.toUpperCase(), x + width / 2, y + 5, { align: 'center' });
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(card.primary.length > 14 ? 9 : 10.5);
+        setTextColor(doc, COLORS.text);
+        const primaryLines = doc.splitTextToSize(card.primary, width - 4);
+        let textY = y + 11.5;
+        primaryLines.forEach((line) => {
+            doc.text(line, x + width / 2, textY, { align: 'center' });
+            textY += 4.2;
+        });
+
+        if (card.secondary) {
+            textY = drawCenteredLines(doc, [card.secondary], x, textY + 0.5, width, {
+                fontSize: 7,
+                fontStyle: 'normal',
+                color: COLORS.muted
+            });
         }
 
+        if (card.tertiary) {
+            drawCenteredLines(doc, [card.tertiary], x, textY, width, {
+                fontSize: 6.2,
+                fontStyle: 'italic',
+                color: COLORS.muted
+            });
+        }
+    }
+
+    function drawProjectSummary(doc, cards, y, options = {}) {
+        const contentLeft = PAGE.margin;
+        const contentWidth = PAGE.width - PAGE.margin * 2;
+        const cardCount = options.cardCount ?? cards.length;
+        const gap = 2;
+        const cardWidth = (contentWidth - gap * (cardCount - 1)) / cardCount;
+        const cardHeight = options.cardHeight ?? 27;
+        const visibleCards = cards.slice(0, cardCount);
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        setTextColor(doc, COLORS.text);
+        doc.text('Project Summary', contentLeft, y);
+
+        setDrawColor(doc, COLORS.orange);
+        doc.setLineWidth(0.5);
+        doc.line(contentLeft, y + 1.5, contentLeft + 34, y + 1.5);
+
+        const cardsY = y + 5;
+        visibleCards.forEach((card, index) => {
+            const cardX = contentLeft + index * (cardWidth + gap);
+            drawKpiCard(doc, cardX, cardsY, cardWidth, cardHeight, card);
+        });
+
+        return cardsY + cardHeight + 3;
+    }
+
+    function getPrintableBounds(doc) {
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const margin = PAGE.margin;
+        const contentWidth = pageWidth - margin * 2;
+
+        return {
+            pageWidth,
+            pageHeight,
+            margin,
+            contentLeft: margin,
+            contentWidth,
+            centerX: pageWidth / 2
+        };
+    }
+
+    function computeWallDiagramSize(state, usableWidth, maxHeight) {
         const wallAspect = state.physicalWidthMM / state.physicalHeightMM;
         let diagramW;
         let diagramH;
 
-        if (wallAspect >= maxWidth / maxHeight) {
-            diagramW = maxWidth;
-            diagramH = maxWidth / wallAspect;
+        if (wallAspect >= usableWidth / maxHeight) {
+            diagramW = usableWidth;
+            diagramH = usableWidth / wallAspect;
         } else {
             diagramH = maxHeight;
             diagramW = maxHeight * wallAspect;
         }
 
-        const x0 = originX + (maxWidth - diagramW) / 2;
-        const y0 = originY;
+        return { diagramW, diagramH, wallAspect };
+    }
+
+    /**
+     * Wall diagram centered on the full printable page width.
+     */
+    function drawWallVisual(doc, state, startY, maxHeight) {
+        if (!state?.panelsWide || !state?.panelsTall) {
+            return startY;
+        }
+
+        const bounds = getPrintableBounds(doc);
+        const { margin, contentWidth, centerX } = bounds;
+        const usableWidth = contentWidth;
+        const { diagramW, diagramH } = computeWallDiagramSize(state, usableWidth, maxHeight);
+        const wallX = margin + (usableWidth - diagramW) / 2;
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8.5);
+        setTextColor(doc, COLORS.text);
+        doc.text('Wall Visual', centerX, startY, { align: 'center' });
+
+        setDrawColor(doc, COLORS.border);
+        doc.setLineWidth(0.2);
+        doc.line(margin, startY + 1.5, margin + usableWidth, startY + 1.5);
+
+        const y0 = startY + 5;
+        const x0 = wallX;
         const cellW = diagramW / state.panelsWide;
         const cellH = diagramH / state.panelsTall;
 
@@ -151,7 +268,7 @@
         doc.roundedRect(x0, y0, diagramW, diagramH, 1.2, 1.2, 'FD');
 
         setDrawColor(doc, COLORS.gridLine);
-        doc.setLineWidth(0.15);
+        doc.setLineWidth(0.12);
         for (let col = 1; col < state.panelsWide; col += 1) {
             const x = x0 + col * cellW;
             doc.line(x, y0, x, y0 + diagramH);
@@ -167,59 +284,58 @@
             const overlayY = y0 + (topPercent / 100) * diagramH;
             const overlayW = (widthPercent / 100) * diagramW;
             const overlayH = (heightPercent / 100) * diagramH;
-
-            setFillColor(doc, COLORS.letterbox);
-            if (topPercent > 0) {
-                doc.rect(x0, y0, diagramW, (topPercent / 100) * diagramH, 'F');
-            }
-            if (topPercent + heightPercent < 100) {
-                const shadeY = y0 + ((topPercent + heightPercent) / 100) * diagramH;
-                const shadeH = diagramH - ((topPercent + heightPercent) / 100) * diagramH;
-                doc.rect(x0, shadeY, diagramW, shadeH, 'F');
-            }
-            if (leftPercent > 0) {
-                doc.rect(x0, overlayY, (leftPercent / 100) * diagramW, overlayH, 'F');
-            }
-            if (leftPercent + widthPercent < 100) {
-                const shadeX = x0 + ((leftPercent + widthPercent) / 100) * diagramW;
-                const shadeW = diagramW - ((leftPercent + widthPercent) / 100) * diagramW;
-                doc.rect(shadeX, overlayY, shadeW, overlayH, 'F');
-            }
+            const overlayCenterX = overlayX + overlayW / 2;
+            const referenceLabel = Summary()?.getOverlayReferenceLabel?.(state.overlayFormatLabel, 'pdf')
+                || `${state.overlayFormatLabel || '16:9'} reference area`;
 
             setDrawColor(doc, COLORS.orange);
-            doc.setLineWidth(0.6);
+            doc.setLineWidth(0.75);
+            doc.setLineDashPattern([1.8, 1.2], 0);
             doc.rect(overlayX, overlayY, overlayW, overlayH);
+            doc.setLineDashPattern([], 0);
 
-            if (state.overlayFormatLabel) {
-                doc.setFont('helvetica', 'bold');
-                doc.setFontSize(6.5);
-                setTextColor(doc, COLORS.orange);
-                doc.text(state.overlayFormatLabel, overlayX + overlayW / 2, overlayY - 1.2, { align: 'center' });
-            }
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(6.5);
+            setTextColor(doc, COLORS.orange);
+            doc.text(referenceLabel, overlayCenterX, overlayY - 1.5, { align: 'center' });
         }
 
         const widthFt = formatFeetInches(state.physicalWidthFt);
         const heightFt = formatFeetInches(state.physicalHeightFt);
-        const widthM = formatMeters(state.physicalWidthMM);
-        const heightM = formatMeters(state.physicalHeightMM);
+        const widthM = formatMetersCompact(state.physicalWidthMM);
+        const heightM = formatMetersCompact(state.physicalHeightMM);
         const captionY = y0 + diagramH + 5;
 
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(7.5);
+        doc.setFontSize(7);
         setTextColor(doc, COLORS.text);
-        const line1 = `${state.panelsWide} × ${state.panelsTall} cabinets · ${formatNumber(state.totalPixelWidth)} × ${formatNumber(state.totalPixelHeight)} px`;
-        doc.text(line1, originX + maxWidth / 2, captionY, { align: 'center' });
+        doc.text(
+            `${state.panelsWide} × ${state.panelsTall} cabinets · ${formatNumber(state.totalPanels)} panels`,
+            centerX,
+            captionY,
+            { align: 'center' }
+        );
 
-        if (widthFt && heightFt && widthM && heightM) {
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(7);
-            setTextColor(doc, COLORS.muted);
-            const line2 = `${widthFt} × ${heightFt} (${widthM} × ${heightM})`;
-            doc.text(line2, originX + maxWidth / 2, captionY + 4, { align: 'center' });
-            return captionY + 8;
-        }
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(6.5);
+        setTextColor(doc, COLORS.muted);
+        const referenceNote = state.overlay
+            ? (Summary()?.getOverlayReferenceNote?.(state.overlayFormatLabel)
+                || 'Overlay shows content fit only. Full LED wall remains active.')
+            : null;
+        const captionLines = [
+            `${formatNumber(state.totalPixelWidth)} × ${formatNumber(state.totalPixelHeight)} px`,
+            widthFt && heightFt && widthM && heightM ? `${widthFt} × ${heightFt} (${widthM} × ${heightM})` : null,
+            referenceNote
+        ].filter(Boolean);
 
-        return captionY + 5;
+        let lineY = captionY + 3.8;
+        captionLines.forEach((line) => {
+            doc.text(line, centerX, lineY, { align: 'center' });
+            lineY += 3.4;
+        });
+
+        return lineY + 2;
     }
 
     function pickRows(rows, labels) {
@@ -227,36 +343,34 @@
         return labels.map((label) => map.get(label)).filter(Boolean);
     }
 
-    function buildLeftColumnRows(model) {
-        const overview = model.sections.overview;
-        return pickRows(overview, [
+    function buildCabinetDetailRows(model) {
+        return pickRows(model.sections.overview, [
+            'Wall grid (W × H)',
             'Total cabinets',
-            'Physical size',
             'Cabinet size',
             'Pixel pitch / spacing',
             'Display mode',
-            'Wall grid (W × H)',
             'Aspect ratio'
         ]);
     }
 
-    function buildResolutionRows(model) {
-        const resolution = model.sections.resolution;
-        return pickRows(resolution, [
+    function buildResolutionDetailRows(model) {
+        return pickRows(model.sections.resolution, [
             'Total resolution',
-            'Megapixels',
+            'Horizontal pixels',
+            'Vertical pixels',
             'Pixels per cabinet'
         ]);
     }
 
-    function buildProcessorRows(model, state) {
-        const processor = model.sections.processor;
-        const picked = pickRows(processor, [
-            'Port capacity setting',
-            'Usable pixels per port',
-            'Fill threshold',
+    function buildProcessorDetailRows(model, state) {
+        const picked = pickRows(model.sections.processor, [
             'Total ports required',
-            'Avg. cabinets per port (est.)'
+            'Avg. port utilization',
+            'Peak port utilization',
+            'Processor loading',
+            'Usable pixels per port',
+            'Fill threshold'
         ]);
 
         if (hasValue(state?.portsRequired) && picked.every((row) => row.label !== 'Total ports required')) {
@@ -269,7 +383,7 @@
         return picked;
     }
 
-    function buildPowerRows(state) {
+    function buildPowerDetailRows(state) {
         const rows = [];
         const circuitAmperage = state?.circuitAmperage;
 
@@ -279,14 +393,14 @@
         if (hasValue(state?.totalEstimatedWatts)) {
             rows.push({ label: 'Total estimated watts', value: `${formatNumber(state.totalEstimatedWatts)} W` });
         }
-        if (hasValue(state?.circuitVoltage)) {
-            rows.push({ label: 'Voltage', value: `${state.circuitVoltage}V` });
+        if (hasValue(state?.totalEstimatedAmps) && hasValue(state?.circuitVoltage)) {
+            rows.push({
+                label: 'Total estimated amps',
+                value: `${Number(state.totalEstimatedAmps).toFixed(1)} A @ ${state.circuitVoltage}V`
+            });
         }
         if (hasValue(circuitAmperage)) {
             rows.push({ label: 'Circuit size', value: `${circuitAmperage}A` });
-        }
-        if (hasValue(state?.rawWattsPerCircuit)) {
-            rows.push({ label: 'Raw circuit capacity', value: `${formatNumber(Math.round(state.rawWattsPerCircuit))} W` });
         }
         if (hasValue(state?.usableWattsPerCircuit)) {
             rows.push({
@@ -295,34 +409,47 @@
             });
         }
         if (hasValue(state?.circuitsRequired)) {
-            const circuitsLabel = hasValue(circuitAmperage)
-                ? `Estimated ${circuitAmperage}A circuits required`
-                : 'Estimated circuits required';
-            rows.push({ label: circuitsLabel, value: formatNumber(state.circuitsRequired) });
+            rows.push({
+                label: 'Circuits required',
+                value: formatNumber(state.circuitsRequired)
+            });
         }
 
         return rows;
     }
 
-    function drawSection(doc, title, rows, x, y, width, options = {}) {
+    function buildNotesRows(model) {
+        const notes = [...(model.sections.buildNotes || [])];
+        if (model.warnings?.length) {
+            model.warnings.slice(0, 2).forEach((warning, index) => {
+                notes.push({
+                    label: index === 0 ? 'Deployment note' : '',
+                    value: warning
+                });
+            });
+        }
+        return notes;
+    }
+
+    function drawDetailSection(doc, title, rows, x, y, width, options = {}) {
         if (!rows.length) {
             return y;
         }
 
-        const labelWidth = options.labelWidth ?? 38;
-        const rowGap = options.rowGap ?? 4.2;
-        const titleGap = options.titleGap ?? 5;
-        const fontSize = options.fontSize ?? 7.5;
-        const valueFontSize = options.valueFontSize ?? 7.5;
+        const labelWidth = options.labelWidth ?? 36;
+        const rowGap = options.rowGap ?? 3.4;
+        const titleGap = options.titleGap ?? 4;
+        const fontSize = options.fontSize ?? 6.5;
+        const valueFontSize = options.valueFontSize ?? 6.5;
 
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(8.5);
+        doc.setFontSize(7.5);
         setTextColor(doc, COLORS.orange);
         doc.text(title, x, y);
 
-        setDrawColor(doc, COLORS.orange);
-        doc.setLineWidth(0.35);
-        doc.line(x, y + 1.2, x + width, y + 1.2);
+        setDrawColor(doc, COLORS.border);
+        doc.setLineWidth(0.2);
+        doc.line(x, y + 1, x + width, y + 1);
 
         let cursorY = y + titleGap;
 
@@ -340,50 +467,56 @@
             const valueLines = doc.splitTextToSize(String(row.value), valueWidth);
             doc.text(valueLines, valueX, cursorY);
 
-            cursorY += Math.max(rowGap, valueLines.length * 3.2);
+            cursorY += Math.max(rowGap, valueLines.length * 2.8);
         });
 
         if (options.note) {
             doc.setFont('helvetica', 'italic');
-            doc.setFontSize(6.5);
+            doc.setFontSize(6);
             setTextColor(doc, COLORS.muted);
             const noteLines = doc.splitTextToSize(options.note, width);
-            doc.text(noteLines, x, cursorY + 1);
-            cursorY += noteLines.length * 3 + 2;
+            doc.text(noteLines, x, cursorY + 0.5);
+            cursorY += noteLines.length * 2.6 + 1;
         }
 
-        return cursorY + 2;
+        return cursorY + 1.5;
     }
 
     function drawFooter(doc, y) {
         const contentWidth = PAGE.width - PAGE.margin * 2;
-        const footerTop = Math.max(y + 4, PAGE.height - PAGE.margin - PAGE.footerHeight);
+        const footerTop = Math.max(y + 3, PAGE.height - PAGE.margin - PAGE.footerHeight);
 
         drawHorizontalRule(doc, footerTop, PAGE.margin, PAGE.width - PAGE.margin);
 
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(7);
+        doc.setFontSize(6.5);
         setTextColor(doc, COLORS.text);
-        doc.text('Generated by Okami Designs LED Wall Calculator', PAGE.margin, footerTop + 5);
+        doc.text('Generated by Okami Designs LED Wall Calculator', PAGE.margin, footerTop + 4.5);
 
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(6.5);
+        doc.setFontSize(6);
         setTextColor(doc, COLORS.muted);
         const disclaimer = 'Verify processor, power, rigging, and manufacturer specifications before deployment.';
-        const lines = doc.splitTextToSize(disclaimer, contentWidth);
-        doc.text(lines, PAGE.margin, footerTop + 9);
+        doc.text(doc.splitTextToSize(disclaimer, contentWidth), PAGE.margin, footerTop + 8);
 
         return footerTop;
     }
 
     function downloadPdf(inputs, state, options = {}) {
         const exportApi = BuildSheet();
+        const summaryApi = Summary();
         if (!exportApi?.buildBuildSheetModel) {
             throw new Error('Build sheet export is unavailable.');
+        }
+        if (!summaryApi?.buildProjectSummary) {
+            throw new Error('Project summary module is unavailable.');
         }
 
         const jsPDF = getJsPDF();
         const model = exportApi.buildBuildSheetModel(inputs, state, options);
+        const wallState = model.wallState;
+        const projectSummary = summaryApi.buildProjectSummary(wallState, inputs);
+        const summaryCards = summaryApi.buildKpiCards(projectSummary);
         const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' });
 
         doc.setProperties({
@@ -392,64 +525,91 @@
             author: 'Okami Designs'
         });
 
-        const contentRight = PAGE.width - PAGE.margin;
-        const columnGap = 8;
-        const columnWidth = (contentRight - PAGE.margin - columnGap) / 2;
-        const leftX = PAGE.margin;
-        const rightX = PAGE.margin + columnWidth + columnGap;
+        const contentLeft = PAGE.margin;
+        const contentWidth = PAGE.width - PAGE.margin * 2;
+        const columnGap = 6;
+        const columnWidth = (contentWidth - columnGap) / 2;
+        const leftX = contentLeft;
+        const rightX = contentLeft + columnWidth + columnGap;
+        const footerReserve = PAGE.margin + PAGE.footerHeight + 4;
+        const maxContentY = PAGE.height - footerReserve;
 
         let y = drawTitleRow(doc, model, PAGE.margin + 2);
 
-        const diagramMaxW = 88;
-        const diagramMaxH = 42;
-        y = drawWallDiagram(doc, model.wallState, diagramMaxW, diagramMaxH, leftX, y + 2);
-        y += 3;
+        let summaryCardCount = 5;
+        let summaryCardHeight = 27;
+        let visualMaxH = 46;
+        const estimatedDetailsHeight = 58;
 
-        const leftRows = buildLeftColumnRows(model);
-        const resolutionRows = buildResolutionRows(model);
-        const processorRows = buildProcessorRows(model, model.wallState);
-        const powerRows = buildPowerRows(model.wallState);
+        let projectedBottom = y + 5 + summaryCardHeight + 3 + visualMaxH + 22 + estimatedDetailsHeight;
+        if (projectedBottom > maxContentY) {
+            visualMaxH = 38;
+            projectedBottom = y + 5 + summaryCardHeight + 3 + visualMaxH + 22 + estimatedDetailsHeight;
+        }
+        if (projectedBottom > maxContentY) {
+            summaryCardCount = 4;
+            projectedBottom = y + 5 + summaryCardHeight + 3 + visualMaxH + 22 + estimatedDetailsHeight;
+        }
+        if (projectedBottom > maxContentY) {
+            summaryCardCount = 3;
+            visualMaxH = 34;
+        }
 
-        const columnStartY = y;
-        const compact = { rowGap: 3.8, titleGap: 4.5, fontSize: 7, valueFontSize: 7, labelWidth: 34 };
+        y = drawProjectSummary(doc, summaryCards, y, {
+            cardCount: summaryCardCount,
+            cardHeight: summaryCardHeight
+        });
 
-        let leftBottom = drawSection(doc, 'Wall Overview', leftRows, leftX, columnStartY, columnWidth, compact);
+        y = drawWallVisual(doc, wallState, y + 2, visualMaxH);
 
-        let rightY = columnStartY;
-        rightY = drawSection(doc, 'Resolution', resolutionRows, rightX, rightY, columnWidth, compact);
-        rightY = drawSection(doc, 'Processor / Ports', processorRows, rightX, rightY + 1, columnWidth, {
-            ...compact,
+        const detailCompact = {
+            rowGap: 3,
+            titleGap: 3.8,
+            fontSize: 6.2,
+            valueFontSize: 6.2,
+            labelWidth: 32
+        };
+
+        const cabinetRows = buildCabinetDetailRows(model);
+        const resolutionRows = buildResolutionDetailRows(model);
+        const processorRows = buildProcessorDetailRows(model, wallState);
+        const powerRows = buildPowerDetailRows(wallState);
+        const notesRows = buildNotesRows(model);
+
+        let detailStartY = y + 1;
+        let leftY = detailStartY;
+        let rightY = detailStartY;
+
+        leftY = drawDetailSection(doc, 'Cabinet Details', cabinetRows, leftX, leftY, columnWidth, detailCompact);
+        leftY = drawDetailSection(doc, 'Resolution Details', resolutionRows, leftX, leftY + 0.5, columnWidth, detailCompact);
+
+        rightY = drawDetailSection(doc, 'Processor Details', processorRows, rightX, rightY, columnWidth, {
+            ...detailCompact,
             note: model.portMapping?.length
                 ? `${formatNumber(model.portMapping.length)} port${model.portMapping.length === 1 ? '' : 's'} suggested — confirm mapping in processor software.`
                 : null
         });
-        rightY = drawSection(doc, 'Estimated Power', powerRows, rightX, rightY + 1, columnWidth, {
-            ...compact,
-            note: '20% headroom included'
+        rightY = drawDetailSection(doc, 'Power Details', powerRows, rightX, rightY + 0.5, columnWidth, {
+            ...detailCompact,
+            note: '20% headroom included on circuit capacity.'
         });
 
-        const contentBottom = Math.max(leftBottom, rightY);
+        const notesY = Math.max(leftY, rightY) + 0.5;
+        let contentBottom = notesY;
 
-        if (model.warnings?.length) {
-            let warnY = contentBottom + 2;
-            if (warnY > PAGE.height - PAGE.margin - PAGE.footerHeight - 14) {
-                doc.setFontSize(6.5);
-                compact.rowGap = 3.2;
-            }
-            const warnRows = model.warnings.slice(0, 2).map((message, index) => ({
-                label: index === 0 ? 'Review' : '',
-                value: message
-            }));
-            drawSection(doc, 'Warnings', warnRows, leftX, warnY, contentRight - PAGE.margin, {
-                ...compact,
-                labelWidth: 14,
-                rowGap: 3.2,
-                fontSize: 6.5,
-                valueFontSize: 6.5
-            });
+        if (notesRows.length && notesY < maxContentY - 10) {
+            contentBottom = drawDetailSection(
+                doc,
+                'Notes',
+                notesRows,
+                contentLeft,
+                notesY,
+                contentWidth,
+                { ...detailCompact, labelWidth: 24 }
+            );
         }
 
-        drawFooter(doc, contentBottom);
+        drawFooter(doc, Math.min(contentBottom, maxContentY));
 
         const filename = `okami-led-wall-build-sheet-${formatFilenameDate(model.exportedAt)}.pdf`;
         doc.save(filename);

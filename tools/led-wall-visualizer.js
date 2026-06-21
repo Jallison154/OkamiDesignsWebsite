@@ -901,17 +901,6 @@
         return `${feet}' ${inches}"`;
     }
 
-    function formatPortCapacity(capacity) {
-        if (capacity >= 1000000) {
-            const millions = capacity / 1000000;
-            return Number.isInteger(millions) ? `${millions}M` : `${millions.toFixed(1)}M`;
-        }
-        if (capacity >= 1000) {
-            return `${Math.round(capacity / 1000)}k`;
-        }
-        return capacity.toLocaleString();
-    }
-
     function formatPixelPair(width, height, useGrouping) {
         const w = useGrouping ? width.toLocaleString() : String(width);
         const h = useGrouping ? height.toLocaleString() : String(height);
@@ -990,115 +979,72 @@
         setText('summary-cabinet-resolution', formatPixelPair(state.pixelWidth, state.pixelHeight, false));
         setText('summary-wall-resolution', formatPixelPair(state.totalPixelWidth, state.totalPixelHeight, false));
         setText('summary-processor-ports', String(state.portsRequired));
-    }
-
-    function formatTotalPixels(totalPixels) {
-        if (totalPixels >= 1000000) {
-            const millions = totalPixels / 1000000;
-            const formatted = millions >= 10 ? millions.toFixed(1) : millions.toFixed(2);
-            return `${formatted.replace(/\.?0+$/, '')}M`;
-        }
-        if (totalPixels >= 1000) {
-            return `${Math.round(totalPixels / 1000)}k`;
-        }
-        return totalPixels.toLocaleString();
-    }
-
-    function formatPortCount(count) {
-        const label = count === 1 ? 'Port' : 'Ports';
-        return `${count} ${label}`;
-    }
-
-    function updateResults(state) {
         setText(
-            'result-wall-primary',
+            'summary-physical-size',
             `${formatFeetInches(state.physicalWidthFt)} × ${formatFeetInches(state.physicalHeightFt)}`
         );
-        setMultilineText('result-wall-secondary', [
-            `${state.panelsWide} × ${state.panelsTall}`,
-            `${state.totalPanels.toLocaleString()} panels`
-        ]);
-        setText(
-            'result-resolution-primary',
-            formatPixelPair(state.totalPixelWidth, state.totalPixelHeight, true)
-        );
-        setMultilineText('result-resolution-secondary', [
-            `${formatTotalPixels(state.totalPixels)} pixels`,
-            state.closestRatio.label
-        ]);
-        setText('result-processor-primary', formatPortCount(state.portsRequired));
-        setMultilineText('result-processor-secondary', [
-            `${state.portFillThreshold}% max fill`,
-            `${formatPortCapacity(state.usablePixelsPerPort)} usable/port`,
-            `${formatPortCapacity(state.portCapacity)} max/port`
-        ]);
-        updatePowerResults(state);
+        setText('summary-port-utilization', formatPercentLabel(state.peakPortUtilizationPercent, 'peak'));
+        setText('summary-power', `${formatWatts(state.totalEstimatedWatts)} · ${state.circuitsRequired} circuits`);
+    }
+
+    function formatPercentLabel(value, label) {
+        if (!Number.isFinite(value)) {
+            return '—';
+        }
+        return `${value.toFixed(1)}% ${label}`;
+    }
+
+    function applyProjectSummaryCard(key, card) {
+        if (!card) {
+            return;
+        }
+
+        const titleEl = document.getElementById(`result-${key}-title`);
+        if (titleEl && card.title) {
+            titleEl.textContent = card.title;
+        }
+
+        setText(`result-${key}-primary`, card.primary || '—');
+        setMultilineText(`result-${key}-secondary`, card.lines || []);
+    }
+
+    function updateProjectSummary(state, inputs) {
+        const Summary = window.OkamiLedWallCalculator?.WallProjectSummary;
+        if (!Summary?.buildProjectSummary) {
+            return;
+        }
+
+        const summary = Summary.buildProjectSummary(state, inputs || gatherInputs());
+        applyProjectSummaryCard('wall', summary.wall);
+        applyProjectSummaryCard('resolution', summary.resolution);
+        applyProjectSummaryCard('processor', summary.processor);
+        applyProjectSummaryCard('power', summary.power);
+        applyProjectSummaryCard('content-fit', summary.contentFit);
+
+        const fitCard = document.getElementById('result-content-fit-card');
+        if (fitCard) {
+            fitCard.classList.toggle('led-result-card--inactive', !summary.contentFit?.configured);
+        }
+
+        updateOverlayDebug(state);
     }
 
     function formatWatts(watts) {
+        const Summary = window.OkamiLedWallCalculator?.WallProjectSummary;
+        if (Summary?.formatWatts) {
+            return Summary.formatWatts(watts);
+        }
         if (!Number.isFinite(watts)) {
             return '—';
         }
         return `${Math.round(watts).toLocaleString()} W`;
     }
 
-    function formatAmps(amps) {
-        if (!Number.isFinite(amps)) {
-            return '—';
-        }
-        return `${amps.toFixed(1)} A`;
-    }
-
-    function updatePowerResults(state) {
-        const title = document.getElementById('result-power-card-title');
-        const ampLabel = Number.isFinite(state.circuitAmperage) && state.circuitAmperage > 0
-            ? `${state.circuitAmperage}A`
-            : 'Circuit';
-
-        if (title) {
-            title.textContent = `Power · ${ampLabel}`;
-        }
-
-        const headroom = Number.isFinite(state.circuitHeadroomPercent)
-            ? state.circuitHeadroomPercent
-            : (100 - (state.circuitSafeLoadPercent || 80));
-
-        setText('result-power-primary', formatWatts(state.totalEstimatedWatts));
-        setMultilineText('result-power-secondary', [
-            `${formatAmps(state.totalEstimatedAmps)} total`,
-            `${state.circuitsRequired} estimated circuits required`,
-            `${Math.round(state.usableWattsPerCircuit || 0).toLocaleString()} W usable/circuit (${state.circuitSafeLoadPercent}% safe load)`,
-            `${headroom}% headroom included`
-        ]);
-    }
-
     function setMultilineText(id, lines) {
         const el = document.getElementById(id);
         if (el) {
-            el.textContent = lines.join('\n');
+            el.textContent = (lines || []).filter(Boolean).join('\n');
         }
-    }
-
-    function updateContentFit(state) {
-        const fitCard = document.getElementById('result-content-fit-card');
-        if (!fitCard) {
-            return;
-        }
-
-        if (!state.overlay) {
-            fitCard.hidden = true;
-            updateOverlayDebug(state);
-            return;
-        }
-
-        fitCard.hidden = false;
-        const usedPercent = Math.round(state.overlay.usedPercentage);
-        setText('result-content-fit-primary', `${usedPercent}% Used`);
-        setMultilineText('result-content-fit-secondary', [
-            state.overlayFormatLabel,
-            formatPixelPair(state.overlay.overlayPixelWidth, state.overlay.overlayPixelHeight, false)
-        ]);
-        updateOverlayDebug(state);
     }
 
     function isCabinetNumbersEnabled() {
@@ -1419,24 +1365,15 @@
             return;
         }
 
+        const { leftPercent, topPercent, widthPercent, heightPercent } = state.overlay;
+        const Summary = window.OkamiLedWallCalculator?.WallProjectSummary;
+        const labelText = Summary?.getOverlayReferenceLabel?.(state.overlayFormatLabel, 'preview')
+            || `${state.overlayFormatLabel || '16:9'} Content Area`;
+
         layer.hidden = false;
-        const { leftPercent, topPercent, widthPercent, heightPercent, unusedHorizontal, unusedVertical } = state.overlay;
-        const shades = [];
-
-        if (unusedVertical > 0) {
-            shades.push(`<div class="led-overlay-shade" style="left:0;top:0;width:100%;height:${topPercent}%;"></div>`);
-            shades.push(`<div class="led-overlay-shade" style="left:0;top:${topPercent + heightPercent}%;width:100%;height:${100 - topPercent - heightPercent}%;"></div>`);
-        }
-
-        if (unusedHorizontal > 0) {
-            shades.push(`<div class="led-overlay-shade" style="left:0;top:${topPercent}%;width:${leftPercent}%;height:${heightPercent}%;"></div>`);
-            shades.push(`<div class="led-overlay-shade" style="left:${leftPercent + widthPercent}%;top:${topPercent}%;width:${100 - leftPercent - widthPercent}%;height:${heightPercent}%;"></div>`);
-        }
-
         layer.innerHTML = `
-            ${shades.join('')}
             <div class="led-overlay-frame" style="left:${leftPercent}%;top:${topPercent}%;width:${widthPercent}%;height:${heightPercent}%;">
-                <span class="led-overlay-label">${state.overlayFormatLabel}</span>
+                <span class="led-overlay-label">${labelText}</span>
             </div>
         `;
     }
@@ -1447,9 +1384,9 @@
         }
 
         const state = getState();
+        const inputs = gatherInputs();
         updateQuickStartUI(state);
-        updateResults(state);
-        updateContentFit(state);
+        updateProjectSummary(state, inputs);
         renderPreview(state);
     }
 

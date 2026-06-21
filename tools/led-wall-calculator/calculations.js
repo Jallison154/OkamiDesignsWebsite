@@ -290,6 +290,49 @@
     }
 
     /**
+     * Aggregate port fill and processor capacity usage for UI and exports.
+     */
+    function summarizePortLoading(state = {}) {
+        const portsRequired = Math.max(0, Math.round(Number(state.portsRequired) || 0));
+        const usablePixelsPerPort = Math.max(0, Math.floor(Number(state.usablePixelsPerPort) || 0));
+        const totalPixels = Math.max(0, Math.round(Number(state.totalPixels) || 0));
+        const portCapacity = Math.max(0, Math.round(Number(state.portCapacity) || 0));
+
+        if (!portsRequired || !usablePixelsPerPort || !totalPixels) {
+            return {
+                avgPortUtilizationPercent: null,
+                peakPortUtilizationPercent: null,
+                processorLoadingPercent: null
+            };
+        }
+
+        let assignedPixels = 0;
+        let peakFill = 0;
+        let fillSum = 0;
+
+        for (let portNum = 1; portNum <= portsRequired; portNum += 1) {
+            const remaining = totalPixels - assignedPixels;
+            const portPixels = portNum === portsRequired
+                ? remaining
+                : Math.min(usablePixelsPerPort, remaining);
+            const fillPercent = (portPixels / usablePixelsPerPort) * 100;
+            peakFill = Math.max(peakFill, fillPercent);
+            fillSum += fillPercent;
+            assignedPixels += portPixels;
+        }
+
+        const processorLoadingPercent = portCapacity > 0
+            ? (totalPixels / (portsRequired * portCapacity)) * 100
+            : null;
+
+        return {
+            avgPortUtilizationPercent: fillSum / portsRequired,
+            peakPortUtilizationPercent: peakFill,
+            processorLoadingPercent
+        };
+    }
+
+    /**
      * Which preview artwork matches cabinet dimensions (square, tall, or custom).
      */
     function calculateCabinetArtworkType(inputs = {}) {
@@ -383,6 +426,11 @@
             portFillThreshold: rawInputs.portFillThreshold
         });
 
+        const portLoading = summarizePortLoading({
+            ...processor,
+            totalPixels: wall.totalPixels
+        });
+
         const overlayTarget = resolveOverlayTargetRatio(rawInputs);
         const overlay = overlayTarget
             ? calculateContentOverlay({
@@ -406,6 +454,7 @@
             aspectRatio: aspect.ratio,
             closestRatio: aspect.closestRatio,
             ...processor,
+            ...portLoading,
             ...power,
             overlayFormat: rawInputs.overlayFormat ?? 'none',
             overlayFormatLabel: overlayTarget ? overlayTarget.label : null,
@@ -434,6 +483,7 @@
         calculateContentOverlay,
         calculatePortFill,
         calculateProcessorPorts,
+        summarizePortLoading,
         calculatePowerRequirements,
         calculateCabinetArtworkType,
         computeWallProject
