@@ -48,6 +48,33 @@
         return pathValue === ADMIN_LOGIN_PAGE || pathValue === ADMIN_ANALYTICS_PAGE;
     }
 
+    function getSettingsHelpers() {
+        if (typeof module !== 'undefined' && module.exports) {
+            try {
+                return require('../settings/site-settings');
+            } catch {
+                return null;
+            }
+        }
+        return global.OkamiShared?.Settings || null;
+    }
+
+    function isPageVisible(settings, pageKey) {
+        const helpers = getSettingsHelpers();
+        if (helpers?.isPageVisible) {
+            return helpers.isPageVisible(settings, pageKey);
+        }
+
+        const entry = settings?.pages?.[pageKey];
+        if (entry == null) {
+            return true;
+        }
+        if (typeof entry === 'boolean') {
+            return entry !== false;
+        }
+        return entry.visible !== false;
+    }
+
     function getRegistry() {
         if (typeof module !== 'undefined' && module.exports) {
             try {
@@ -134,7 +161,7 @@
             return { allowed: false, reason: 'home' };
         }
 
-        if (pathValue.startsWith('tools/') && settings.pages?.tools === false) {
+        if (pathValue.startsWith('tools/') && !isPageVisible(settings, 'tools')) {
             return { allowed: false, reason: 'hidden' };
         }
 
@@ -142,7 +169,7 @@
         if (!pageKey && input.pathname) {
             pageKey = getPageKeyFromPath(normalizeVisibilityPath(input.pathname));
         }
-        if (pageKey && settings.pages?.[pageKey] === false) {
+        if (pageKey && !isPageVisible(settings, pageKey)) {
             return { allowed: false, reason: 'hidden' };
         }
 
@@ -214,6 +241,7 @@
         isExplicitIndexPath,
         isConstructionLandingPath,
         isAdminRoutePath,
+        isPageVisible,
         getAccessDecision,
         resolvePublicLandingPage,
         resolveRouteDecision,

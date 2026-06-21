@@ -180,11 +180,34 @@
         return targetPath;
     }
 
+    function isPageVisible(settings, pageKey) {
+        if (settingsApi?.isPageVisible) {
+            return settingsApi.isPageVisible(settings, pageKey);
+        }
+        if (visibilityApi?.isPageVisible) {
+            return visibilityApi.isPageVisible(settings, pageKey);
+        }
+        const entry = settings?.pages?.[pageKey];
+        if (entry == null) {
+            return true;
+        }
+        if (typeof entry === 'boolean') {
+            return entry !== false;
+        }
+        return entry.visible !== false;
+    }
+
+    function getSortedNavKeys(settings, keys) {
+        if (settingsApi?.getNavKeysSorted) {
+            return settingsApi.getNavKeysSorted(settings, keys);
+        }
+        return [...keys];
+    }
+
     function getSettingsSignature(settings) {
         return JSON.stringify({
             constructionMode: Boolean(settings?.constructionMode),
-            pages: settings?.pages || {},
-            pageOrder: settings?.pageOrder || []
+            pages: settings?.pages || {}
         });
     }
 
@@ -270,17 +293,13 @@
             return settingsApi.mergeSettings(raw);
         }
 
-        const pages = { ...DEFAULT_SITE_SETTINGS.pages, ...(raw?.pages || {}) };
-        Object.keys(DEFAULT_SITE_SETTINGS.pages).forEach((key) => {
-            pages[key] = pages[key] !== false;
-        });
+        const pages = settingsApi?.normalizePages
+            ? settingsApi.normalizePages(raw?.pages, raw?.pageOrder)
+            : { ...DEFAULT_SITE_SETTINGS.pages, ...(raw?.pages || {}) };
 
         return {
             constructionMode: Boolean(raw?.constructionMode),
             pages,
-            pageOrder: settingsApi?.normalizePageOrder
-                ? settingsApi.normalizePageOrder(raw?.pageOrder)
-                : (Array.isArray(raw?.pageOrder) ? raw.pageOrder : []),
             updatedAt: raw?.updatedAt || null
         };
     }
@@ -421,12 +440,12 @@
             return { allowed: false, reason: 'home' };
         }
 
-        if (isToolsPath(pathname) && settings.pages.tools === false) {
+        if (isToolsPath(pathname) && !isPageVisible(settings, 'tools')) {
             return { allowed: false, reason: 'hidden' };
         }
 
         const pageKey = getPageKeyFromPath(pathname);
-        if (pageKey && settings.pages[pageKey] === false) {
+        if (pageKey && !isPageVisible(settings, pageKey)) {
             return { allowed: false, reason: 'hidden' };
         }
 
@@ -646,6 +665,13 @@
                 });
             });
         });
+
+        const donateItem = registryApi?.DONATE_NAV_ITEM;
+        if (donateItem) {
+            document.querySelectorAll(`[data-nav-page-key="${donateItem.key}"]`).forEach((link) => {
+                link.dataset.navPageKey = donateItem.key;
+            });
+        }
     }
 
     function findNavLinksForPath(path) {
@@ -655,127 +681,148 @@
         return document.querySelectorAll(selectors.join(', '));
     }
 
-    function applyNavOrder(settings) {
-        const pageOrder = registryApi?.normalizePageOrder
-            ? registryApi.normalizePageOrder(settings?.pageOrder)
-            : (settings?.pageOrder || registryApi?.getDefaultPageOrder?.() || []);
+    function createTopNavLink(item, isMobile) {
+        const link = document.createElement('a');
+        link.href = item.url;
+        link.dataset.navPageKey = item.key;
+        link.textContent = item.navLabel;
 
-        const pagesByKey = registryApi?.PUBLIC_PAGES
-            ? Object.fromEntries(registryApi.PUBLIC_PAGES.map((page) => [page.key, page]))
-            : null;
-
-        if (!pagesByKey) {
-            return;
+        if (item.isContactBtn) {
+            link.className = 'nav-link contact-btn';
+        } else if (item.isDonateBtn || item.key === 'donate') {
+            link.className = 'nav-link nav-donate-link';
+        } else if (isMobile && item.key !== 'contact') {
+            link.className = 'nav-link';
+        } else {
+            link.className = 'nav-link';
         }
 
-        function reorderTopLevelNav(navRoot) {
-            if (!navRoot) {
+        if (item.external) {
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+        }
+
+        return link;
+    }
+
+    function ensureTopNavItems(navRoot, isMobile) {
+        const topNavKeys = registryApi?.getTopNavItemKeys?.() || [];
+        topNavKeys.forEach((key) => {
+            const item = registryApi?.getNavItemDefinition?.(key);
+            if (!item || item.isToolsDropdown) {
                 return;
             }
 
-            pageOrder.forEach((key) => {
-                const page = pagesByKey[key];
-                if (!page) {
+            const selector = `[data-nav-page-key="${key}"]`;
+            if (navRoot.querySelector(selector)) {
+                return;
+            }
+
+            const existing = item.external
+                ? null
+                : navRoot.querySelector(`a.nav-link[href="${item.url}"], a.contact-btn[href="${item.url}"]`);
+
+            if (existing) {
+                existing.dataset.navPageKey = key;
+                return;
+            }
+
+            navRoot.appendChild(createTopNavLink({
+                ...item,
+                isContactBtn: item.isContactBtn || key === 'contact',
+                isDonateBtn: key === 'donate'
+            }, isMobile));
+        });
+    }
+
+    function getTopNavElement(navRoot, key, isMobile) {
+        if (key === 'tools') {
+            return navRoot.querySelector(isMobile ? ':scope > .nav-mobile-group' : ':scope > .nav-dropdown');
+        }
+
+        const keyed = navRoot.querySelector(`:scope > [data-nav-page-key="${key}"]`);
+        if (keyed) {
+            return keyed;
+        }
+
+        const item = registryApi?.getNavItemDefinition?.(key);
+        if (!item || item.external) {
+            return navRoot.querySelector(`:scope > [data-nav-page-key="${key}"]`);
+        }
+
+        return navRoot.querySelector(
+            `:scope > a.nav-link[href="${item.url}"], :scope > a.contact-btn[href="${item.url}"]`
+        );
+    }
+
+    function applyNavOrderFromSettings(settings) {
+        const topNavKeys = registryApi?.getTopNavItemKeys?.() || [];
+        const sortedKeys = getSortedNavKeys(settings, topNavKeys);
+
+        document.querySelectorAll('nav.nav, nav.nav-mobile').forEach((navRoot) => {
+            const isMobile = navRoot.classList.contains('nav-mobile');
+            ensureTopNavItems(navRoot, isMobile);
+
+            sortedKeys.forEach((key) => {
+                if (!isPageVisible(settings, key)) {
                     return;
                 }
 
-                if (key === 'tools') {
-                    const toolsBlock = navRoot.querySelector(':scope > .nav-dropdown, :scope > .nav-mobile-group');
-                    if (toolsBlock) {
-                        navRoot.appendChild(toolsBlock);
-                    }
-                    return;
-                }
-
-                const href = page.publicPath || '/';
-                const link = navRoot.querySelector(
-                    `:scope > a.nav-link[href="${href}"], :scope > a.contact-btn[href="${href}"]`
-                );
-                if (link) {
-                    navRoot.appendChild(link);
+                const element = getTopNavElement(navRoot, key, isMobile);
+                if (element) {
+                    navRoot.appendChild(element);
                 }
             });
-        }
+        });
 
-        function reorderToolLinks(menuRoot) {
-            if (!menuRoot) {
-                return;
-            }
-
+        const toolKeys = getSortedNavKeys(settings, TOOL_PAGE_KEYS);
+        document.querySelectorAll('.nav-dropdown-menu, .nav-mobile-submenu').forEach((menuRoot) => {
             const toolsHub = menuRoot.querySelector('[data-tools-hub]');
             if (toolsHub) {
                 menuRoot.insertBefore(toolsHub, menuRoot.firstChild);
             }
 
-            pageOrder
-                .filter((key) => TOOL_PAGE_KEYS.includes(key))
-                .forEach((key) => {
-                    const link = menuRoot.querySelector(`[data-tool-key="${key}"]`);
-                    if (link) {
-                        menuRoot.appendChild(link);
-                    }
-                });
-        }
-
-        document.querySelectorAll('nav.nav').forEach(reorderTopLevelNav);
-        document.querySelectorAll('nav.nav-mobile').forEach(reorderTopLevelNav);
-        document.querySelectorAll('.nav-dropdown-menu, .nav-mobile-submenu').forEach(reorderToolLinks);
+            toolKeys.forEach((key) => {
+                const link = menuRoot.querySelector(`[data-tool-key="${key}"]`);
+                if (link) {
+                    menuRoot.appendChild(link);
+                }
+            });
+        });
     }
 
     function applyNavigation(settings) {
-        const pages = settings.pages;
-        const skipNavKeys = new Set(['tools', ...TOOL_PAGE_KEYS]);
+        const topNavKeys = registryApi?.getTopNavItemKeys?.() || [];
 
-        applyNavOrder(settings);
+        applyNavOrderFromSettings(settings);
         ensureNavPageKeys();
 
-        if (registryApi?.PUBLIC_PAGES?.length) {
-            registryApi.PUBLIC_PAGES.forEach((page) => {
-                if (skipNavKeys.has(page.key)) {
+        topNavKeys.forEach((key) => {
+            document.querySelectorAll(`[data-nav-page-key="${key}"]`).forEach((link) => {
+                if (link.classList.contains('nav-dropdown-item') || link.classList.contains('nav-sublink')) {
                     return;
                 }
-
-                document.querySelectorAll(`[data-nav-page-key="${page.key}"]`).forEach((link) => {
-                    setNavItemVisible(link, pages[page.key] !== false);
-                });
+                setNavItemVisible(link, isPageVisible(settings, key));
             });
-        } else {
-            Object.entries(getNavigationPagePaths()).forEach(([pageKey, paths]) => {
-                if (skipNavKeys.has(pageKey)) {
-                    return;
-                }
-
-                paths.forEach((path) => {
-                    findNavLinksForPath(path).forEach((link) => {
-                        if (link.classList.contains('nav-dropdown-item') || link.classList.contains('nav-sublink')) {
-                            return;
-                        }
-                        setNavItemVisible(link, pages[pageKey] !== false);
-                    });
-                });
-            });
-        }
+        });
 
         document.querySelectorAll('[data-tool-key]').forEach((link) => {
             const pageKey = link.dataset.toolKey;
-            if (!pageKey || !Object.prototype.hasOwnProperty.call(pages, pageKey)) {
+            if (!pageKey) {
                 return;
             }
-            setNavItemVisible(link, pages[pageKey] !== false);
+            setNavItemVisible(link, isPageVisible(settings, pageKey));
         });
 
         document.querySelectorAll('[data-tools-hub]').forEach((link) => {
-            setNavItemVisible(link, pages.tools !== false);
+            setNavItemVisible(link, isPageVisible(settings, 'tools'));
         });
 
-        const anyToolVisible = TOOL_PAGE_KEYS.some((key) => pages[key] !== false);
-        const showToolsMenu = pages.tools !== false && anyToolVisible;
+        const anyToolVisible = TOOL_PAGE_KEYS.some((key) => isPageVisible(settings, key));
+        const showToolsMenu = isPageVisible(settings, 'tools') && anyToolVisible;
 
-        document.querySelectorAll('.nav-dropdown').forEach((dropdown) => {
+        document.querySelectorAll('.nav-dropdown, .nav-mobile-group').forEach((dropdown) => {
             setNavItemVisible(dropdown, showToolsMenu);
-        });
-        document.querySelectorAll('.nav-mobile-group').forEach((group) => {
-            setNavItemVisible(group, showToolsMenu);
         });
 
         document.querySelectorAll('[data-tools-card]').forEach((card) => {
@@ -784,10 +831,14 @@
                 return;
             }
             const visible = pageKey === 'tools'
-                ? pages.tools !== false
-                : pages[pageKey] !== false;
+                ? isPageVisible(settings, 'tools')
+                : isPageVisible(settings, pageKey);
             card.hidden = !visible;
             card.style.display = visible ? '' : 'none';
+        });
+
+        document.querySelectorAll('.okami-site-footer').forEach((footer) => {
+            setNavItemVisible(footer, isPageVisible(settings, 'donate'));
         });
     }
 

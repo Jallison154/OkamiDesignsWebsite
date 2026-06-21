@@ -49,6 +49,16 @@
             trackAnalytics: true
         },
         {
+            key: 'prints',
+            title: '3D Prints',
+            navLabel: '3D PRINTS',
+            filePaths: ['3d-prints.html'],
+            publicPath: '/3d-prints',
+            analyticsPath: '/3d-prints',
+            canonicalPath: '/3d-prints',
+            trackAnalytics: true
+        },
+        {
             key: 'ledVideoWallCalculator',
             title: 'LED Video Wall Calculator',
             filePaths: ['tools/led-wall-visualizer.html'],
@@ -70,13 +80,37 @@
         }
     ];
 
-    const EXTRA_PUBLIC_ROUTES = [
-        {
-            filePath: '3d-prints.html',
-            publicPath: '/3d-prints',
-            analyticsPath: '/3d-prints',
-            canonicalPath: '/3d-prints'
-        }
+    const EXTRA_PUBLIC_ROUTES = [];
+
+    const DONATE_NAV_ITEM = {
+        key: 'donate',
+        title: 'Donate',
+        navLabel: 'Donate',
+        url: 'https://ko-fi.com/okamidesigns',
+        external: true,
+        inTopNav: true
+    };
+
+    const TOP_NAV_ITEM_KEYS = [
+        'home',
+        'services',
+        'tools',
+        'prints',
+        'support',
+        'contact',
+        'donate'
+    ];
+
+    const ADMIN_NAV_ITEM_KEYS = [
+        'home',
+        'services',
+        'tools',
+        'prints',
+        'support',
+        'contact',
+        'donate',
+        'ledVideoWallCalculator',
+        'okamiSignalLab'
     ];
 
     const LEGACY_HTML_REDIRECTS = {
@@ -352,6 +386,53 @@
         return order;
     }
 
+    function getNavItemDefinition(key) {
+        if (key === DONATE_NAV_ITEM.key) {
+            return { ...DONATE_NAV_ITEM };
+        }
+
+        const page = PUBLIC_PAGES.find((entry) => entry.key === key);
+        if (!page) {
+            return null;
+        }
+
+        return {
+            key: page.key,
+            title: page.title,
+            navLabel: page.navLabel || page.title.toUpperCase(),
+            url: page.publicPath || '/',
+            external: false,
+            inTopNav: TOP_NAV_ITEM_KEYS.includes(page.key),
+            isToolsDropdown: page.key === 'tools',
+            isContactBtn: page.key === 'contact',
+            isDonateBtn: false
+        };
+    }
+
+    function getTopNavItemKeys() {
+        return TOP_NAV_ITEM_KEYS.slice();
+    }
+
+    function getAdminNavItemKeys() {
+        return ADMIN_NAV_ITEM_KEYS.slice();
+    }
+
+    function getAdminNavItems() {
+        return ADMIN_NAV_ITEM_KEYS
+            .map((key) => getNavItemDefinition(key))
+            .filter(Boolean);
+    }
+
+    function formatNavItemPath(item) {
+        if (!item) {
+            return '/';
+        }
+        if (item.external) {
+            return item.url;
+        }
+        return item.url || '/';
+    }
+
     function getPublicServeRoutes() {
         const routes = PUBLIC_PAGES
             .filter((page) => page.publicPath && page.publicPath !== '/')
@@ -413,6 +494,14 @@
         isPublicCleanPath,
         isManagedPublicRequest,
         getPublicPathForFilePath,
+        DONATE_NAV_ITEM,
+        TOP_NAV_ITEM_KEYS,
+        ADMIN_NAV_ITEM_KEYS,
+        getNavItemDefinition,
+        getTopNavItemKeys,
+        getAdminNavItemKeys,
+        getAdminNavItems,
+        formatNavItemPath,
         getPublicServeRoutes,
         resolvePage,
         getPageKeyFromPathValue,

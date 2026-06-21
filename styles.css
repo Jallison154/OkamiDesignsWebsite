@@ -364,7 +364,7 @@ a.contact-btn.nav-item-hidden {
     left: 0;
 }
 
-.nav-support-link {
+.nav-donate-link {
     font-size: 12px;
     font-weight: 600;
     letter-spacing: 0.04em;
@@ -376,18 +376,18 @@ a.contact-btn.nav-item-hidden {
     transition: color 0.25s ease, border-color 0.25s ease, background 0.25s ease;
 }
 
-.nav-support-link::before {
+.nav-donate-link::before {
     display: none;
 }
 
-.nav-support-link:hover,
-.nav-support-link:focus {
+.nav-donate-link:hover,
+.nav-donate-link:focus {
     color: var(--accent-color);
     border-color: rgba(255, 106, 45, 0.45);
     background: rgba(255, 106, 45, 0.1);
 }
 
-.nav-mobile .nav-support-link {
+.nav-mobile .nav-donate-link {
     width: 100%;
     text-align: center;
     margin-top: 4px;
@@ -482,7 +482,7 @@ a.contact-btn.nav-item-hidden {
 }
 
 @media (max-width: 768px) {
-    .nav-support-link {
+    .nav-donate-link {
         font-size: 11px;
         padding: 7px 12px;
     }
@@ -2435,6 +2435,31 @@ html {
     font-family: 'JetBrains Mono', monospace;
 }
 
+.visibility-page-kind {
+    font-size: 11px;
+    color: var(--secondary-text);
+    opacity: 0.75;
+}
+
+.visibility-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+}
+
+.visibility-secondary-button {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: var(--secondary-text);
+}
+
+.visibility-secondary-button:hover,
+.visibility-secondary-button:focus {
+    border-color: rgba(255, 106, 45, 0.45);
+    color: var(--primary-text);
+}
+
 .visibility-switch {
     display: inline-flex;
     align-items: center;
@@ -2484,13 +2509,6 @@ html {
     letter-spacing: 0.4px;
     color: var(--secondary-text);
     min-width: 48px;
-}
-
-.visibility-actions {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
 }
 
 .visibility-save-status {

@@ -60,23 +60,16 @@
         return {
             constructionMode: false,
             pages: {
-                home: true,
-                services: true,
-                tools: true,
-                support: true,
-                contact: true,
-                ledVideoWallCalculator: true,
-                okamiSignalLab: true
-            },
-            pageOrder: [
-                'home',
-                'services',
-                'support',
-                'contact',
-                'tools',
-                'ledVideoWallCalculator',
-                'okamiSignalLab'
-            ]
+                home: { visible: true, navOrder: 1 },
+                tools: { visible: true, navOrder: 2 },
+                prints: { visible: true, navOrder: 3 },
+                support: { visible: true, navOrder: 4 },
+                contact: { visible: true, navOrder: 5 },
+                donate: { visible: true, navOrder: 6 },
+                services: { visible: true, navOrder: 7 },
+                ledVideoWallCalculator: { visible: true, navOrder: 8 },
+                okamiSignalLab: { visible: true, navOrder: 9 }
+            }
         };
     }
 
@@ -86,51 +79,68 @@
             return api.mergeSettings(raw);
         }
 
-        const defaults = getDefaultSiteSettings();
-        const pages = { ...defaults.pages, ...(raw?.pages || {}) };
-        Object.keys(defaults.pages).forEach((key) => {
-            pages[key] = pages[key] !== false;
-        });
-
-        return {
-            constructionMode: Boolean(raw?.constructionMode),
-            pages,
-            pageOrder: Array.isArray(raw?.pageOrder) ? raw.pageOrder : defaults.pageOrder.slice()
-        };
+        return getDefaultSiteSettings();
     }
 
-    function formatVisibilityPath(page) {
-        if (page.analyticsPath) {
-            return page.analyticsPath;
+    function isPageVisible(settings, pageKey) {
+        const api = getSettingsApi();
+        if (api?.isPageVisible) {
+            return api.isPageVisible(settings, pageKey);
         }
-        const filePath = page.filePaths?.[0];
-        return filePath ? `/${filePath}` : '/';
+        const entry = settings?.pages?.[pageKey];
+        if (entry == null) {
+            return true;
+        }
+        if (typeof entry === 'boolean') {
+            return entry !== false;
+        }
+        return entry.visible !== false;
     }
 
-    function getVisibilityPageOrder(settings) {
-        if (window.OkamiPageRegistry?.normalizePageOrder) {
-            return window.OkamiPageRegistry.normalizePageOrder(settings?.pageOrder);
+    function formatNavItemPath(item) {
+        if (window.OkamiPageRegistry?.formatNavItemPath) {
+            return window.OkamiPageRegistry.formatNavItemPath(item);
         }
-        if (window.OkamiShared?.Settings?.normalizePageOrder) {
-            return window.OkamiShared.Settings.normalizePageOrder(settings?.pageOrder);
+        if (item?.external) {
+            return item.url;
         }
-        return window.OkamiPageRegistry?.PUBLIC_PAGES?.map((page) => page.key) || [];
+        return item?.url || '/';
     }
 
-    function buildVisibilityPageRow(page, isVisible) {
-        const pathLabel = formatVisibilityPath(page);
+    function getAdminNavItems(settings) {
+        const registryItems = window.OkamiPageRegistry?.getAdminNavItems?.();
+        if (!registryItems?.length) {
+            return [];
+        }
+
+        const api = getSettingsApi();
+        const keys = registryItems.map((item) => item.key);
+        const sortedKeys = api?.getAdminItemKeysSorted
+            ? api.getAdminItemKeysSorted(settings, keys)
+            : keys;
+
+        const itemsByKey = Object.fromEntries(registryItems.map((item) => [item.key, item]));
+        return sortedKeys.map((key) => itemsByKey[key]).filter(Boolean);
+    }
+
+    function buildVisibilityPageRow(item, settings) {
+        const pathLabel = formatNavItemPath(item);
+        const isVisible = isPageVisible(settings, item.key);
+        const pathHint = item.external ? 'External link' : 'Site page';
+
         return `
-            <div class="visibility-page-row" data-page-key="${escapeHtml(page.key)}">
+            <div class="visibility-page-row" data-page-key="${escapeHtml(item.key)}">
                 <div class="visibility-page-order" aria-label="Reorder page">
-                    <button type="button" class="visibility-order-btn visibility-order-up" data-page-key="${escapeHtml(page.key)}" aria-label="Move ${escapeHtml(page.title)} up">↑</button>
-                    <button type="button" class="visibility-order-btn visibility-order-down" data-page-key="${escapeHtml(page.key)}" aria-label="Move ${escapeHtml(page.title)} down">↓</button>
+                    <button type="button" class="visibility-order-btn visibility-order-up" data-page-key="${escapeHtml(item.key)}" aria-label="Move ${escapeHtml(item.title)} up">↑</button>
+                    <button type="button" class="visibility-order-btn visibility-order-down" data-page-key="${escapeHtml(item.key)}" aria-label="Move ${escapeHtml(item.title)} down">↓</button>
                 </div>
                 <div class="visibility-page-info">
-                    <span class="visibility-page-name">${escapeHtml(page.title)}</span>
+                    <span class="visibility-page-name">${escapeHtml(item.title)}</span>
                     <span class="visibility-page-path">${escapeHtml(pathLabel)}</span>
+                    <span class="visibility-page-kind">${escapeHtml(pathHint)}</span>
                 </div>
                 <label class="visibility-switch">
-                    <input type="checkbox" class="visibility-page-toggle" data-page-key="${escapeHtml(page.key)}"${isVisible ? ' checked' : ''}>
+                    <input type="checkbox" class="visibility-page-toggle" data-page-key="${escapeHtml(item.key)}"${isVisible ? ' checked' : ''}>
                     <span class="visibility-switch-slider" aria-hidden="true"></span>
                     <span class="visibility-switch-text">Visible</span>
                 </label>
@@ -205,18 +215,14 @@
             return;
         }
 
-        const pages = window.OkamiPageRegistry?.PUBLIC_PAGES;
-        if (!pages?.length) {
+        const normalized = normalizeSiteSettings(settings);
+        const items = getAdminNavItems(normalized);
+        if (!items.length) {
             return;
         }
 
-        const normalized = normalizeSiteSettings(settings);
-        const order = getVisibilityPageOrder(normalized);
-        const pagesByKey = Object.fromEntries(pages.map((page) => [page.key, page]));
-        const sortedPages = order.map((key) => pagesByKey[key]).filter(Boolean);
-
-        container.innerHTML = sortedPages
-            .map((page) => buildVisibilityPageRow(page, normalized.pages[page.key] !== false))
+        container.innerHTML = items
+            .map((item) => buildVisibilityPageRow(item, normalized))
             .join('');
 
         bindVisibilityOrderButtons(container);
@@ -542,31 +548,54 @@
         loadSiteVisibilitySettings();
     }
 
-    function readPageOrderFromList() {
+    function readVisibilityRowsFromList() {
         const container = document.getElementById('visibility-page-list');
         if (!container) {
-            return getVisibilityPageOrder(getDefaultSiteSettings());
+            return [];
         }
 
-        return [...container.querySelectorAll('.visibility-page-row')]
-            .map((row) => row.dataset.pageKey)
-            .filter(Boolean);
+        return [...container.querySelectorAll('.visibility-page-row')].map((row) => {
+            const pageKey = row.dataset.pageKey;
+            const toggle = row.querySelector('.visibility-page-toggle');
+            return {
+                key: pageKey,
+                visible: Boolean(toggle?.checked)
+            };
+        }).filter((row) => row.key);
     }
 
     function readSiteVisibilityForm() {
         const constructionToggle = document.getElementById('construction-mode-toggle');
         const settings = normalizeSiteSettings(getDefaultSiteSettings());
         settings.constructionMode = Boolean(constructionToggle?.checked);
-        settings.pageOrder = getVisibilityPageOrder({ pageOrder: readPageOrderFromList() });
 
-        document.querySelectorAll('.visibility-page-toggle').forEach((toggle) => {
-            const pageKey = toggle.dataset.pageKey;
-            if (pageKey && Object.prototype.hasOwnProperty.call(settings.pages, pageKey)) {
-                settings.pages[pageKey] = toggle.checked;
-            }
-        });
+        const api = getSettingsApi();
+        if (api?.buildPagesFromOrderedRows) {
+            settings.pages = api.buildPagesFromOrderedRows(readVisibilityRowsFromList());
+        } else {
+            readVisibilityRowsFromList().forEach((row, index) => {
+                if (settings.pages[row.key]) {
+                    settings.pages[row.key].visible = row.visible;
+                    settings.pages[row.key].navOrder = index + 1;
+                }
+            });
+        }
 
         return settings;
+    }
+
+    function resetNavigationOrder() {
+        const api = getSettingsApi();
+        const current = readSiteVisibilityForm();
+        const resetPages = api?.resetNavigationOrder
+            ? api.resetNavigationOrder(current.pages)
+            : getDefaultSiteSettings().pages;
+
+        applySiteVisibilityForm({
+            ...current,
+            pages: resetPages
+        });
+        setVisibilitySaveStatus('Navigation order reset to defaults. Save Settings to apply.');
     }
 
     function applySiteVisibilityForm(settings) {
@@ -756,6 +785,12 @@
         if (constructionToggle && constructionToggle.dataset.bound !== 'true') {
             constructionToggle.addEventListener('change', () => updateConstructionToggleState(constructionToggle));
             constructionToggle.dataset.bound = 'true';
+        }
+
+        const resetButton = document.getElementById('reset-nav-order');
+        if (resetButton && resetButton.dataset.bound !== 'true') {
+            resetButton.addEventListener('click', resetNavigationOrder);
+            resetButton.dataset.bound = 'true';
         }
     }
 

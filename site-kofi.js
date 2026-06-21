@@ -19,17 +19,6 @@
         return link;
     }
 
-    function injectHeaderSupportLinks() {
-        document.querySelectorAll('.nav .contact-btn, .nav-mobile .contact-btn').forEach((contactLink) => {
-            const nav = contactLink.parentElement;
-            if (!nav || nav.querySelector('.nav-support-link')) {
-                return;
-            }
-
-            nav.insertBefore(createKofiAnchor('nav-link nav-support-link', '☕ Support'), contactLink);
-        });
-    }
-
     function injectSiteFooter() {
         if (document.querySelector('.okami-site-footer')) {
             return;
@@ -38,7 +27,8 @@
         const footer = document.createElement('footer');
         footer.className = 'okami-site-footer';
         footer.setAttribute('aria-label', 'Site footer');
-        footer.appendChild(createKofiAnchor('okami-site-footer-kofi-link', '☕ Support on Ko-fi'));
+        footer.dataset.navPageKey = 'donate';
+        footer.appendChild(createKofiAnchor('okami-site-footer-kofi-link', '☕ Donate on Ko-fi'));
 
         const particles = document.getElementById('particles-js');
         if (particles?.parentNode) {
@@ -53,7 +43,6 @@
             return;
         }
 
-        injectHeaderSupportLinks();
         injectSiteFooter();
 
         if (global.SiteVisibility?.refreshNavigationSettings) {

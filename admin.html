@@ -72,7 +72,7 @@
 
                     <section class="visibility-section" id="site-visibility-section">
                         <h2 class="section-title">Site Visibility</h2>
-                        <p class="visibility-section-desc">Control which pages are public and whether visitors see the construction splash page first. Use the arrows to set navigation order. Hidden pages are blocked for everyone, including while signed in to admin.</p>
+                        <p class="visibility-section-desc">Control which pages and nav items are public, set navigation order with the arrows, and choose whether visitors see the construction splash page first.</p>
 
                         <label class="visibility-toggle" for="construction-mode-toggle">
                             <input type="checkbox" id="construction-mode-toggle">
@@ -110,6 +110,7 @@
                         <div class="visibility-page-list" id="visibility-page-list" aria-live="polite"></div>
 
                         <div class="visibility-actions">
+                            <button type="button" id="reset-nav-order" class="upload-submit-button visibility-secondary-button">Reset Navigation Order</button>
                             <button type="button" id="save-site-visibility" class="upload-submit-button">Save Settings</button>
                             <p id="visibility-save-status" class="visibility-save-status" hidden></p>
                         </div>

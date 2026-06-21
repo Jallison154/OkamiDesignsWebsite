@@ -41,6 +41,13 @@
       "monthlyViews": {},
       "lastViewedAt": null
     },
+    "/3d-prints": {
+      "title": "3D Prints",
+      "totalViews": 0,
+      "dailyViews": {},
+      "monthlyViews": {},
+      "lastViewedAt": null
+    },
     "/tools/led-video-wall-calculator": {
       "title": "LED Video Wall Calculator",
       "totalViews": 0,
@@ -123,18 +130,18 @@
     },
     "/home.html": {
       "title": "Home",
-      "totalViews": 39,
+      "totalViews": 40,
       "dailyViews": {
         "2026-06-14": 1,
         "2026-06-15": 13,
         "2026-06-16": 13,
-        "2026-06-21": 12
+        "2026-06-21": 13
       },
       "monthlyViews": {
-        "2026-06": 39
+        "2026-06": 40
       },
-      "lastViewedAt": "2026-06-21T03:52:27.922Z"
+      "lastViewedAt": "2026-06-21T04:01:04.165Z"
     }
   },
-  "updatedAt": "2026-06-21T03:52:27.922Z"
+  "updatedAt": "2026-06-21T04:01:04.165Z"
 }

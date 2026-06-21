@@ -53,7 +53,6 @@ async function handleSaveSiteSettings(req, res) {
             settings: {
                 constructionMode: settings.constructionMode,
                 pages: settings.pages,
-                pageOrder: settings.pageOrder,
                 updatedAt: settings.updatedAt || null
             }
         });
@@ -124,7 +123,6 @@ app.get('/api/site-settings', async (req, res) => {
         res.json({
             constructionMode: settings.constructionMode,
             pages: settings.pages,
-            pageOrder: settings.pageOrder,
             updatedAt: settings.updatedAt || null
         });
     } catch (error) {
