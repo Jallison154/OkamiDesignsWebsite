@@ -257,6 +257,29 @@ async function updatePageContent(html, url, anchor = '') {
         document.title = newTitle.textContent;
     }
 
+    doc.querySelectorAll('link[rel="stylesheet"]').forEach((link) => {
+        const href = link.getAttribute('href');
+        if (!href) {
+            return;
+        }
+
+        const baseHref = href.split('?')[0];
+        let stylesheet = Array.from(document.querySelectorAll('link[rel="stylesheet"]')).find((el) => {
+            const currentHref = el.getAttribute('href') || '';
+            return currentHref.split('?')[0] === baseHref;
+        });
+
+        if (!stylesheet) {
+            stylesheet = document.createElement('link');
+            stylesheet.setAttribute('rel', 'stylesheet');
+            document.head.appendChild(stylesheet);
+        }
+
+        if (stylesheet.getAttribute('href') !== href) {
+            stylesheet.setAttribute('href', href);
+        }
+    });
+
     const sanitizeNode = (node) => {
         if (!node) {
             return null;
