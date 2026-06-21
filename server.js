@@ -58,7 +58,66 @@ async function buildUniqueFilename(manifest, slugCandidate, extension, excludeId
 app.use(express.json());
 app.set('trust proxy', 1);
 
-const { normalizeVisibilityPath, getAccessDecision, buildVisibilityRedirect: sharedBuildVisibilityRedirect } = accessPolicy;
+const { normalizeVisibilityPath, getAccessDecision, buildVisibilityRedirect: sharedBuildVisibilityRedirect, resolvePublicLandingPage } = accessPolicy;
+
+const HOME_HTML = path.join(__dirname, 'home.html');
+const CONSTRUCTION_HTML = path.join(__dirname, 'index.html');
+
+function logSiteRouting(details) {
+    console.info('[Site Routing]', {
+        ...details,
+        timestamp: new Date().toISOString()
+    });
+}
+
+function describeLandingPage(landing) {
+    return landing === 'construction'
+        ? 'index.html (construction splash)'
+        : 'home.html (live site)';
+}
+
+async function logStartupSiteRouting() {
+    try {
+        const settings = await readSiteSettings();
+        const landing = resolvePublicLandingPage(settings);
+        logSiteRouting({
+            context: 'startup',
+            route: '/',
+            constructionMode: Boolean(settings.constructionMode),
+            landingPage: describeLandingPage(landing),
+            settingsSource: SITE_SETTINGS_PATH,
+            settingsUpdatedAt: settings.updatedAt || null
+        });
+    } catch (error) {
+        console.warn('[Site Routing] startup check failed:', error.message || error);
+    }
+}
+
+function serveManagedRoot(req, res, settings, pathValue, isAdmin) {
+    const landing = resolvePublicLandingPage(settings);
+
+    logSiteRouting({
+        context: 'request',
+        route: req.path,
+        constructionMode: Boolean(settings.constructionMode),
+        landingPage: describeLandingPage(landing),
+        isAdmin
+    });
+
+    setNoCacheHeaders(res);
+
+    if (landing === 'home') {
+        if (pathValue === 'index.html') {
+            if (isAdmin) {
+                return res.sendFile(CONSTRUCTION_HTML);
+            }
+            return res.redirect(302, '/');
+        }
+        return res.sendFile(HOME_HTML);
+    }
+
+    return res.sendFile(CONSTRUCTION_HTML);
+}
 
 function setNoCacheHeaders(res) {
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -108,6 +167,8 @@ async function siteVisibilityMiddleware(req, res, next) {
     }
 
     const pathValue = normalizeVisibilityPath(req.path);
+    const requestPath = req.path.toLowerCase();
+
     const isManagedPage = pathValue === ''
         || pathValue.endsWith('.html')
         || pathValue.startsWith('tools/');
@@ -118,7 +179,19 @@ async function siteVisibilityMiddleware(req, res, next) {
 
     try {
         const settings = await readSiteSettings();
-        const access = getServerAccessDecision(pathValue, settings, isAdminRequest(req));
+        const isAdmin = isAdminRequest(req);
+
+        if (requestPath === '/' || requestPath === '/index.html') {
+            const rootVariant = requestPath === '/index.html' ? 'index.html' : '';
+            serveManagedRoot(req, res, settings, rootVariant, isAdmin);
+            return;
+        }
+
+        if (!settings.constructionMode && pathValue === 'home.html' && !isAdmin) {
+            return res.redirect(301, '/');
+        }
+
+        const access = getServerAccessDecision(pathValue, settings, isAdmin);
 
         if (access.allowed) {
             return next();
@@ -156,6 +229,7 @@ app.get('/.well-known/appspecific/com.chrome.devtools.json', (_req, res) => {
 
 const STATIC_CACHE_PATTERN = /\.(?:css|js|png|jpe?g|gif|webp|svg|ico|woff2?)$/i;
 app.use(express.static('.', {
+    index: false,
     setHeaders: (res, filePath) => {
         if (/\.html$/i.test(filePath)) {
             setNoCacheHeaders(res);
@@ -857,6 +931,7 @@ app.get('/api/health', (req, res) => {
 async function prepareServer() {
     await ensureFilesDir();
     logCommercialValidation(validateCommercialConfig(readCommercialConfig()));
+    await logStartupSiteRouting();
 }
 
 function startServer() {
@@ -866,7 +941,7 @@ function startServer() {
             console.log(`📁 Files directory: ${FILES_DIR}`);
             console.log(`⚙️  Site settings: ${SITE_SETTINGS_PATH}`);
             console.log(`✅ Server ready and listening on 0.0.0.0:${PORT}`);
-            console.log(`   Cloudflare Tunnel should target http://127.0.0.1:${PORT} (not a static-only host)`);
+            console.log(`   Cloudflare Tunnel should target http://127.0.0.1:${PORT} (site root — not /index.html or a static subfolder)`);
             resolve(server);
         });
         server.on('error', reject);

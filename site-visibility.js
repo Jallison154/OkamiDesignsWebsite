@@ -132,7 +132,7 @@
     }
 
     function getSplashUrl() {
-        return window.location.pathname.includes('/tools/') ? '../index.html' : 'index.html';
+        return window.location.pathname.includes('/tools/') ? '../index.html' : '/';
     }
 
     function getNotFoundUrl() {
@@ -140,7 +140,7 @@
     }
 
     function getHomeUrl() {
-        return window.location.pathname.includes('/tools/') ? '../home.html' : 'home.html';
+        return window.location.pathname.includes('/tools/') ? '../' : '/';
     }
 
     function getAdminLoginUrl() {
@@ -205,12 +205,14 @@
     }
 
     function logVisibilityDebug(settings, context = 'init') {
+        const landing = settings?.constructionMode ? 'construction (/)' : 'home (/)';
         console.info('[Okami Site Visibility]', {
             context,
             constructionMode: Boolean(settings?.constructionMode),
             settingsSource: lastSettingsSource,
             path: window.location.pathname,
-            isAdmin: isAdminUser()
+            isAdmin: isAdminUser(),
+            selectedLandingPage: landing
         });
     }
 

@@ -97,13 +97,17 @@
         return { allowed: true, reason: null };
     }
 
+    function resolvePublicLandingPage(settings) {
+        return settings?.constructionMode ? 'construction' : 'home';
+    }
+
     function buildVisibilityRedirect(pathValue, reason) {
         const inTools = pathValue.startsWith('tools/');
         if (reason === 'home') {
-            return inTools ? '/home.html' : '/home.html';
+            return inTools ? '/' : '/';
         }
         if (reason === 'construction') {
-            return inTools ? '/index.html' : '/index.html';
+            return inTools ? '/index.html' : '/';
         }
         if (reason === 'hidden') {
             return inTools ? '/404.html' : '/404.html';
@@ -125,6 +129,7 @@
         normalizePath,
         normalizeVisibilityPath,
         getAccessDecision,
+        resolvePublicLandingPage,
         buildVisibilityRedirect,
         isSystemPage
     };

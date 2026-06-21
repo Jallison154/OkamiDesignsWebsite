@@ -2,7 +2,7 @@
     'use strict';
 
     const PUBLIC_PAGES = [
-        { key: 'home', title: 'Home', filePaths: ['home.html'], analyticsPath: '/home.html', trackAnalytics: true },
+        { key: 'home', title: 'Home', filePaths: ['home.html'], analyticsPath: '/', trackAnalytics: true, isPublicLanding: true },
         { key: 'services', title: 'Services', filePaths: ['services.html'], analyticsPath: '/services.html', trackAnalytics: true },
         { key: 'support', title: 'Support', filePaths: ['support.html'], analyticsPath: '/support.html', trackAnalytics: true },
         { key: 'contact', title: 'Contact', filePaths: ['contact.html'], analyticsPath: '/contact.html', trackAnalytics: true },
@@ -34,7 +34,8 @@
         filePaths: ['index.html'],
         analyticsPath: '/',
         trackAnalytics: true,
-        trackSeparately: true
+        trackSeparately: true,
+        constructionOnly: true
     };
 
     const EXEMPT_PATHS = new Set([
@@ -55,6 +56,9 @@
     function normalizeAnalyticsPath(pathname) {
         const filePath = normalizeFilePath(pathname);
         if (!filePath) {
+            return '/';
+        }
+        if (filePath === 'index.html') {
             return SPLASH_PAGE.analyticsPath;
         }
         for (const page of PUBLIC_PAGES) {
@@ -71,7 +75,11 @@
     function resolvePage(pathname) {
         const filePath = normalizeFilePath(pathname);
         if (!filePath) {
-            return { ...SPLASH_PAGE, filePath: '' };
+            const home = PUBLIC_PAGES.find((page) => page.key === 'home');
+            return { ...home, filePath: '' };
+        }
+        if (filePath === 'index.html') {
+            return { ...SPLASH_PAGE, filePath: 'index.html' };
         }
         for (const page of PUBLIC_PAGES) {
             if (page.filePaths.some((candidate) => candidate.toLowerCase() === filePath)) {

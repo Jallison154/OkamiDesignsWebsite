@@ -1,18 +1,17 @@
 {
   "pages": {
-    "/home.html": {
-      "title": "Home",
-      "totalViews": 29,
+    "/": {
+      "title": "Construction Splash",
+      "totalViews": 7,
       "dailyViews": {
         "2026-06-14": 1,
-        "2026-06-15": 13,
-        "2026-06-16": 13,
-        "2026-06-21": 2
+        "2026-06-15": 2,
+        "2026-06-16": 4
       },
       "monthlyViews": {
-        "2026-06": 29
+        "2026-06": 7
       },
-      "lastViewedAt": "2026-06-21T02:31:33.619Z"
+      "lastViewedAt": "2026-06-16T00:41:33.969Z"
     },
     "/services.html": {
       "title": "Services",
@@ -80,19 +79,20 @@
       },
       "lastViewedAt": "2026-06-16T06:00:38.333Z"
     },
-    "/": {
-      "title": "Construction Splash",
-      "totalViews": 7,
+    "/home.html": {
+      "title": "Home",
+      "totalViews": 30,
       "dailyViews": {
         "2026-06-14": 1,
-        "2026-06-15": 2,
-        "2026-06-16": 4
+        "2026-06-15": 13,
+        "2026-06-16": 13,
+        "2026-06-21": 3
       },
       "monthlyViews": {
-        "2026-06": 7
+        "2026-06": 30
       },
-      "lastViewedAt": "2026-06-16T00:41:33.969Z"
+      "lastViewedAt": "2026-06-21T02:37:11.145Z"
     }
   },
-  "updatedAt": "2026-06-21T02:31:33.619Z"
+  "updatedAt": "2026-06-21T02:37:11.145Z"
 }
