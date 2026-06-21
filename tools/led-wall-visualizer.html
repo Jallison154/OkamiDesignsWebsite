@@ -192,6 +192,30 @@
                                     <div class="led-advanced-divider"></div>
 
                                     <div class="led-advanced-section">
+                                        <h4 class="led-advanced-section-title">Wall Size</h4>
+                                        <div class="led-stepper-group">
+                                            <div class="led-stepper-row">
+                                                <label class="led-stepper-label" for="panels-wide-adv">Panels Wide</label>
+                                                <div class="led-stepper">
+                                                    <button type="button" class="led-stepper-btn" id="panels-wide-adv-dec" aria-label="Decrease panels wide">−</button>
+                                                    <input type="number" class="led-stepper-value" id="panels-wide-adv" min="1" max="500" step="1" value="10" inputmode="numeric" aria-label="Panels wide">
+                                                    <button type="button" class="led-stepper-btn" id="panels-wide-adv-inc" aria-label="Increase panels wide">+</button>
+                                                </div>
+                                            </div>
+                                            <div class="led-stepper-row">
+                                                <label class="led-stepper-label" for="panels-tall-adv">Panels High</label>
+                                                <div class="led-stepper">
+                                                    <button type="button" class="led-stepper-btn" id="panels-tall-adv-dec" aria-label="Decrease panels high">−</button>
+                                                    <input type="number" class="led-stepper-value" id="panels-tall-adv" min="1" max="500" step="1" value="6" inputmode="numeric" aria-label="Panels high">
+                                                    <button type="button" class="led-stepper-btn" id="panels-tall-adv-inc" aria-label="Increase panels high">+</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="led-advanced-divider"></div>
+
+                                    <div class="led-advanced-section">
                                         <h4 class="led-advanced-section-title">Custom Cabinet Dimensions</h4>
                                         <div class="led-advanced-grid">
                                             <div class="led-advanced-field">
@@ -352,19 +376,20 @@
                                     </div>
 
                                     <div class="led-advanced-section" id="led-custom-spacing-settings" hidden>
-                                        <h4 class="led-advanced-section-title">LED Spacing</h4>
-                                        <div class="led-advanced-grid">
-                                            <div class="led-advanced-field">
-                                                <label class="led-stepper-label" for="custom-spacing-horizontal-mm">Horizontal LED Spacing</label>
+                                        <h4 class="led-advanced-section-title">Custom LED Spacing</h4>
+                                        <p class="led-advanced-help">Used for custom pixel spacing calculations.</p>
+                                        <div class="led-pitch-cards">
+                                            <div class="led-pitch-card">
+                                                <label class="led-pitch-card-label" for="custom-spacing-horizontal-mm">Horizontal Pitch</label>
                                                 <div class="led-advanced-input">
-                                                    <input type="number" id="custom-spacing-horizontal-mm" min="0.01" step="0.1" value="2.6" title="Horizontal distance between LED pixels in millimeters">
+                                                    <input type="number" id="custom-spacing-horizontal-mm" min="0.01" step="0.1" value="2.6" inputmode="decimal" aria-label="Horizontal pitch in millimeters">
                                                     <span class="led-advanced-unit">mm</span>
                                                 </div>
                                             </div>
-                                            <div class="led-advanced-field">
-                                                <label class="led-stepper-label" for="custom-spacing-vertical-mm">Vertical LED Spacing</label>
+                                            <div class="led-pitch-card">
+                                                <label class="led-pitch-card-label" for="custom-spacing-vertical-mm">Vertical Pitch</label>
                                                 <div class="led-advanced-input">
-                                                    <input type="number" id="custom-spacing-vertical-mm" min="0.01" step="0.1" value="2.6" title="Vertical distance between LED pixels in millimeters">
+                                                    <input type="number" id="custom-spacing-vertical-mm" min="0.01" step="0.1" value="2.6" inputmode="decimal" aria-label="Vertical pitch in millimeters">
                                                     <span class="led-advanced-unit">mm</span>
                                                 </div>
                                             </div>
@@ -392,7 +417,6 @@
                                 <button type="button" class="led-btn led-btn-secondary" id="led-load-project">Load Project</button>
                                 <input type="file" id="led-load-project-input" accept="application/json,.json" hidden>
                                 <button type="button" class="led-btn led-btn-secondary" id="led-download-build-sheet-pdf">Download PDF Build Sheet</button>
-                                <button type="button" class="led-btn led-btn-secondary" id="led-export-build-sheet-print">Print Build Sheet</button>
                                 <button type="button" class="led-btn led-btn-secondary" id="led-export-report">Export Report</button>
                             </div>
                         </div>
@@ -445,6 +469,7 @@
                             </div>
                             <div class="led-result-card led-result-card--summary" id="result-processor-card">
                                 <h3 class="led-result-card-title" id="result-processor-title">Processor</h3>
+                                <span class="led-result-badge" id="result-processor-badge" hidden></span>
                                 <div class="led-result-body">
                                     <p class="led-result-primary" id="result-processor-primary">—</p>
                                     <p class="led-result-secondary led-result-secondary--stacked" id="result-processor-secondary">—</p>
@@ -489,14 +514,14 @@
     <script src="../client/commercial/commercial-gate.js"></script>
     <script src="../client/commercial/license-panel.js"></script>
     <script src="../client/desktop/shell-bridge.js"></script>
-    <script src="led-wall-calculator/constants.js?v=20260709"></script>
-    <script src="led-wall-calculator/calculations.js?v=20260709"></script>
-    <script src="led-wall-calculator/metrics.js?v=20260709"></script>
-    <script src="led-wall-calculator/project-io.js?v=20260709"></script>
-    <script src="led-wall-calculator/build-sheet-export.js?v=20260709"></script>
-    <script src="led-wall-calculator/wall-project-summary.js?v=20260709"></script>
-    <script src="vendor/jspdf.umd.min.js?v=20260709"></script>
-    <script src="led-wall-calculator/build-sheet-pdf.js?v=20260709"></script>
-    <script src="led-wall-visualizer.js?v=20260709"></script>
+    <script src="led-wall-calculator/constants.js?v=20260711"></script>
+    <script src="led-wall-calculator/calculations.js?v=20260711"></script>
+    <script src="led-wall-calculator/metrics.js?v=20260711"></script>
+    <script src="led-wall-calculator/project-io.js?v=20260711"></script>
+    <script src="led-wall-calculator/build-sheet-export.js?v=20260711"></script>
+    <script src="led-wall-calculator/wall-project-summary.js?v=20260711"></script>
+    <script src="vendor/jspdf.umd.min.js?v=20260711"></script>
+    <script src="led-wall-calculator/build-sheet-pdf.js?v=20260711"></script>
+    <script src="led-wall-visualizer.js?v=20260711"></script>
 </body>
 </html>

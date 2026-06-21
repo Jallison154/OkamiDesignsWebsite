@@ -169,8 +169,16 @@
         if (card.tertiary) {
             drawCenteredLines(doc, [card.tertiary], x, textY, width, {
                 fontSize: 6.2,
-                fontStyle: 'italic',
+                fontStyle: 'normal',
                 color: COLORS.muted
+            });
+        }
+
+        if (card.badge) {
+            drawCenteredLines(doc, [card.badge], x, textY + (card.tertiary ? 3.2 : 0.5), width, {
+                fontSize: 5.5,
+                fontStyle: 'bold',
+                color: COLORS.orange
             });
         }
     }

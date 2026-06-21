@@ -37,7 +37,16 @@
     };
 
     const ADV_FIELD_IDS = Object.keys(ADV_TO_HIDDEN_FIELDS);
-    const PANEL_COUNT_IDS = ['panels-wide', 'panels-tall'];
+    const PANEL_COUNT_CANONICAL = {
+        'panels-wide-adv': 'panels-wide',
+        'panels-tall-adv': 'panels-tall'
+    };
+    const PANEL_COUNT_STEPPERS = [
+        { input: 'panels-wide', dec: 'panels-wide-dec', inc: 'panels-wide-inc' },
+        { input: 'panels-tall', dec: 'panels-tall-dec', inc: 'panels-tall-inc' },
+        { input: 'panels-wide-adv', dec: 'panels-wide-adv-dec', inc: 'panels-wide-adv-inc' },
+        { input: 'panels-tall-adv', dec: 'panels-tall-adv-dec', inc: 'panels-tall-adv-inc' }
+    ];
 
     const OVERLAY_DEBUG = new URLSearchParams(window.location.search).has('debug');
     const CABINET_NUMBERS_SESSION_KEY = 'led-show-cabinet-numbers';
@@ -68,6 +77,8 @@
         });
 
         initQuickStart();
+        initPanelCountControls();
+        syncPanelCountFields();
         initShowCabinetNumbers();
         initCabinetArt();
 
@@ -147,10 +158,6 @@
 
         document.getElementById('led-download-build-sheet-pdf')?.addEventListener('click', () => {
             void downloadBuildSheetPdf();
-        });
-
-        document.getElementById('led-export-build-sheet-print')?.addEventListener('click', () => {
-            void exportBuildSheetPrint();
         });
 
         const stage = document.getElementById('led-preview-stage');
@@ -265,13 +272,15 @@
                 }
             });
         });
+    }
 
-        document.getElementById('panels-wide-dec')?.addEventListener('click', () => adjustPanelCount('panels-wide', -1));
-        document.getElementById('panels-wide-inc')?.addEventListener('click', () => adjustPanelCount('panels-wide', 1));
-        document.getElementById('panels-tall-dec')?.addEventListener('click', () => adjustPanelCount('panels-tall', -1));
-        document.getElementById('panels-tall-inc')?.addEventListener('click', () => adjustPanelCount('panels-tall', 1));
+    function initPanelCountControls() {
+        PANEL_COUNT_STEPPERS.forEach(({ input, dec, inc }) => {
+            document.getElementById(dec)?.addEventListener('click', () => adjustPanelCount(input, -1));
+            document.getElementById(inc)?.addEventListener('click', () => adjustPanelCount(input, 1));
+        });
 
-        PANEL_COUNT_IDS.forEach((id) => {
+        getAllPanelCountInputIds().forEach((id) => {
             const input = document.getElementById(id);
             input?.addEventListener('input', () => onPanelCountInput(id));
             input?.addEventListener('blur', () => onPanelCountBlur(id));
@@ -282,6 +291,23 @@
                 }
             });
         });
+    }
+
+    function getAllPanelCountInputIds() {
+        return PANEL_COUNT_STEPPERS.map(({ input }) => input);
+    }
+
+    function getPanelCountSiblings(id) {
+        const canonical = PANEL_COUNT_CANONICAL[id] || id;
+        if (canonical === 'panels-wide') {
+            return ['panels-wide', 'panels-wide-adv'];
+        }
+        return ['panels-tall', 'panels-tall-adv'];
+    }
+
+    function syncPanelCountFields() {
+        setInputValue('panels-wide-adv', readInt('panels-wide', DEFAULTS.panelsWide));
+        setInputValue('panels-tall-adv', readInt('panels-tall', DEFAULTS.panelsTall));
     }
 
     function syncAdvFromHidden() {
@@ -356,6 +382,7 @@
         setInputValue('cabinet-height-mm', snapshot.cabinetHeightMM);
         setInputValue('panels-wide', snapshot.panelsWide);
         setInputValue('panels-tall', snapshot.panelsTall);
+        syncPanelCountFields();
         syncAdvFromHidden();
     }
 
@@ -410,12 +437,15 @@
     }
 
     function getPanelCountDefault(id) {
-        return id === 'panels-wide' ? DEFAULTS.panelsWide : DEFAULTS.panelsTall;
+        const canonical = PANEL_COUNT_CANONICAL[id] || id;
+        return canonical === 'panels-wide' ? DEFAULTS.panelsWide : DEFAULTS.panelsTall;
     }
 
     function setPanelCount(id, value) {
         const next = clampPanelCount(value);
-        setInputValue(id, next);
+        getPanelCountSiblings(id).forEach((siblingId) => {
+            setInputValue(siblingId, next);
+        });
         updateAll();
     }
 
@@ -454,16 +484,20 @@
     }
 
     function syncPanelCountInputs(state) {
-        PANEL_COUNT_IDS.forEach((id) => {
-            const input = document.getElementById(id);
-            if (!input || document.activeElement === input) {
-                return;
-            }
+        [
+            { ids: getPanelCountSiblings('panels-wide'), value: state.panelsWide },
+            { ids: getPanelCountSiblings('panels-tall'), value: state.panelsTall }
+        ].forEach(({ ids, value }) => {
+            ids.forEach((id) => {
+                const input = document.getElementById(id);
+                if (!input || document.activeElement === input) {
+                    return;
+                }
 
-            const value = id === 'panels-wide' ? state.panelsWide : state.panelsTall;
-            if (parseInt(input.value, 10) !== value) {
-                input.value = value;
-            }
+                if (parseInt(input.value, 10) !== value) {
+                    input.value = value;
+                }
+            });
         });
     }
 
@@ -591,6 +625,7 @@
 
     function openAdvancedView() {
         advancedViewOpen = true;
+        syncPanelCountFields();
         document.getElementById('led-config-swap')?.classList.add('is-advanced');
         document.querySelector('.wall-configuration-card')?.classList.add('is-advanced-open');
         const quickStart = document.getElementById('led-quick-start');
@@ -636,6 +671,7 @@
         setCustomSpacingVertical(DEFAULTS.meshPitchVerticalMM);
         setInputValue('panels-wide', DEFAULTS.panelsWide);
         setInputValue('panels-tall', DEFAULTS.panelsTall);
+        syncPanelCountFields();
         document.getElementById('auto-calculate-resolution').checked = DEFAULTS.autoCalculateResolution;
         setInputValue('pixel-width', DEFAULTS.pixelWidth);
         setInputValue('pixel-height', DEFAULTS.pixelHeight);
@@ -796,20 +832,6 @@
         }
     }
 
-    function exportBuildSheetPrint() {
-        try {
-            const BuildSheet = window.OkamiLedWallCalculator?.BuildSheetExport;
-            if (!BuildSheet?.openPrintView) {
-                throw new Error('Build sheet print view is unavailable.');
-            }
-
-            const { inputs, state, options } = buildSheetExportOptions();
-            BuildSheet.openPrintView(inputs, state, options);
-        } catch (error) {
-            window.alert(error.message || 'Could not open build sheet for printing. Please try again.');
-        }
-    }
-
     function applyProjectInputs(inputs = {}) {
         const data = inputs || {};
 
@@ -824,6 +846,7 @@
         setInputValue('project-name', data.projectName ?? '');
         setInputValue('panels-wide', data.panelsWide ?? DEFAULTS.panelsWide);
         setInputValue('panels-tall', data.panelsTall ?? DEFAULTS.panelsTall);
+        syncPanelCountFields();
         setInputValue('pixel-width', data.pixelWidth ?? DEFAULTS.pixelWidth);
         setInputValue('pixel-height', data.pixelHeight ?? DEFAULTS.pixelHeight);
         setInputValue('port-capacity', data.portCapacity ?? DEFAULTS.portCapacity);
@@ -1012,31 +1035,17 @@
         }
 
         setText(`result-${key}-primary`, card.primary || '—');
+        setMultilineText(`result-${key}-secondary`, card.lines || []);
 
-        const secondaryEl = document.getElementById(`result-${key}-secondary`);
-        if (!secondaryEl) {
-            return;
-        }
-
-        secondaryEl.textContent = '';
-
-        if (card.emphasis) {
-            const emphasisEl = document.createElement('strong');
-            emphasisEl.className = 'led-result-emphasis';
-            emphasisEl.textContent = card.emphasis;
-            secondaryEl.appendChild(emphasisEl);
-        }
-
-        const detailLines = (card.lines || []).filter(Boolean);
-        if (detailLines.length) {
-            if (card.emphasis) {
-                secondaryEl.appendChild(document.createTextNode('\n'));
+        const badgeEl = document.getElementById(`result-${key}-badge`);
+        if (badgeEl) {
+            if (card.badge) {
+                badgeEl.textContent = card.badge;
+                badgeEl.hidden = false;
+            } else {
+                badgeEl.textContent = '';
+                badgeEl.hidden = true;
             }
-            secondaryEl.appendChild(document.createTextNode(detailLines.join('\n')));
-        }
-
-        if (!card.emphasis && !detailLines.length) {
-            secondaryEl.textContent = '—';
         }
     }
 

@@ -40,7 +40,7 @@
         return `${Number(amps).toFixed(1)} A`;
     }
 
-    function formatPercent(value, digits = 1) {
+    function formatPercent(value, digits = 0) {
         if (!hasValue(value)) {
             return null;
         }
@@ -59,6 +59,20 @@
             return `${Math.round(capacity / 1000)}k px`;
         }
         return `${formatNumber(capacity)} px`;
+    }
+
+    function formatPortCapacityShort(capacity) {
+        if (!hasValue(capacity)) {
+            return null;
+        }
+        if (capacity >= 1000000) {
+            const millions = capacity / 1000000;
+            return Number.isInteger(millions) ? `${millions}M` : `${millions.toFixed(1)}M`;
+        }
+        if (capacity >= 1000) {
+            return `${Math.round(capacity / 1000)}k`;
+        }
+        return formatNumber(capacity);
     }
 
     function formatPixelPair(width, height) {
@@ -98,69 +112,79 @@
         return `${unusedV}px Top/Bottom · ${unusedH}px Side Letterbox`;
     }
 
+    function describeContentFitCompact(overlay) {
+        if (!overlay) {
+            return null;
+        }
+
+        const unusedH = Math.round(overlay.unusedHorizontal || 0);
+        const unusedV = Math.round(overlay.unusedVertical || 0);
+
+        if (unusedH === 0 && unusedV === 0) {
+            return 'Exact fit';
+        }
+        if (unusedV > 0 && unusedH === 0) {
+            return `${unusedV}px letterbox`;
+        }
+        if (unusedH > 0 && unusedV === 0) {
+            return `${unusedH}px letterbox`;
+        }
+        return `${unusedV}px letterbox`;
+    }
+
     function buildContentFitSection(state, inputs) {
         const formatLabel = state.overlayFormatLabel || '16:9';
         const title = `${formatLabel} Reference Fit`;
         const overlayFormat = inputs?.overlayFormat ?? state.overlayFormat ?? 'none';
-        const referenceNote = 'Reference only — does not change wall size.';
 
         if (!state.overlay) {
-            if (overlayFormat === 'none') {
-                return {
-                    title,
-                    configured: false,
-                    primary: 'Not configured',
-                    lines: ['Enable overlay in Advanced settings', referenceNote]
-                };
-            }
             return {
                 title,
                 configured: false,
-                primary: '—',
-                lines: ['Overlay not calculated', referenceNote]
+                primary: overlayFormat === 'none' ? 'Not configured' : '—',
+                lines: []
             };
         }
 
         const overlay = state.overlay;
-        const fitStatus = describeContentFitStatus(overlay);
-        const lines = [
-            `${Math.round(overlay.usedPercentage)}% of wall used`,
-            fitStatus,
-            referenceNote
-        ].filter(Boolean);
+        const compactFit = describeContentFitCompact(overlay);
 
         return {
             title,
             configured: true,
             primary: formatPixelPair(overlay.overlayPixelWidth, overlay.overlayPixelHeight),
-            lines
+            lines: [
+                `${Math.round(overlay.usedPercentage)}% wall used`,
+                compactFit
+            ].filter(Boolean)
         };
     }
 
-    function buildProcessorSummaryLines(state) {
+    function buildProcessorSummarySection(state) {
         const threshold = hasValue(state.portFillThreshold) ? state.portFillThreshold : 90;
+        const portsRequired = state.portsRequired;
+        const portWord = portsRequired === 1 ? 'Port' : 'Ports';
+        const usableShort = formatPortCapacityShort(state.usablePixelsPerPort);
         const safePeak = state.peakSafeCapacityUsedPercent ?? state.peakPortUtilizationPercent;
-        const usablePort = formatPortCapacity(state.usablePixelsPerPort);
-        const maxPort = formatPortCapacity(state.portCapacity);
-        const lines = [];
 
-        if (hasValue(safePeak)) {
-            lines.push(`${formatPercent(safePeak)} of ${threshold}% safe capacity`);
-        }
-        if (usablePort && maxPort) {
-            lines.push(`${usablePort} usable / ${maxPort} max per port`);
-        }
-        if (hasValue(state.peakRawMaxLoadPercent)) {
-            lines.push(`Actual max port load: ${formatPercent(state.peakRawMaxLoadPercent)}`);
-        }
-        if (hasValue(state.processorPortHeadroomPercent)) {
-            lines.push(`Safety headroom: ${formatPercent(state.processorPortHeadroomPercent)}`);
-        }
+        const lines = [
+            `${threshold}% safe limit`,
+            usableShort ? `${usableShort} usable/port` : null
+        ].filter(Boolean);
+
+        let badge = null;
         if (state.atSafePortLimit || (hasValue(safePeak) && safePeak >= 99.5)) {
-            lines.push('At safe limit — add another port for more headroom.');
+            badge = 'At Limit';
+        } else if (hasValue(safePeak) && safePeak >= 95) {
+            badge = 'Add Port';
         }
 
-        return lines;
+        return {
+            title: 'Processor',
+            primary: hasValue(portsRequired) ? `${formatNumber(portsRequired)} ${portWord}` : '—',
+            lines,
+            badge
+        };
     }
 
     function buildPowerSummarySection(state) {
@@ -172,43 +196,17 @@
         const circuitWord = circuitsRequired === 1 ? 'Circuit' : 'Circuits';
         const title = hasValue(circuitAmperage) ? `Power • ${circuitAmperage}A` : 'Power';
 
-        const primary = hasValue(circuitsRequired)
-            ? `${formatNumber(circuitsRequired)} ${circuitWord}`
-            : '—';
-
-        const emphasis = hasValue(state.totalEstimatedWatts)
-            ? `${formatWatts(state.totalEstimatedWatts)} estimated`
-            : null;
-
-        const lines = [
-            hasValue(state.totalEstimatedAmps)
-                ? `${Number(state.totalEstimatedAmps).toFixed(1)}A total`
-                : null,
-            hasValue(state.usableWattsPerCircuit)
-                ? `${formatNumber(Math.round(state.usableWattsPerCircuit))} W usable/circuit`
-                : null,
-            `${headroom}% headroom included`
-        ].filter(Boolean);
-
-        const ampsAtVoltage = hasValue(state.totalEstimatedAmps) && hasValue(state.circuitVoltage)
-            ? `${Number(state.totalEstimatedAmps).toFixed(1)}A @ ${state.circuitVoltage}V`
-            : null;
-
-        const supportingDetail = [
-            ampsAtVoltage,
-            hasValue(state.usableWattsPerCircuit)
-                ? `${formatNumber(Math.round(state.usableWattsPerCircuit))} W usable/circuit`
-                : null,
-            `${headroom}% headroom included`
-        ].filter(Boolean).join(' · ');
-
         return {
             title,
-            primary,
-            emphasis,
-            lines,
-            ampsAtVoltage,
-            supportingDetail
+            primary: hasValue(circuitsRequired)
+                ? `${formatNumber(circuitsRequired)} ${circuitWord}`
+                : '—',
+            lines: [
+                hasValue(state.totalEstimatedWatts)
+                    ? `${formatWatts(state.totalEstimatedWatts)} estimated`
+                    : null,
+                `${headroom}% headroom`
+            ].filter(Boolean)
         };
     }
 
@@ -218,45 +216,29 @@
     function buildProjectSummary(state, inputs = {}) {
         const widthFt = formatFeetInches(state.physicalWidthFt);
         const heightFt = formatFeetInches(state.physicalHeightFt);
-        const widthM = formatMetersCompact(state.physicalWidthMM);
-        const heightM = formatMetersCompact(state.physicalHeightMM);
-
         const physicalPrimary = widthFt && heightFt ? `${widthFt} × ${heightFt}` : '—';
-        const physicalMetric = widthM && heightM ? `(${widthM} × ${heightM})` : null;
 
-        const wallLines = [
-            `${state.panelsWide} × ${state.panelsTall} cabinet grid`,
-            `${formatNumber(state.totalPanels)} cabinets`
-        ];
-        if (physicalMetric) {
-            wallLines.push(physicalMetric);
-        }
-
-        const portsRequired = hasValue(state.portsRequired) ? state.portsRequired : null;
-        const portWord = portsRequired === 1 ? 'Port' : 'Ports';
-        const processorLines = buildProcessorSummaryLines(state);
+        const processor = buildProcessorSummarySection(state);
         const power = buildPowerSummarySection(state);
-
         const contentFit = buildContentFitSection(state, inputs);
 
         return {
             wall: {
                 title: 'Wall',
                 primary: physicalPrimary,
-                lines: wallLines.filter(Boolean)
+                lines: [
+                    `${state.panelsWide} × ${state.panelsTall} cabinets`,
+                    `${formatNumber(state.totalPanels)} total`
+                ]
             },
             resolution: {
                 title: 'Resolution',
                 primary: formatPixelPair(state.totalPixelWidth, state.totalPixelHeight),
                 lines: [
-                    `${formatPixelPair(state.pixelWidth, state.pixelHeight)} px per cabinet`
+                    `${formatPixelPair(state.pixelWidth, state.pixelHeight)} px/cabinet`
                 ]
             },
-            processor: {
-                title: 'Processor',
-                primary: portsRequired != null ? `${formatNumber(portsRequired)} ${portWord}` : '—',
-                lines: processorLines
-            },
+            processor,
             power,
             contentFit
         };
@@ -270,52 +252,49 @@
             {
                 title: 'Wall Size',
                 primary: summary.wall.primary,
-                secondary: summary.wall.lines.find((line) => line.startsWith('(')) || null,
-                tertiary: null
+                secondary: summary.wall.lines[0] || null,
+                tertiary: summary.wall.lines[1] || null
             },
             {
                 title: 'Resolution',
                 primary: summary.resolution.primary,
-                secondary: null,
+                secondary: summary.resolution.lines[0] || null,
                 tertiary: null
             },
             {
-                title: 'Processor Ports',
+                title: 'Processor',
                 primary: summary.processor.primary,
                 secondary: summary.processor.lines[0] || null,
-                tertiary: null
+                tertiary: summary.processor.lines[1] || null,
+                badge: summary.processor.badge
             },
             {
                 title: summary.power.title,
                 primary: summary.power.primary,
-                secondary: summary.power.emphasis,
-                secondaryBold: true,
-                tertiary: summary.power.supportingDetail || summary.power.ampsAtVoltage
+                secondary: summary.power.lines[0] || null,
+                secondaryBold: Boolean(summary.power.lines[0]),
+                tertiary: summary.power.lines[1] || null
             },
             {
                 title: summary.contentFit.title,
-                primary: summary.contentFit.configured
-                    ? summary.contentFit.primary
-                    : summary.contentFit.primary,
-                secondary: summary.contentFit.configured
-                    ? summary.contentFit.lines[0]
-                    : (summary.contentFit.lines[0] || null),
-                tertiary: summary.contentFit.configured
-                    ? summary.contentFit.lines.slice(1).join(' · ')
-                    : (summary.contentFit.lines[1] || null)
+                primary: summary.contentFit.primary,
+                secondary: summary.contentFit.lines[0] || null,
+                tertiary: summary.contentFit.lines[1] || null
             }
         ];
     }
 
     const api = {
-        buildProcessorSummaryLines,
+        buildProcessorSummarySection,
         buildPowerSummarySection,
         buildProjectSummary,
         buildKpiCards,
         describeContentFitStatus,
+        describeContentFitCompact,
         getOverlayReferenceLabel,
         getOverlayReferenceNote,
         formatPortCapacity,
+        formatPortCapacityShort,
         formatWatts,
         formatFeetInches,
         formatMetersCompact
