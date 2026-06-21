@@ -378,7 +378,8 @@
                                 <button type="button" class="led-btn led-btn-secondary" id="led-save-project">Save Project</button>
                                 <button type="button" class="led-btn led-btn-secondary" id="led-load-project">Load Project</button>
                                 <input type="file" id="led-load-project-input" accept="application/json,.json" hidden>
-                                <button type="button" class="led-btn led-btn-secondary" id="led-export-build-sheet">Export Build Sheet</button>
+                                <button type="button" class="led-btn led-btn-secondary" id="led-download-build-sheet-pdf">Download PDF Build Sheet</button>
+                                <button type="button" class="led-btn led-btn-secondary" id="led-export-build-sheet-print">Print Build Sheet</button>
                                 <button type="button" class="led-btn led-btn-secondary" id="led-export-report">Export Report</button>
                             </div>
                         </div>
@@ -480,6 +481,8 @@
     <script src="led-wall-calculator/metrics.js"></script>
     <script src="led-wall-calculator/project-io.js"></script>
     <script src="led-wall-calculator/build-sheet-export.js"></script>
-    <script src="led-wall-visualizer.js?v=20260701"></script>
+    <script src="vendor/jspdf.umd.min.js"></script>
+    <script src="led-wall-calculator/build-sheet-pdf.js"></script>
+    <script src="led-wall-visualizer.js?v=20260702"></script>
 </body>
 </html>

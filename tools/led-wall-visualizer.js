@@ -146,8 +146,12 @@
             void exportProjectReport();
         });
 
-        document.getElementById('led-export-build-sheet')?.addEventListener('click', () => {
-            void exportBuildSheet();
+        document.getElementById('led-download-build-sheet-pdf')?.addEventListener('click', () => {
+            void downloadBuildSheetPdf();
+        });
+
+        document.getElementById('led-export-build-sheet-print')?.addEventListener('click', () => {
+            void exportBuildSheetPrint();
         });
 
         const stage = document.getElementById('led-preview-stage');
@@ -756,23 +760,44 @@
         ProjectIO.downloadReport(gatherInputs(), getState());
     }
 
-    function exportBuildSheet() {
+    function buildSheetExportOptions() {
+        const logoUrl = new URL('../GFX/Full/Okami_Designs_FullW.png', window.location.href).href;
+        const inputs = gatherInputs();
+        return {
+            inputs,
+            state: getState(),
+            options: {
+                projectName: inputs.projectName,
+                logoUrl
+            }
+        };
+    }
+
+    function downloadBuildSheetPdf() {
+        try {
+            const PdfExport = window.OkamiLedWallCalculator?.BuildSheetPdf;
+            if (!PdfExport?.downloadPdf) {
+                throw new Error('PDF build sheet export is unavailable.');
+            }
+
+            const { inputs, state, options } = buildSheetExportOptions();
+            PdfExport.downloadPdf(inputs, state, options);
+        } catch (error) {
+            window.alert(error.message || 'Could not download build sheet PDF. Please try again.');
+        }
+    }
+
+    function exportBuildSheetPrint() {
         try {
             const BuildSheet = window.OkamiLedWallCalculator?.BuildSheetExport;
             if (!BuildSheet?.openPrintView) {
-                throw new Error('Build sheet export is unavailable.');
+                throw new Error('Build sheet print view is unavailable.');
             }
 
-            const inputs = gatherInputs();
-            const state = getState();
-            const logoUrl = new URL('../GFX/Full/Okami_Designs_FullW.png', window.location.href).href;
-
-            BuildSheet.openPrintView(inputs, state, {
-                projectName: inputs.projectName,
-                logoUrl
-            });
+            const { inputs, state, options } = buildSheetExportOptions();
+            BuildSheet.openPrintView(inputs, state, options);
         } catch (error) {
-            window.alert(error.message || 'Could not export build sheet. Please try again.');
+            window.alert(error.message || 'Could not open build sheet for printing. Please try again.');
         }
     }
 
