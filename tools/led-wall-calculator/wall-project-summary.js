@@ -210,6 +210,15 @@
         };
     }
 
+    function formatDualLength(feet, mm) {
+        const imperial = formatFeetInches(feet);
+        const metric = formatMetersCompact(mm);
+        if (imperial && metric) {
+            return `${imperial} · ${metric}`;
+        }
+        return imperial || metric || '—';
+    }
+
     function formatDegreeLabel(degrees) {
         if (!hasValue(degrees)) {
             return '0°';
@@ -223,28 +232,73 @@
         const heightFt = formatFeetInches(state.physicalHeightFt);
         const physicalPrimary = widthFt && heightFt ? `${widthFt} × ${heightFt}` : '—';
 
-        const lines = [
-            `${state.panelsWide} × ${state.panelsTall} cabinets`,
-            `${formatNumber(state.totalPanels)} total`
-        ];
-
-        const curvedActive = state.curvedWallActive === true;
-        if (curvedActive) {
-            const arcWidthFt = state.arcWidthFeet ?? state.physicalWidthFt;
-            lines.unshift(
-                `Curve: ${formatDegreeLabel(state.cabinetAngleDegrees)} per cabinet · ${formatDegreeLabel(state.totalCurveAngle)} total`,
-                `Depth: ${formatFeetInches(state.depthFeet)}`,
-                `Curved Width: ${formatFeetInches(state.chordWidthFeet)}`,
-                `Flat Width: ${formatFeetInches(arcWidthFt)}`
-            );
-        }
-
         return {
             title: 'Wall',
             primary: physicalPrimary,
-            lines,
-            badge: curvedActive ? 'Curved' : null
+            lines: [
+                `${state.panelsWide} × ${state.panelsTall} cabinets`,
+                `${formatNumber(state.totalPanels)} total`
+            ],
+            badge: null
         };
+    }
+
+    function buildCurvedWallSummarySection(state) {
+        if (!state.curvedWallActive) {
+            return {
+                visible: false,
+                title: 'Curved Wall',
+                primary: '—',
+                lines: [],
+                badge: null
+            };
+        }
+
+        return {
+            visible: true,
+            title: 'Curved Wall',
+            primary: formatDualLength(state.chordWidthFeet, state.chordWidthMM),
+            lines: [
+                `Venue Width Required: ${formatDualLength(state.chordWidthFeet, state.chordWidthMM)}`,
+                `Surface Width: ${formatDualLength(state.surfaceWidthFeet, state.surfaceWidthMM)}`,
+                `Curve Radius: ${formatDualLength(state.radiusFeet, state.radiusMM)}`,
+                `Curve Depth: ${formatDualLength(state.curveDepthFeet, state.curveDepthMM)}`,
+                `Total Curve Angle: ${formatDegreeLabel(state.totalCurveAngle)} (${formatDegreeLabel(state.cabinetAngleDegrees)}/cab)`
+            ],
+            badge: 'Curved'
+        };
+    }
+
+    /**
+     * Detail rows for PDF / export when curved wall mode is active.
+     */
+    function buildCurvedWallDetailRows(state) {
+        if (!state?.curvedWallActive) {
+            return [];
+        }
+
+        return [
+            {
+                label: 'Surface Width',
+                value: formatDualLength(state.surfaceWidthFeet, state.surfaceWidthMM)
+            },
+            {
+                label: 'Venue Width Required',
+                value: formatDualLength(state.chordWidthFeet, state.chordWidthMM)
+            },
+            {
+                label: 'Curve Radius',
+                value: formatDualLength(state.radiusFeet, state.radiusMM)
+            },
+            {
+                label: 'Curve Depth',
+                value: formatDualLength(state.curveDepthFeet, state.curveDepthMM)
+            },
+            {
+                label: 'Total Curve Angle',
+                value: `${formatDegreeLabel(state.totalCurveAngle)} (${formatDegreeLabel(state.cabinetAngleDegrees)} per cabinet)`
+            }
+        ];
     }
 
     /**
@@ -257,6 +311,7 @@
 
         return {
             wall: buildWallSummarySection(state),
+            curvedWall: buildCurvedWallSummarySection(state),
             resolution: {
                 title: 'Resolution',
                 primary: formatPixelPair(state.totalPixelWidth, state.totalPixelHeight),
@@ -314,6 +369,9 @@
     const api = {
         buildProcessorSummarySection,
         buildPowerSummarySection,
+        buildWallSummarySection,
+        buildCurvedWallSummarySection,
+        buildCurvedWallDetailRows,
         buildProjectSummary,
         buildKpiCards,
         describeContentFitStatus,
@@ -324,7 +382,9 @@
         formatPortCapacityShort,
         formatWatts,
         formatFeetInches,
-        formatMetersCompact
+        formatMetersCompact,
+        formatDualLength,
+        formatDegreeLabel
     };
 
     if (typeof module !== 'undefined' && module.exports) {

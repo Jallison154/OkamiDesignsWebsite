@@ -92,6 +92,7 @@
 
     const MIN_PANEL_COUNT = 1;
     const MAX_PANEL_COUNT = 500;
+    const MAX_TOTAL_CURVE_ANGLE = 180;
 
     global.OkamiLedWallCalculator = global.OkamiLedWallCalculator || {};
     global.OkamiLedWallCalculator.Constants = {
@@ -109,6 +110,7 @@
         OVERLAY_FORMAT_RATIOS,
         MIN_PANEL_COUNT,
         MAX_PANEL_COUNT,
+        MAX_TOTAL_CURVE_ANGLE,
         CABINET_ANGLE_PRESETS
     };
 })(typeof window !== 'undefined' ? window : globalThis);

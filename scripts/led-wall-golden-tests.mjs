@@ -568,12 +568,11 @@ const cases = [
                 cabinetAnglePreset: '2.5'
             });
             assertEqual(r.curvedWallActive, true, 'curvedWallActive');
-            assertNear(r.physicalWidthFt, r.arcWidthFeet, 0.001, 'physicalWidth equals arc');
-            assertNear(r.arcWidthFeet, 16 + 5 / 12, 0.05, 'arcWidthFeet ~16\'5"');
-            assertNear(r.chordWidthFeet, 16 + 3 / 12, 0.05, 'chordWidthFeet ~16\'3"');
-            assertNear(r.depthFeet, 0.891, 0.02, 'depthFeet');
-            assertNear(r.totalCurveAngle, 25, 0.01, 'totalCurveAngle');
-            assertNear(r.cabinetAngleDegrees, 2.5, 0.01, 'cabinetAngleDegrees');
+            assertNear(r.physicalWidthFt, r.surfaceWidthFeet, 0.001, 'physicalWidth equals surface');
+            assertNear(r.totalCurveAngle, 22.5, 0.01, 'totalCurveAngle');
+            assertNear(r.chordWidthFeet, 16.29, 0.05, 'chordWidthFeet');
+            assertNear(r.curveDepthFeet, 0.798, 0.03, 'curveDepthFeet');
+            assertNear(r.radiusFeet, 41.77, 0.1, 'radiusFeet');
             assertEqual(r.totalPixelWidth, 1280, 'pixels unchanged');
             assertEqual(r.portsRequired, 2, 'ports unchanged');
         }
@@ -590,7 +589,59 @@ const cases = [
             });
             assertEqual(curved.curvedWallActive, true, 'curvedWallActive');
             assertNear(curved.cabinetAngleDegrees, 5, 0.01, 'custom angle');
-            assertNear(curved.totalCurveAngle, 20, 0.01, 'totalCurveAngle');
+            assertNear(curved.totalCurveAngle, 15, 0.01, 'totalCurveAngle');
+        }
+    },
+    {
+        name: 'Curved wall single cabinet wide stays flat',
+        fn: () => {
+            const curved = Calc.calculateCurvedWallPhysical({
+                curvedWallMode: true,
+                cabinetAnglePreset: '5',
+                cabinetWidthMM: 500,
+                panelsWide: 1
+            });
+            assertEqual(curved.curvedWallActive, false, 'curvedWallActive');
+            assertNear(curved.chordWidthFeet, curved.surfaceWidthFeet, 0.001, 'chord equals surface');
+            assertEqual(curved.curveDepthFeet, 0, 'curveDepthFeet');
+        }
+    },
+    {
+        name: 'Curved wall rejects total angle over 180°',
+        fn: () => {
+            const curved = Calc.calculateCurvedWallPhysical({
+                curvedWallMode: true,
+                cabinetAnglePreset: 'custom',
+                customCabinetAngleDegrees: 30,
+                cabinetWidthMM: 500,
+                panelsWide: 10
+            });
+            assertEqual(curved.curvedWallActive, false, 'curvedWallActive');
+            assertEqual(curved.curvedWallAngleExceeded, true, 'curvedWallAngleExceeded');
+            assertNear(curved.totalCurveAngle, 270, 0.01, 'totalCurveAngle raw');
+        }
+    },
+    {
+        name: 'Curved cabinet layout returns positions for preview',
+        fn: () => {
+            const state = Calc.computeWallProject({
+                panelsWide: 6,
+                panelsTall: 2,
+                cabinetWidthMM: 500,
+                cabinetHeightMM: 500,
+                curvedWallMode: true,
+                cabinetAnglePreset: '5'
+            });
+            const layout = Calc.computeCurvedCabinetLayout(state, 600, 200);
+            if (!layout || layout.positions.length !== 6) {
+                throw new Error('layout: expected 6 cabinet positions');
+            }
+            if (Math.abs(layout.positions[0].xPx - layout.positions[1].xPx) < 1) {
+                throw new Error('layout: expected distinct x positions along arc');
+            }
+            if (layout.positions[0].rotateY === layout.positions[1].rotateY) {
+                throw new Error('layout: expected rotation to change along arc');
+            }
         }
     }
 ];

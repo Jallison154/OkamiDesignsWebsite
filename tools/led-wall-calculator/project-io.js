@@ -51,7 +51,7 @@
 
         if (state.curvedWallActive) {
             const Summary = global.OkamiLedWallCalculator?.WallProjectSummary;
-            const formatFeetInches = Summary?.formatFeetInches;
+            const formatDual = Summary?.formatDualLength;
             const formatDegree = (degrees) => {
                 const rounded = Math.round(Number(degrees) * 10) / 10;
                 return Number.isInteger(rounded) ? `${rounded}°` : `${rounded.toFixed(1)}°`;
@@ -59,10 +59,11 @@
             lines.push(
                 '',
                 'CURVED WALL',
-                `  Flat width (arc): ${formatFeetInches?.(state.arcWidthFeet) || `${state.arcWidthFeet.toFixed(2)}'`}`,
-                `  Curved width (chord): ${formatFeetInches?.(state.chordWidthFeet) || `${state.chordWidthFeet.toFixed(2)}'`}`,
-                `  Curve depth: ${formatFeetInches?.(state.depthFeet) || `${state.depthFeet.toFixed(2)}'`}`,
-                `  Curve: ${formatDegree(state.cabinetAngleDegrees)} per cabinet · ${formatDegree(state.totalCurveAngle)} total`
+                `  Surface width: ${formatDual?.(state.surfaceWidthFeet, state.surfaceWidthMM) || `${state.surfaceWidthFeet.toFixed(2)}'`}`,
+                `  Venue width required: ${formatDual?.(state.chordWidthFeet, state.chordWidthMM) || `${state.chordWidthFeet.toFixed(2)}'`}`,
+                `  Curve radius: ${formatDual?.(state.radiusFeet, state.radiusMM) || `${state.radiusFeet.toFixed(2)}'`}`,
+                `  Curve depth: ${formatDual?.(state.curveDepthFeet, state.curveDepthMM) || `${state.curveDepthFeet.toFixed(2)}'`}`,
+                `  Total curve angle: ${formatDegree(state.totalCurveAngle)} (${formatDegree(state.cabinetAngleDegrees)} per cabinet)`
             );
         }
 

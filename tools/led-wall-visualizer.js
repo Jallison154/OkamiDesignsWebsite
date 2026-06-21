@@ -10,6 +10,8 @@
         calculateContentOverlay,
         calculateCabinetArtworkType,
         computeWallProject,
+        computeCurvedCabinetLayout,
+        maxCabinetAngleForPanels,
         isCustomSpacingDisplayType
     } = Calc;
 
@@ -794,12 +796,16 @@
         return Number.isFinite(value) && value >= 0 ? value : DEFAULTS.customCabinetAngleDegrees;
     }
 
-    function updateCurvedWallControls() {
+    function updateCurvedWallControls(state) {
         const modeOn = readCurvedWallMode();
         const settings = document.getElementById('led-curved-wall-settings');
         const modeState = document.getElementById('curved-wall-mode-state');
         const customField = document.getElementById('led-custom-cabinet-angle-field');
+        const customInput = document.getElementById('custom-cabinet-angle-degrees');
+        const errorEl = document.getElementById('led-curved-wall-error');
         const preset = readCabinetAnglePreset();
+        const panelsWide = readInt('panels-wide', DEFAULTS.panelsWide);
+        const maxAngle = maxCabinetAngleForPanels(panelsWide);
 
         if (settings) {
             settings.hidden = !modeOn;
@@ -810,19 +816,53 @@
         if (customField) {
             customField.hidden = !modeOn || preset !== 'custom';
         }
+        if (customInput && panelsWide > 1) {
+            customInput.max = String(Math.round(maxAngle * 10) / 10);
+        }
+
+        if (errorEl) {
+            if (state?.curvedWallAngleExceeded && state.curvedWallValidationMessage) {
+                errorEl.textContent = state.curvedWallValidationMessage;
+                errorEl.hidden = false;
+            } else if (modeOn && preset === 'custom' && readCustomCabinetAngleDegrees() > maxAngle && panelsWide > 1) {
+                errorEl.textContent = `Cabinet angle cannot exceed ${maxAngle.toFixed(1)}° for ${panelsWide} cabinets wide (180° total max).`;
+                errorEl.hidden = false;
+            } else {
+                errorEl.textContent = '';
+                errorEl.hidden = true;
+            }
+        }
     }
 
     function initCurvedWallControls() {
         document.getElementById('curved-wall-mode')?.addEventListener('change', () => {
-            updateCurvedWallControls();
+            updateCurvedWallControls(getState());
             updateAll();
         });
         document.getElementById('cabinet-angle-preset')?.addEventListener('change', () => {
-            updateCurvedWallControls();
+            updateCurvedWallControls(getState());
             updateAll();
         });
-        document.getElementById('custom-cabinet-angle-degrees')?.addEventListener('input', updateAll);
-        updateCurvedWallControls();
+        document.getElementById('custom-cabinet-angle-degrees')?.addEventListener('input', () => {
+            updateCurvedWallControls(getState());
+            updateAll();
+        });
+        document.getElementById('custom-cabinet-angle-degrees')?.addEventListener('blur', () => {
+            const input = document.getElementById('custom-cabinet-angle-degrees');
+            const panelsWide = readInt('panels-wide', DEFAULTS.panelsWide);
+            const maxAngle = maxCabinetAngleForPanels(panelsWide);
+            if (input) {
+                const value = parseFloat(input.value);
+                if (Number.isFinite(value) && value > maxAngle) {
+                    input.value = String(Math.round(maxAngle * 10) / 10);
+                } else if (Number.isFinite(value) && value < 0) {
+                    input.value = '0';
+                }
+            }
+            updateCurvedWallControls(getState());
+            updateAll();
+        });
+        updateCurvedWallControls(getState());
     }
 
     function gatherInputs() {
@@ -963,7 +1003,7 @@
         }
         setInputValue('cabinet-angle-preset', data.cabinetAnglePreset ?? DEFAULTS.cabinetAnglePreset);
         setInputValue('custom-cabinet-angle-degrees', data.customCabinetAngleDegrees ?? DEFAULTS.customCabinetAngleDegrees);
-        updateCurvedWallControls();
+        updateCurvedWallControls(getState());
 
         const autoCalculate = document.getElementById('auto-calculate-resolution');
         if (autoCalculate) {
@@ -1007,6 +1047,9 @@
     }
 
     function getWallPhysicalAspect(state) {
+        if (state.curvedWallActive && state.chordWidthMM && state.physicalHeightMM) {
+            return state.chordWidthMM / state.physicalHeightMM;
+        }
         if (state.physicalWidthMM && state.physicalHeightMM) {
             return state.physicalWidthMM / state.physicalHeightMM;
         }
@@ -1070,7 +1113,7 @@
 
         toggleCustomFormatFields();
         applyAutoCalculateMode();
-        updateCurvedWallControls();
+        updateCurvedWallControls(state);
     }
 
     function updateQuickStartUI(state) {
@@ -1102,6 +1145,7 @@
         syncPanelCountInputs(state);
         syncAdvFromHidden();
         updateAdvancedSettings(state);
+        updateCurvedWallControls(state);
 
         const cabinetLabel = formatQuickCabinetLabel(cabinetPreset);
         const pitchLabel = formatQuickPitchLabel(state);
@@ -1164,6 +1208,17 @@
 
         const summary = Summary.buildProjectSummary(state, inputs || gatherInputs());
         applyProjectSummaryCard('wall', summary.wall);
+
+        const curvedCard = document.getElementById('result-curved-wall-card');
+        if (summary.curvedWall?.visible) {
+            if (curvedCard) {
+                curvedCard.hidden = false;
+            }
+            applyProjectSummaryCard('curved-wall', summary.curvedWall);
+        } else if (curvedCard) {
+            curvedCard.hidden = true;
+        }
+
         applyProjectSummaryCard('resolution', summary.resolution);
         applyProjectSummaryCard('processor', summary.processor);
         applyProjectSummaryCard('power', summary.power);
@@ -1376,6 +1431,49 @@
         }
     }
 
+    function resetPreviewCabinetStyles(cells) {
+        cells.forEach((cell) => {
+            cell.style.width = '';
+            cell.style.height = '';
+            cell.style.left = '';
+            cell.style.top = '';
+            cell.style.transform = '';
+            cell.classList.remove('led-cabinet--arc');
+        });
+    }
+
+    function applyCurvedPreviewLayout(wall, state, wallWidth, wallHeight) {
+        const layout = computeCurvedCabinetLayout(state, wallWidth, wallHeight);
+        if (!layout) {
+            return false;
+        }
+
+        wall.classList.add('led-preview-wall--curved');
+        wall.style.display = 'block';
+        wall.style.gridTemplateColumns = 'none';
+        wall.style.gridTemplateRows = 'none';
+
+        const cells = wall.querySelectorAll('.led-cabinet');
+        resetPreviewCabinetStyles(cells);
+
+        cells.forEach((cell, index) => {
+            const col = index % state.panelsWide;
+            const row = Math.floor(index / state.panelsWide);
+            const pos = layout.positions[col];
+            const left = pos.xPx - layout.cabinetWidthPx / 2;
+            const top = row * layout.rowHeightPx + pos.depthPx;
+
+            cell.style.width = `${layout.cabinetWidthPx}px`;
+            cell.style.height = `${layout.rowHeightPx}px`;
+            cell.style.left = `${left}px`;
+            cell.style.top = `${top}px`;
+            cell.style.transform = `rotateY(${pos.rotateY}deg)`;
+            cell.classList.add('led-cabinet--arc');
+        });
+
+        return true;
+    }
+
     function renderPreview(state) {
         const stage = document.getElementById('led-preview-stage');
         const wall = document.getElementById('led-preview-wall');
@@ -1384,6 +1482,11 @@
         }
 
         hideCabinetTooltip();
+
+        const isCurvedPreview = state.curvedWallActive === true;
+        if (stage) {
+            stage.classList.toggle('led-preview-stage--curved', isCurvedPreview);
+        }
 
         const wallPhysicalAspect = getWallPhysicalAspect(state);
         const numbersEnabled = isCabinetNumbersEnabled();
@@ -1428,8 +1531,6 @@
 
         wall.style.width = `${wallWidth}px`;
         wall.style.height = `${wallHeight}px`;
-        wall.style.gridTemplateColumns = `repeat(${state.panelsWide}, ${state.cabinetWidthMM}fr)`;
-        wall.style.gridTemplateRows = `repeat(${state.panelsTall}, ${state.cabinetHeightMM}fr)`;
 
         const totalPanels = state.totalPanels;
         const cellHeight = wallHeight / state.panelsTall;
@@ -1439,20 +1540,22 @@
 
         if (wallContainer) {
             wallContainer.classList.toggle('has-axis-labels', showAxisLabels);
+            wallContainer.classList.toggle('has-curved-preview', isCurvedPreview);
         }
         if (colAxis) {
-            colAxis.hidden = !showAxisLabels;
+            colAxis.hidden = !showAxisLabels || isCurvedPreview;
         }
         if (rowAxis) {
-            rowAxis.hidden = !showAxisLabels;
+            rowAxis.hidden = !showAxisLabels || isCurvedPreview;
         }
-        if (showAxisLabels) {
+        if (showAxisLabels && !isCurvedPreview) {
             renderAxisLabels(colAxis, rowAxis, state);
         }
 
         const existingCells = wall.querySelectorAll('.led-cabinet');
         if (existingCells.length !== totalPanels) {
             wall.textContent = '';
+            wall.classList.remove('led-preview-wall--curved');
             const fragment = document.createDocumentFragment();
 
             for (let i = 0; i < totalPanels; i++) {
@@ -1470,6 +1573,17 @@
         applyCabinetArtToWall(wall, state);
 
         const cells = wall.querySelectorAll('.led-cabinet');
+        const usingCurvedLayout = isCurvedPreview && applyCurvedPreviewLayout(wall, state, wallWidth, wallHeight);
+
+        if (!usingCurvedLayout) {
+            wall.classList.remove('led-preview-wall--curved');
+            wall.style.display = 'grid';
+            wall.style.gridTemplateColumns = `repeat(${state.panelsWide}, ${state.cabinetWidthMM}fr)`;
+            wall.style.gridTemplateRows = `repeat(${state.panelsTall}, ${state.cabinetHeightMM}fr)`;
+            resetPreviewCabinetStyles(cells);
+        }
+
+        const cellWidth = wallWidth / state.panelsWide;
         cells.forEach((cell, index) => {
             const row = Math.floor(index / state.panelsWide);
             const col = index % state.panelsWide;

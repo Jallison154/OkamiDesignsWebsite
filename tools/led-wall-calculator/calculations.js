@@ -437,6 +437,7 @@
     /**
      * Arc width, chord width, depth, and total curve angle for angled cabinets.
      * Does not affect pixel resolution or processor math.
+     * Surface width = cabinet width × cabinets wide (arc length).
      */
     function calculateCurvedWallPhysical(inputs = {}) {
         const mmPerFoot = Number(inputs.mmPerFoot) || C.MM_PER_FOOT;
@@ -444,42 +445,135 @@
         const panelsWide = clampPanelCount(Number(inputs.panelsWide) || C.DEFAULTS.panelsWide);
         const curvedWallMode = inputs.curvedWallMode === true
             || inputs.curvedWallMode === 'true';
-        const cabinetAngleDegrees = resolveCabinetAngleDegrees(inputs);
+        const cabinetAngleDegrees = Math.max(0, resolveCabinetAngleDegrees(inputs));
 
-        const cabinetWidthFeet = cabinetWidthMM / mmPerFoot;
-        const arcWidthFeet = cabinetWidthFeet * panelsWide;
+        const surfaceWidthFeet = (cabinetWidthMM / mmPerFoot) * panelsWide;
+        const surfaceWidthMM = cabinetWidthMM * panelsWide;
 
-        if (!curvedWallMode || cabinetAngleDegrees === 0) {
+        const flatResult = {
+            curvedWallMode,
+            curvedWallActive: false,
+            cabinetAngleDegrees: 0,
+            surfaceWidthFeet,
+            surfaceWidthMM,
+            arcWidthFeet: surfaceWidthFeet,
+            chordWidthFeet: surfaceWidthFeet,
+            chordWidthMM: surfaceWidthMM,
+            curveDepthFeet: 0,
+            curveDepthMM: 0,
+            depthFeet: 0,
+            totalCurveAngle: 0,
+            totalCurveAngleRadians: 0,
+            radiusFeet: null,
+            radiusMM: null,
+            curvedWallAngleExceeded: false,
+            curvedWallValidationMessage: null
+        };
+
+        if (!curvedWallMode || cabinetAngleDegrees === 0 || panelsWide <= 1) {
+            return flatResult;
+        }
+
+        const totalCurveAngle = (panelsWide - 1) * cabinetAngleDegrees;
+        if (totalCurveAngle > C.MAX_TOTAL_CURVE_ANGLE) {
             return {
-                curvedWallMode,
-                curvedWallActive: false,
-                cabinetAngleDegrees: 0,
-                arcWidthFeet,
-                chordWidthFeet: arcWidthFeet,
-                depthFeet: 0,
-                totalCurveAngle: 0,
-                radiusFeet: null
+                ...flatResult,
+                cabinetAngleDegrees,
+                totalCurveAngle,
+                curvedWallAngleExceeded: true,
+                curvedWallValidationMessage: `Total curve angle (${totalCurveAngle.toFixed(1)}°) exceeds 180°. Reduce cabinet angle or panel count.`
             };
         }
 
-        const angleRadians = cabinetAngleDegrees * Math.PI / 180;
-        const radiusFeet = cabinetWidthFeet / angleRadians;
-        const totalAngleRadians = angleRadians * panelsWide;
-        const chordWidthFeet = 2 * radiusFeet * Math.sin(totalAngleRadians / 2);
-        const totalCurveAngle = cabinetAngleDegrees * panelsWide;
-        const halfChord = chordWidthFeet / 2;
-        const depthFeet = radiusFeet - Math.sqrt(Math.max(0, (radiusFeet * radiusFeet) - (halfChord * halfChord)));
+        if (totalCurveAngle === 0) {
+            return flatResult;
+        }
+
+        const totalCurveAngleRadians = totalCurveAngle * Math.PI / 180;
+        const radiusFeet = surfaceWidthFeet / totalCurveAngleRadians;
+        const chordWidthFeet = 2 * radiusFeet * Math.sin(totalCurveAngleRadians / 2);
+        const curveDepthFeet = radiusFeet * (1 - Math.cos(totalCurveAngleRadians / 2));
 
         return {
             curvedWallMode,
             curvedWallActive: true,
             cabinetAngleDegrees,
-            arcWidthFeet,
+            surfaceWidthFeet,
+            surfaceWidthMM,
+            arcWidthFeet: surfaceWidthFeet,
             chordWidthFeet,
-            depthFeet,
+            chordWidthMM: chordWidthFeet * mmPerFoot,
+            curveDepthFeet,
+            curveDepthMM: curveDepthFeet * mmPerFoot,
+            depthFeet: curveDepthFeet,
             totalCurveAngle,
-            radiusFeet
+            totalCurveAngleRadians,
+            radiusFeet,
+            radiusMM: radiusFeet * mmPerFoot,
+            curvedWallAngleExceeded: false,
+            curvedWallValidationMessage: null
         };
+    }
+
+    /**
+     * Layout positions for curved wall preview (front view with perspective).
+     */
+    function computeCurvedCabinetLayout(state, layoutWidthPx, layoutHeightPx) {
+        const panelsWide = clampPanelCount(Number(state.panelsWide) || C.DEFAULTS.panelsWide);
+        const panelsTall = clampPanelCount(Number(state.panelsTall) || C.DEFAULTS.panelsTall);
+        const totalRad = Number(state.totalCurveAngleRadians) || 0;
+        const radiusFeet = Number(state.radiusFeet) || 0;
+        const surfaceWidthFeet = Number(state.surfaceWidthFeet) || 0;
+        const curveDepthFeet = Number(state.curveDepthFeet) || 0;
+
+        if (!state.curvedWallActive || totalRad <= 0 || radiusFeet <= 0 || panelsWide <= 1) {
+            return null;
+        }
+
+        const startRad = -totalRad / 2;
+        const angularStep = totalRad / panelsWide;
+        const cabinetWidthFeet = surfaceWidthFeet / panelsWide;
+        const footPositions = [];
+
+        for (let col = 0; col < panelsWide; col += 1) {
+            const theta = startRad + (col + 0.5) * angularStep;
+            footPositions.push({
+                x: radiusFeet * Math.sin(theta),
+                depth: radiusFeet * (1 - Math.cos(theta)),
+                rotateY: (theta * 180) / Math.PI
+            });
+        }
+
+        const minX = Math.min(...footPositions.map((p) => p.x - cabinetWidthFeet / 2));
+        const maxX = Math.max(...footPositions.map((p) => p.x + cabinetWidthFeet / 2));
+        const spanXFt = Math.max(maxX - minX, state.chordWidthFeet || surfaceWidthFeet);
+        const scale = layoutWidthPx / spanXFt;
+        const cabinetWidthPx = cabinetWidthFeet * scale;
+        const rowHeightPx = layoutHeightPx / panelsTall;
+        const depthScale = curveDepthFeet > 0 ? Math.min(scale, (layoutHeightPx * 0.12) / curveDepthFeet) : 0;
+
+        return {
+            panelsWide,
+            panelsTall,
+            cabinetWidthPx,
+            rowHeightPx,
+            positions: footPositions.map((p) => ({
+                xPx: (p.x - minX) * scale,
+                depthPx: p.depth * depthScale,
+                rotateY: p.rotateY
+            }))
+        };
+    }
+
+    /**
+     * Maximum per-cabinet angle before total curve exceeds 180°.
+     */
+    function maxCabinetAngleForPanels(panelsWide) {
+        const wide = clampPanelCount(Number(panelsWide) || C.DEFAULTS.panelsWide);
+        if (wide <= 1) {
+            return 0;
+        }
+        return C.MAX_TOTAL_CURVE_ANGLE / (wide - 1);
     }
 
     /**
@@ -604,6 +698,8 @@
         calculateCabinetArtworkType,
         resolveCabinetAngleDegrees,
         calculateCurvedWallPhysical,
+        computeCurvedCabinetLayout,
+        maxCabinetAngleForPanels,
         computeWallProject
     });
 })(typeof window !== 'undefined' ? window : globalThis);

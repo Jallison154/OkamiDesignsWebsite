@@ -227,7 +227,10 @@
     }
 
     function computeWallDiagramSize(state, usableWidth, maxHeight) {
-        const wallAspect = state.physicalWidthMM / state.physicalHeightMM;
+        const widthMM = state.curvedWallActive && state.chordWidthMM
+            ? state.chordWidthMM
+            : state.physicalWidthMM;
+        const wallAspect = widthMM / state.physicalHeightMM;
         let diagramW;
         let diagramH;
 
@@ -240,6 +243,33 @@
         }
 
         return { diagramW, diagramH, wallAspect };
+    }
+
+    function drawCurvedWallGrid(doc, state, x0, y0, diagramW, diagramH) {
+        const Calc = global.OkamiLedWallCalculator;
+        const layout = Calc?.computeCurvedCabinetLayout?.(state, diagramW, diagramH);
+        if (!layout) {
+            return false;
+        }
+
+        setFillColor(doc, COLORS.wallFill);
+        setDrawColor(doc, COLORS.wallStroke);
+        doc.setLineWidth(0.35);
+
+        for (let row = 0; row < state.panelsTall; row += 1) {
+            for (let col = 0; col < state.panelsWide; col += 1) {
+                const pos = layout.positions[col];
+                const x = x0 + pos.xPx - layout.cabinetWidthPx / 2;
+                const y = y0 + row * layout.rowHeightPx + pos.depthPx;
+                doc.roundedRect(x, y, layout.cabinetWidthPx, layout.rowHeightPx, 0.4, 0.4, 'FD');
+            }
+        }
+
+        setDrawColor(doc, COLORS.orange);
+        doc.setLineWidth(0.25);
+        doc.line(x0, y0 + diagramH + 0.8, x0 + diagramW, y0 + diagramH + 0.8);
+
+        return true;
     }
 
     /**
@@ -269,21 +299,24 @@
         const x0 = wallX;
         const cellW = diagramW / state.panelsWide;
         const cellH = diagramH / state.panelsTall;
+        const drewCurved = state.curvedWallActive && drawCurvedWallGrid(doc, state, x0, y0, diagramW, diagramH);
 
-        setFillColor(doc, COLORS.wallFill);
-        setDrawColor(doc, COLORS.wallStroke);
-        doc.setLineWidth(0.35);
-        doc.roundedRect(x0, y0, diagramW, diagramH, 1.2, 1.2, 'FD');
+        if (!drewCurved) {
+            setFillColor(doc, COLORS.wallFill);
+            setDrawColor(doc, COLORS.wallStroke);
+            doc.setLineWidth(0.35);
+            doc.roundedRect(x0, y0, diagramW, diagramH, 1.2, 1.2, 'FD');
 
-        setDrawColor(doc, COLORS.gridLine);
-        doc.setLineWidth(0.12);
-        for (let col = 1; col < state.panelsWide; col += 1) {
-            const x = x0 + col * cellW;
-            doc.line(x, y0, x, y0 + diagramH);
-        }
-        for (let row = 1; row < state.panelsTall; row += 1) {
-            const y = y0 + row * cellH;
-            doc.line(x0, y, x0 + diagramW, y);
+            setDrawColor(doc, COLORS.gridLine);
+            doc.setLineWidth(0.12);
+            for (let col = 1; col < state.panelsWide; col += 1) {
+                const x = x0 + col * cellW;
+                doc.line(x, y0, x, y0 + diagramH);
+            }
+            for (let row = 1; row < state.panelsTall; row += 1) {
+                const y = y0 + row * cellH;
+                doc.line(x0, y, x0 + diagramW, y);
+            }
         }
 
         if (state.overlay) {
@@ -334,6 +367,9 @@
         const captionLines = [
             `${formatNumber(state.totalPixelWidth)} × ${formatNumber(state.totalPixelHeight)} px`,
             widthFt && heightFt && widthM && heightM ? `${widthFt} × ${heightFt} (${widthM} × ${heightM})` : null,
+            state.curvedWallActive && Summary()?.formatDualLength
+                ? `Venue width ${Summary().formatDualLength(state.chordWidthFeet, state.chordWidthMM)} · Surface ${Summary().formatDualLength(state.surfaceWidthFeet, state.surfaceWidthMM)}`
+                : null,
             referenceNote
         ].filter(Boolean);
 
@@ -425,6 +461,10 @@
         }
 
         return rows;
+    }
+
+    function buildCurvedWallDetailRows(state) {
+        return Summary()?.buildCurvedWallDetailRows?.(state) || [];
     }
 
     function buildNotesRows(model) {
@@ -591,6 +631,17 @@
 
         leftY = drawDetailSection(doc, 'Cabinet Details', cabinetRows, leftX, leftY, columnWidth, detailCompact);
         leftY = drawDetailSection(doc, 'Resolution Details', resolutionRows, leftX, leftY + 0.5, columnWidth, detailCompact);
+        if (wallState.curvedWallActive) {
+            leftY = drawDetailSection(
+                doc,
+                'Curved Wall',
+                buildCurvedWallDetailRows(wallState),
+                leftX,
+                leftY + 0.5,
+                columnWidth,
+                detailCompact
+            );
+        }
 
         rightY = drawDetailSection(doc, 'Processor Details', processorRows, rightX, rightY, columnWidth, {
             ...detailCompact,
