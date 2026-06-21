@@ -10,7 +10,9 @@
         calculateContentOverlay,
         calculateCabinetArtworkType,
         computeWallProject,
-        computeCurvedCabinetLayout,
+        computeTopViewCurveDiagram,
+        computeTopViewCurveViewBox,
+        buildTopViewCurveSvg,
         maxCabinetAngleForPanels,
         isCustomSpacingDisplayType
     } = Calc;
@@ -1047,10 +1049,6 @@
     }
 
     function getWallPhysicalAspect(state) {
-        if (state.curvedWallActive && state.chordWidthMM && state.physicalHeightMM) {
-            const totalHeightMM = state.physicalHeightMM + (state.curveDepthMM || 0);
-            return state.chordWidthMM / totalHeightMM;
-        }
         if (state.physicalWidthMM && state.physicalHeightMM) {
             return state.physicalWidthMM / state.physicalHeightMM;
         }
@@ -1432,47 +1430,47 @@
         }
     }
 
-    function resetPreviewCabinetStyles(cells) {
-        cells.forEach((cell) => {
-            cell.style.width = '';
-            cell.style.height = '';
-            cell.style.left = '';
-            cell.style.top = '';
-            cell.style.transform = '';
-            cell.classList.remove('led-cabinet--arc');
-        });
-    }
-
-    function applyCurvedPreviewLayout(wall, state, wallWidth, wallHeight) {
-        const layout = computeCurvedCabinetLayout(state, wallWidth, wallHeight);
-        if (!layout) {
-            return false;
+    function renderTopViewCurvePanel(state) {
+        const panel = document.getElementById('led-top-view-panel');
+        const diagramEl = document.getElementById('led-top-view-diagram');
+        const metricsEl = document.getElementById('led-top-view-metrics');
+        if (!panel || !diagramEl || !metricsEl) {
+            return;
         }
 
-        wall.classList.add('led-preview-wall--curved');
-        wall.style.display = 'block';
-        wall.style.gridTemplateColumns = 'none';
-        wall.style.gridTemplateRows = 'none';
+        const showPanel = state.curvedWallMode === true
+            && state.curvedWallActive === true
+            && !state.curvedWallAngleExceeded;
 
-        const cells = wall.querySelectorAll('.led-cabinet');
-        resetPreviewCabinetStyles(cells);
+        panel.hidden = !showPanel;
+        if (!showPanel) {
+            diagramEl.innerHTML = '';
+            metricsEl.innerHTML = '';
+            return;
+        }
 
-        cells.forEach((cell, index) => {
-            const col = index % state.panelsWide;
-            const row = Math.floor(index / state.panelsWide);
-            const pos = layout.positions[col];
-            const left = pos.leftPx;
-            const top = layout.padY + row * layout.rowHeightPx + pos.depthPx;
+        const diagram = computeTopViewCurveDiagram(state);
+        const viewBox = computeTopViewCurveViewBox(diagram);
+        diagramEl.innerHTML = buildTopViewCurveSvg(diagram, viewBox);
 
-            cell.style.width = `${layout.cabinetWidthPx}px`;
-            cell.style.height = `${layout.rowHeightPx}px`;
-            cell.style.left = `${left}px`;
-            cell.style.top = `${top}px`;
-            cell.style.transform = Math.abs(pos.rotateY) > 0.05 ? `rotateY(${pos.rotateY}deg)` : '';
-            cell.classList.add('led-cabinet--arc');
-        });
+        const Summary = window.OkamiLedWallCalculator?.WallProjectSummary;
+        const formatDual = Summary?.formatDualLength || ((feet, mm) => formatFeetInches(feet));
+        const formatDegree = Summary?.formatDegreeLabel || ((deg) => `${deg}°`);
+        const radiusLabel = diagram.radiusFeet != null
+            ? formatDual(diagram.radiusFeet, state.radiusMM)
+            : 'N/A';
 
-        return true;
+        const rows = [
+            { label: 'Surface Width', value: formatDual(diagram.surfaceWidthFeet, state.surfaceWidthMM) },
+            { label: 'Venue Width Required', value: formatDual(diagram.chordWidthFeet, state.chordWidthMM) },
+            { label: 'Curve Depth', value: formatDual(diagram.curveDepthFeet, state.curveDepthMM) },
+            { label: 'Radius', value: radiusLabel },
+            { label: 'Total Curve Angle', value: formatDegree(diagram.totalCurveAngle) }
+        ];
+
+        metricsEl.innerHTML = rows.map((row) => (
+            `<div class="led-top-view-metric"><dt>${row.label}</dt><dd>${row.value}</dd></div>`
+        )).join('');
     }
 
     function renderPreview(state) {
@@ -1483,11 +1481,6 @@
         }
 
         hideCabinetTooltip();
-
-        const isCurvedPreview = state.curvedWallActive === true;
-        if (stage) {
-            stage.classList.toggle('led-preview-stage--curved', isCurvedPreview);
-        }
 
         const wallPhysicalAspect = getWallPhysicalAspect(state);
         const numbersEnabled = isCabinetNumbersEnabled();
@@ -1541,22 +1534,20 @@
 
         if (wallContainer) {
             wallContainer.classList.toggle('has-axis-labels', showAxisLabels);
-            wallContainer.classList.toggle('has-curved-preview', isCurvedPreview);
         }
         if (colAxis) {
-            colAxis.hidden = !showAxisLabels || isCurvedPreview;
+            colAxis.hidden = !showAxisLabels;
         }
         if (rowAxis) {
-            rowAxis.hidden = !showAxisLabels || isCurvedPreview;
+            rowAxis.hidden = !showAxisLabels;
         }
-        if (showAxisLabels && !isCurvedPreview) {
+        if (showAxisLabels) {
             renderAxisLabels(colAxis, rowAxis, state);
         }
 
         const existingCells = wall.querySelectorAll('.led-cabinet');
         if (existingCells.length !== totalPanels) {
             wall.textContent = '';
-            wall.classList.remove('led-preview-wall--curved');
             const fragment = document.createDocumentFragment();
 
             for (let i = 0; i < totalPanels; i++) {
@@ -1573,17 +1564,12 @@
 
         applyCabinetArtToWall(wall, state);
 
+        wall.classList.remove('led-preview-wall--curved');
+        wall.style.display = 'grid';
+        wall.style.gridTemplateColumns = `repeat(${state.panelsWide}, ${state.cabinetWidthMM}fr)`;
+        wall.style.gridTemplateRows = `repeat(${state.panelsTall}, ${state.cabinetHeightMM}fr)`;
+
         const cells = wall.querySelectorAll('.led-cabinet');
-        const usingCurvedLayout = isCurvedPreview && applyCurvedPreviewLayout(wall, state, wallWidth, wallHeight);
-
-        if (!usingCurvedLayout) {
-            wall.classList.remove('led-preview-wall--curved');
-            wall.style.display = 'grid';
-            wall.style.gridTemplateColumns = `repeat(${state.panelsWide}, ${state.cabinetWidthMM}fr)`;
-            wall.style.gridTemplateRows = `repeat(${state.panelsTall}, ${state.cabinetHeightMM}fr)`;
-            resetPreviewCabinetStyles(cells);
-        }
-
         cells.forEach((cell, index) => {
             const row = Math.floor(index / state.panelsWide);
             const col = index % state.panelsWide;
@@ -1613,6 +1599,7 @@
 
         bindPreviewHover(wall);
         renderOverlayLayer(state);
+        renderTopViewCurvePanel(state);
     }
 
     function renderOverlayLayer(state) {

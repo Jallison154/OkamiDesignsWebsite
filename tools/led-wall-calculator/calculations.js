@@ -516,70 +516,157 @@
     }
 
     /**
-     * Layout positions for curved wall preview.
-     * Each column shares one horizontal arc offset and one depth offset (all rows in that column match).
+     * Top-down arc geometry for the curved wall diagram (preview + PDF).
+     * Coordinates in feet: chord on y=0, arc bulges toward +y (stage depth).
      */
-    function computeCurvedCabinetLayout(state, layoutWidthPx, layoutHeightPx) {
+    function computeTopViewCurveDiagram(state) {
         const panelsWide = clampPanelCount(Number(state.panelsWide) || C.DEFAULTS.panelsWide);
-        const panelsTall = clampPanelCount(Number(state.panelsTall) || C.DEFAULTS.panelsTall);
-
-        if (!state.curvedWallActive || panelsWide <= 1) {
-            return null;
-        }
-
-        const cabinetAngleRadians = (Number(state.cabinetAngleDegrees) || 0) * Math.PI / 180;
+        const surfaceWidthFeet = Number(state.surfaceWidthFeet) || Number(state.physicalWidthFt) || 0;
+        const chordWidthFeet = Number(state.chordWidthFeet) || surfaceWidthFeet;
+        const curveDepthFeet = Number(state.curveDepthFeet) || 0;
         const radiusFeet = Number(state.radiusFeet) || 0;
-        const surfaceWidthFeet = Number(state.surfaceWidthFeet) || 0;
-        const physicalHeightFeet = Number(state.physicalHeightFt) || 0;
+        const totalRad = Number(state.totalCurveAngleRadians) || 0;
+        const totalCurveAngle = Number(state.totalCurveAngle) || 0;
+        const flat = !state.curvedWallActive || panelsWide <= 1 || totalRad <= 0 || radiusFeet <= 0;
 
-        if (cabinetAngleRadians <= 0 || radiusFeet <= 0 || surfaceWidthFeet <= 0 || physicalHeightFeet <= 0) {
-            return null;
+        if (flat) {
+            const half = surfaceWidthFeet / 2;
+            return {
+                flat: true,
+                panelsWide,
+                surfaceWidthFeet,
+                chordWidthFeet: surfaceWidthFeet,
+                curveDepthFeet: 0,
+                radiusFeet: null,
+                totalCurveAngle: 0,
+                arcSegments: [{ x1: -half, y1: 0, x2: half, y2: 0 }],
+                chordLine: { x1: -half, y1: 0, x2: half, y2: 0 },
+                depthLine: null,
+                radiusLine: null,
+                circleCenter: null,
+                apex: { x: 0, y: 0 }
+            };
         }
 
-        const centerColumn = (panelsWide - 1) / 2;
-        const cabinetWidthFeet = surfaceWidthFeet / panelsWide;
-        const rowHeightFeet = physicalHeightFeet / panelsTall;
-        const halfCabinetFeet = cabinetWidthFeet / 2;
+        const halfTheta = totalRad / 2;
+        const cosHalf = Math.cos(halfTheta);
 
-        const columns = [];
-        for (let col = 0; col < panelsWide; col += 1) {
-            const columnOffset = col - centerColumn;
-            const angle = columnOffset * cabinetAngleRadians;
-            columns.push({
-                xCenterFeet: radiusFeet * Math.sin(angle),
-                curveDepthFeet: radiusFeet * (1 - Math.cos(angle)),
-                rotateY: (angle * 180) / Math.PI
-            });
+        function pointAt(phi) {
+            return {
+                x: radiusFeet * Math.sin(phi),
+                y: radiusFeet * Math.cos(phi) - radiusFeet * cosHalf
+            };
         }
 
-        const minXFeet = Math.min(...columns.map((c) => c.xCenterFeet - halfCabinetFeet));
-        const maxXFeet = Math.max(...columns.map((c) => c.xCenterFeet + halfCabinetFeet));
-        const spanXFeet = Math.max(maxXFeet - minXFeet, state.chordWidthFeet || surfaceWidthFeet);
-        const maxDepthFeet = Math.max(...columns.map((c) => c.curveDepthFeet));
-        const spanYFeet = physicalHeightFeet + maxDepthFeet;
+        const segAngle = totalRad / panelsWide;
+        const arcSegments = [];
+        for (let i = 0; i < panelsWide; i += 1) {
+            const phi0 = -halfTheta + i * segAngle;
+            const phi1 = phi0 + segAngle;
+            const p0 = pointAt(phi0);
+            const p1 = pointAt(phi1);
+            arcSegments.push({ x1: p0.x, y1: p0.y, x2: p1.x, y2: p1.y });
+        }
 
-        const scale = Math.min(layoutWidthPx / spanXFeet, layoutHeightPx / spanYFeet);
-        const contentWidthPx = spanXFeet * scale;
-        const contentHeightPx = spanYFeet * scale;
-        const padX = (layoutWidthPx - contentWidthPx) / 2;
-        const padY = (layoutHeightPx - contentHeightPx) / 2;
-        const cabinetWidthPx = cabinetWidthFeet * scale;
-        const rowHeightPx = rowHeightFeet * scale;
+        const leftEnd = pointAt(-halfTheta);
+        const rightEnd = pointAt(halfTheta);
+        const apex = pointAt(0);
+        const circleCenter = { x: 0, y: apex.y - radiusFeet };
 
         return {
+            flat: false,
             panelsWide,
-            panelsTall,
-            cabinetWidthPx,
-            rowHeightPx,
-            padX,
-            padY,
-            scale,
-            positions: columns.map((col) => ({
-                leftPx: padX + (col.xCenterFeet - halfCabinetFeet - minXFeet) * scale,
-                depthPx: col.curveDepthFeet * scale,
-                rotateY: col.rotateY
-            }))
+            surfaceWidthFeet,
+            chordWidthFeet,
+            curveDepthFeet,
+            radiusFeet,
+            totalCurveAngle,
+            arcSegments,
+            chordLine: { x1: leftEnd.x, y1: 0, x2: rightEnd.x, y2: 0 },
+            depthLine: { x1: 0, y1: 0, x2: apex.x, y2: apex.y },
+            radiusLine: { x1: circleCenter.x, y1: circleCenter.y, x2: apex.x, y2: apex.y },
+            circleCenter,
+            apex
         };
+    }
+
+    /**
+     * View box + padding for rendering top view diagram into SVG or PDF.
+     */
+    function computeTopViewCurveViewBox(diagram, paddingRatio = 0.18) {
+        if (!diagram) {
+            return null;
+        }
+
+        const points = [];
+        diagram.arcSegments.forEach((seg) => {
+            points.push({ x: seg.x1, y: seg.y1 }, { x: seg.x2, y: seg.y2 });
+        });
+        if (diagram.circleCenter) {
+            points.push(diagram.circleCenter);
+        }
+        if (diagram.apex) {
+            points.push(diagram.apex);
+        }
+
+        const xs = points.map((p) => p.x);
+        const ys = points.map((p) => p.y);
+        let minX = Math.min(...xs);
+        let maxX = Math.max(...xs);
+        let minY = Math.min(...ys);
+        let maxY = Math.max(...ys);
+
+        if (diagram.flat) {
+            minY -= Math.max(0.5, (maxX - minX) * 0.08);
+        }
+
+        const padX = (maxX - minX) * paddingRatio || 0.5;
+        const padY = (maxY - minY) * paddingRatio || 0.5;
+        minX -= padX;
+        maxX += padX;
+        minY -= padY * 1.4;
+        maxY += padY;
+
+        return {
+            minX,
+            minY,
+            width: maxX - minX,
+            height: maxY - minY
+        };
+    }
+
+    function topViewYToSvg(y, viewBox) {
+        return viewBox.minY * 2 + viewBox.height - y;
+    }
+
+    /**
+     * SVG markup for top view curve diagram (shared by UI + PDF conversion path).
+     */
+    function buildTopViewCurveSvg(diagram, viewBox) {
+        if (!diagram || !viewBox) {
+            return '';
+        }
+
+        const ySvg = (y) => topViewYToSvg(y, viewBox);
+        const vb = `${viewBox.minX} ${viewBox.minY} ${viewBox.width} ${viewBox.height}`;
+
+        const segments = diagram.arcSegments.map((seg, index) => (
+            `<line x1="${seg.x1}" y1="${ySvg(seg.y1)}" x2="${seg.x2}" y2="${ySvg(seg.y2)}" stroke="rgba(255,255,255,0.85)" stroke-width="0.16" stroke-linecap="round" vector-effect="non-scaling-stroke"/>`
+        )).join('');
+
+        const chord = diagram.chordLine
+            ? `<line x1="${diagram.chordLine.x1}" y1="${ySvg(diagram.chordLine.y1)}" x2="${diagram.chordLine.x2}" y2="${ySvg(diagram.chordLine.y2)}" stroke="#ff6a2d" stroke-width="0.12" stroke-dasharray="0.4 0.25" vector-effect="non-scaling-stroke"/>`
+            : '';
+
+        const depth = diagram.depthLine
+            ? `<line x1="${diagram.depthLine.x1}" y1="${ySvg(diagram.depthLine.y1)}" x2="${diagram.depthLine.x2}" y2="${ySvg(diagram.depthLine.y2)}" stroke="rgba(255,255,255,0.4)" stroke-width="0.1" stroke-dasharray="0.2 0.18" vector-effect="non-scaling-stroke"/>`
+            : '';
+
+        const radius = diagram.radiusLine
+            ? `<line x1="${diagram.radiusLine.x1}" y1="${ySvg(diagram.radiusLine.y1)}" x2="${diagram.radiusLine.x2}" y2="${ySvg(diagram.radiusLine.y2)}" stroke="rgba(255,255,255,0.28)" stroke-width="0.08" stroke-dasharray="0.18 0.16" vector-effect="non-scaling-stroke"/>`
+            : '';
+
+        return `<svg class="led-top-view-svg" viewBox="${vb}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Top view curve diagram">${segments}${chord}${depth}${radius}</svg>`;
     }
 
     /**
@@ -715,7 +802,10 @@
         calculateCabinetArtworkType,
         resolveCabinetAngleDegrees,
         calculateCurvedWallPhysical,
-        computeCurvedCabinetLayout,
+        computeTopViewCurveDiagram,
+        computeTopViewCurveViewBox,
+        buildTopViewCurveSvg,
+        topViewYToSvg,
         maxCabinetAngleForPanels,
         computeWallProject
     });

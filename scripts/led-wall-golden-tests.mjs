@@ -622,7 +622,7 @@ const cases = [
         }
     },
     {
-        name: 'Curved cabinet layout returns positions for preview',
+        name: 'Top view curve diagram geometry',
         fn: () => {
             const state = Calc.computeWallProject({
                 panelsWide: 6,
@@ -632,17 +632,36 @@ const cases = [
                 curvedWallMode: true,
                 cabinetAnglePreset: '5'
             });
-            const layout = Calc.computeCurvedCabinetLayout(state, 600, 200);
-            if (!layout || layout.positions.length !== 6) {
-                throw new Error('layout: expected 6 cabinet positions');
+            const diagram = Calc.computeTopViewCurveDiagram(state);
+            const viewBox = Calc.computeTopViewCurveViewBox(diagram);
+            if (!diagram || diagram.flat || diagram.arcSegments.length !== 6) {
+                throw new Error('diagram: expected 6 arc segments');
             }
-            if (Math.abs(layout.positions[0].leftPx - layout.positions[1].leftPx) < 1) {
-                throw new Error('layout: expected distinct column positions along arc');
+            if (!viewBox || viewBox.width <= 0 || viewBox.height <= 0) {
+                throw new Error('viewBox: invalid dimensions');
             }
-            const centerCol = Math.floor((state.panelsWide - 1) / 2);
-            const edgeCol = state.panelsWide - 1;
-            if (layout.positions[edgeCol].depthPx <= layout.positions[centerCol].depthPx) {
-                throw new Error('layout: edge columns should have greater depth than center');
+            const svg = Calc.buildTopViewCurveSvg(diagram, viewBox);
+            if (!svg.includes('<line')) {
+                throw new Error('svg: missing segment markup');
+            }
+            if (diagram.curveDepthFeet <= 0) {
+                throw new Error('diagram: expected positive curve depth');
+            }
+        }
+    },
+    {
+        name: 'Top view flat when curved mode off',
+        fn: () => {
+            const state = Calc.computeWallProject({
+                panelsWide: 6,
+                panelsTall: 2,
+                cabinetWidthMM: 500,
+                curvedWallMode: false,
+                cabinetAnglePreset: '5'
+            });
+            const diagram = Calc.computeTopViewCurveDiagram(state);
+            if (!diagram.flat) {
+                throw new Error('expected flat diagram when curved mode off');
             }
         }
     }

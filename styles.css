@@ -5282,6 +5282,126 @@ html {
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
+.led-preview-layout {
+    display: flex;
+    align-items: stretch;
+    gap: clamp(12px, 2vw, 18px);
+    min-height: 0;
+}
+
+.led-preview-main {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.led-top-view-panel {
+    flex: 0 0 min(240px, 34%);
+    min-width: 0;
+    padding: 12px 12px 10px;
+    border: 1px solid rgba(255, 106, 45, 0.22);
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.22);
+}
+
+.led-top-view-panel[hidden] {
+    display: none !important;
+}
+
+.led-top-view-title {
+    margin: 0 0 4px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.92);
+}
+
+.led-top-view-note {
+    margin: 0 0 8px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    color: var(--secondary-text);
+}
+
+.led-top-view-diagram {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    min-height: 120px;
+    max-height: 180px;
+    margin-bottom: 10px;
+}
+
+.led-top-view-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.led-top-view-svg .led-top-view-segment {
+    stroke: rgba(255, 255, 255, 0.82);
+    stroke-width: 0.14;
+    stroke-linecap: round;
+}
+
+.led-top-view-svg .led-top-view-chord {
+    stroke: var(--accent-color);
+    stroke-width: 0.12;
+    stroke-dasharray: 0.35 0.22;
+}
+
+.led-top-view-svg .led-top-view-depth,
+.led-top-view-svg .led-top-view-radius {
+    stroke: rgba(255, 255, 255, 0.35);
+    stroke-width: 0.08;
+    stroke-dasharray: 0.18 0.16;
+}
+
+.led-top-view-metrics {
+    margin: 0;
+    display: grid;
+    gap: 6px;
+}
+
+.led-top-view-metric {
+    display: grid;
+    gap: 1px;
+}
+
+.led-top-view-metric dt {
+    margin: 0;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.35px;
+    text-transform: uppercase;
+    color: var(--secondary-text);
+}
+
+.led-top-view-metric dd {
+    margin: 0;
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+    line-height: 1.35;
+}
+
+@media (max-width: 960px) {
+    .led-preview-layout {
+        flex-direction: column;
+    }
+
+    .led-top-view-panel {
+        flex: 1 1 auto;
+        width: 100%;
+    }
+
+    .led-top-view-diagram {
+        max-height: 160px;
+    }
+}
+
 .led-preview-wall--curved {
     display: block;
     transform-style: preserve-3d;

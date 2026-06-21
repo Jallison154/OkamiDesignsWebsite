@@ -20,7 +20,7 @@
     <meta name="twitter:description" content="Calculate LED video wall resolution, cabinet layouts, processor ports, aspect ratios, and content fit with the free Okami Designs LED Video Wall Calculator.">
     <meta name="twitter:image" content="https://okamidesigns.com/images/led-cabinet-square.png">
     <link rel="icon" href="../images/Okami_Designs_HeadWhite.png" type="image/png">
-    <link rel="stylesheet" href="../styles.css?v=20260713">
+    <link rel="stylesheet" href="../styles.css?v=20260716">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -550,13 +550,23 @@
                                 <span>Show Cabinet Numbers</span>
                             </label>
                         </div>
-                        <div class="led-preview-stage" id="led-preview-stage">
-                            <div class="led-preview-wall-container" id="led-preview-wall-container">
-                                <div class="led-preview-col-axis" id="led-preview-col-axis" aria-hidden="true"></div>
-                                <div class="led-preview-row-axis" id="led-preview-row-axis" aria-hidden="true"></div>
-                                <div class="led-preview-wall" id="led-preview-wall"></div>
+                        <div class="led-preview-layout">
+                            <div class="led-preview-main">
+                                <div class="led-preview-stage" id="led-preview-stage">
+                                    <div class="led-preview-wall-container" id="led-preview-wall-container">
+                                        <div class="led-preview-col-axis" id="led-preview-col-axis" aria-hidden="true"></div>
+                                        <div class="led-preview-row-axis" id="led-preview-row-axis" aria-hidden="true"></div>
+                                        <div class="led-preview-wall" id="led-preview-wall"></div>
+                                    </div>
+                                    <div class="led-cabinet-tooltip" id="led-cabinet-tooltip" role="tooltip" hidden></div>
+                                </div>
                             </div>
-                            <div class="led-cabinet-tooltip" id="led-cabinet-tooltip" role="tooltip" hidden></div>
+                            <aside class="led-top-view-panel" id="led-top-view-panel" hidden aria-labelledby="led-top-view-title">
+                                <h3 id="led-top-view-title" class="led-top-view-title">Top View Curve</h3>
+                                <p class="led-top-view-note">Stage front ↓</p>
+                                <div class="led-top-view-diagram" id="led-top-view-diagram"></div>
+                                <dl class="led-top-view-metrics" id="led-top-view-metrics"></dl>
+                            </aside>
                         </div>
                         <div class="led-overlay-debug" id="led-overlay-debug" hidden>
                             <p class="led-overlay-debug-title">Debug (<code>?debug</code>)</p>
@@ -613,13 +623,13 @@
     <script src="../client/commercial/license-panel.js"></script>
     <script src="../client/desktop/shell-bridge.js"></script>
     <script src="led-wall-calculator/constants.js?v=20260713"></script>
-    <script src="led-wall-calculator/calculations.js?v=20260715"></script>
+    <script src="led-wall-calculator/calculations.js?v=20260716"></script>
     <script src="led-wall-calculator/metrics.js?v=20260713"></script>
     <script src="led-wall-calculator/project-io.js?v=20260713"></script>
     <script src="led-wall-calculator/build-sheet-export.js?v=20260713"></script>
     <script src="led-wall-calculator/wall-project-summary.js?v=20260713"></script>
     <script src="vendor/jspdf.umd.min.js?v=20260713"></script>
     <script src="led-wall-calculator/build-sheet-pdf.js?v=20260713"></script>
-    <script src="led-wall-visualizer.js?v=20260715"></script>
+    <script src="led-wall-visualizer.js?v=20260716"></script>
 </body>
 </html>

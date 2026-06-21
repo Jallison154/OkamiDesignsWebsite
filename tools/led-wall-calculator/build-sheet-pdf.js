@@ -227,13 +227,7 @@
     }
 
     function computeWallDiagramSize(state, usableWidth, maxHeight) {
-        const widthMM = state.curvedWallActive && state.chordWidthMM
-            ? state.chordWidthMM
-            : state.physicalWidthMM;
-        const heightMM = state.curvedWallActive && state.physicalHeightMM
-            ? state.physicalHeightMM + (state.curveDepthMM || 0)
-            : state.physicalHeightMM;
-        const wallAspect = widthMM / heightMM;
+        const wallAspect = state.physicalWidthMM / state.physicalHeightMM;
         let diagramW;
         let diagramH;
 
@@ -248,31 +242,105 @@
         return { diagramW, diagramH, wallAspect };
     }
 
-    function drawCurvedWallGrid(doc, state, x0, y0, diagramW, diagramH) {
+    function drawTopViewCurveDiagram(doc, state, x0, y0, boxW, boxH) {
         const Calc = global.OkamiLedWallCalculator;
-        const layout = Calc?.computeCurvedCabinetLayout?.(state, diagramW, diagramH);
-        if (!layout) {
-            return false;
+        const diagram = Calc?.computeTopViewCurveDiagram?.(state);
+        const viewBox = Calc?.computeTopViewCurveViewBox?.(diagram);
+        if (!diagram || !viewBox || !state.curvedWallActive) {
+            return y0;
         }
 
-        setFillColor(doc, COLORS.wallFill);
+        const ySvg = (y) => Calc.topViewYToSvg?.(y, viewBox)
+            ?? (viewBox.minY * 2 + viewBox.height - y);
+
+        const mapX = (x) => x0 + ((x - viewBox.minX) / viewBox.width) * boxW;
+        const mapY = (y) => y0 + ((ySvg(y) - viewBox.minY) / viewBox.height) * boxH;
+
         setDrawColor(doc, COLORS.wallStroke);
-        doc.setLineWidth(0.35);
+        doc.setLineWidth(0.55);
+        diagram.arcSegments.forEach((seg) => {
+            doc.line(mapX(seg.x1), mapY(seg.y1), mapX(seg.x2), mapY(seg.y2));
+        });
 
-        for (let row = 0; row < state.panelsTall; row += 1) {
-            for (let col = 0; col < state.panelsWide; col += 1) {
-                const pos = layout.positions[col];
-                const x = x0 + pos.leftPx;
-                const y = y0 + layout.padY + row * layout.rowHeightPx + pos.depthPx;
-                doc.roundedRect(x, y, layout.cabinetWidthPx, layout.rowHeightPx, 0.4, 0.4, 'FD');
-            }
+        if (diagram.chordLine) {
+            setDrawColor(doc, COLORS.orange);
+            doc.setLineWidth(0.35);
+            doc.setLineDashPattern([1.4, 1], 0);
+            doc.line(
+                mapX(diagram.chordLine.x1),
+                mapY(diagram.chordLine.y1),
+                mapX(diagram.chordLine.x2),
+                mapY(diagram.chordLine.y2)
+            );
+            doc.setLineDashPattern([], 0);
         }
 
-        setDrawColor(doc, COLORS.orange);
-        doc.setLineWidth(0.25);
-        doc.line(x0, y0 + diagramH + 0.8, x0 + diagramW, y0 + diagramH + 0.8);
+        if (diagram.depthLine) {
+            setDrawColor(doc, COLORS.muted);
+            doc.setLineWidth(0.25);
+            doc.line(
+                mapX(diagram.depthLine.x1),
+                mapY(diagram.depthLine.y1),
+                mapX(diagram.depthLine.x2),
+                mapY(diagram.depthLine.y2)
+            );
+        }
 
-        return true;
+        if (diagram.radiusLine) {
+            setDrawColor(doc, COLORS.gridLine);
+            doc.setLineWidth(0.2);
+            doc.line(
+                mapX(diagram.radiusLine.x1),
+                mapY(diagram.radiusLine.y1),
+                mapX(diagram.radiusLine.x2),
+                mapY(diagram.radiusLine.y2)
+            );
+        }
+
+        const summaryApi = Summary();
+        const formatDual = summaryApi?.formatDualLength;
+        const formatDegree = summaryApi?.formatDegreeLabel;
+        const rows = [
+            ['Surface Width', formatDual?.(diagram.surfaceWidthFeet, state.surfaceWidthMM)],
+            ['Venue Width Required', formatDual?.(diagram.chordWidthFeet, state.chordWidthMM)],
+            ['Curve Depth', formatDual?.(diagram.curveDepthFeet, state.curveDepthMM)],
+            ['Radius', diagram.radiusFeet != null ? formatDual?.(diagram.radiusFeet, state.radiusMM) : 'N/A'],
+            ['Total Curve Angle', formatDegree?.(diagram.totalCurveAngle)]
+        ].filter((row) => row[1]);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(6);
+        setTextColor(doc, COLORS.muted);
+        let labelY = y0 + boxH + 4;
+        rows.forEach(([label, value]) => {
+            doc.text(`${label}: ${value}`, x0, labelY);
+            labelY += 3.2;
+        });
+
+        return labelY + 1;
+    }
+
+    function drawTopViewCurveSection(doc, state, startY, maxHeight) {
+        if (!state?.curvedWallActive) {
+            return startY;
+        }
+
+        const bounds = getPrintableBounds(doc);
+        const { margin, contentWidth, centerX } = bounds;
+        const boxW = Math.min(contentWidth * 0.62, 92);
+        const boxH = Math.min(maxHeight * 0.55, 34);
+        const x0 = margin + (contentWidth - boxW) / 2;
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8.5);
+        setTextColor(doc, COLORS.text);
+        doc.text('Top View Curve', centerX, startY, { align: 'center' });
+
+        setDrawColor(doc, COLORS.border);
+        doc.setLineWidth(0.2);
+        doc.line(margin, startY + 1.5, margin + contentWidth, startY + 1.5);
+
+        return drawTopViewCurveDiagram(doc, state, x0, startY + 5, boxW, boxH);
     }
 
     /**
@@ -302,24 +370,21 @@
         const x0 = wallX;
         const cellW = diagramW / state.panelsWide;
         const cellH = diagramH / state.panelsTall;
-        const drewCurved = state.curvedWallActive && drawCurvedWallGrid(doc, state, x0, y0, diagramW, diagramH);
 
-        if (!drewCurved) {
-            setFillColor(doc, COLORS.wallFill);
-            setDrawColor(doc, COLORS.wallStroke);
-            doc.setLineWidth(0.35);
-            doc.roundedRect(x0, y0, diagramW, diagramH, 1.2, 1.2, 'FD');
+        setFillColor(doc, COLORS.wallFill);
+        setDrawColor(doc, COLORS.wallStroke);
+        doc.setLineWidth(0.35);
+        doc.roundedRect(x0, y0, diagramW, diagramH, 1.2, 1.2, 'FD');
 
-            setDrawColor(doc, COLORS.gridLine);
-            doc.setLineWidth(0.12);
-            for (let col = 1; col < state.panelsWide; col += 1) {
-                const x = x0 + col * cellW;
-                doc.line(x, y0, x, y0 + diagramH);
-            }
-            for (let row = 1; row < state.panelsTall; row += 1) {
-                const y = y0 + row * cellH;
-                doc.line(x0, y, x0 + diagramW, y);
-            }
+        setDrawColor(doc, COLORS.gridLine);
+        doc.setLineWidth(0.12);
+        for (let col = 1; col < state.panelsWide; col += 1) {
+            const x = x0 + col * cellW;
+            doc.line(x, y0, x, y0 + diagramH);
+        }
+        for (let row = 1; row < state.panelsTall; row += 1) {
+            const y = y0 + row * cellH;
+            doc.line(x0, y, x0 + diagramW, y);
         }
 
         if (state.overlay) {
@@ -370,9 +435,6 @@
         const captionLines = [
             `${formatNumber(state.totalPixelWidth)} × ${formatNumber(state.totalPixelHeight)} px`,
             widthFt && heightFt && widthM && heightM ? `${widthFt} × ${heightFt} (${widthM} × ${heightM})` : null,
-            state.curvedWallActive && Summary()?.formatDualLength
-                ? `Venue width ${Summary().formatDualLength(state.chordWidthFeet, state.chordWidthMM)} · Surface ${Summary().formatDualLength(state.surfaceWidthFeet, state.surfaceWidthMM)}`
-                : null,
             referenceNote
         ].filter(Boolean);
 
@@ -613,6 +675,10 @@
         });
 
         y = drawWallVisual(doc, wallState, y + 2, visualMaxH);
+
+        if (wallState.curvedWallActive) {
+            y = drawTopViewCurveSection(doc, wallState, y + 2, 42);
+        }
 
         const detailCompact = {
             rowGap: 3,
