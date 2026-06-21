@@ -6,14 +6,14 @@
         'okami-signal-lab': {
             id: 'okami-signal-lab',
             name: 'Okami Signal Lab',
-            webPath: '/tools/signal-lab.html',
+            webPath: '/tools/signal-lab',
             desktopSku: 'okami-signal-lab-desktop',
             tier: 'professional'
         },
         'okami-led-wall-calculator': {
             id: 'okami-led-wall-calculator',
             name: 'LED Video Wall Calculator',
-            webPath: '/tools/led-wall-visualizer.html',
+            webPath: '/tools/led-video-wall-calculator',
             desktopSku: 'okami-led-wall-calculator-desktop',
             tier: 'standard'
         }
@@ -24,8 +24,8 @@
         privacyPolicy: '/legal/privacy.html',
         disclaimer: '/legal/disclaimer.html',
         commercialLicense: '/legal/commercial-license.html',
-        support: '/support.html',
-        contact: '/contact.html'
+        support: '/support',
+        contact: '/contact'
     };
 
     const api = {

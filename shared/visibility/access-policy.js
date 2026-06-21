@@ -14,6 +14,11 @@
     }
 
     function normalizeVisibilityPath(requestPath) {
+        const registry = getRegistry();
+        if (registry?.resolveVisibilityPathValue) {
+            return registry.resolveVisibilityPathValue(requestPath);
+        }
+
         let normalized = (requestPath || '/').split('?')[0].replace(/\\/g, '/').toLowerCase();
         if (normalized.endsWith('/')) {
             normalized = normalized.slice(0, -1) || '/';
@@ -89,6 +94,7 @@
     function getAccessDecision(input) {
         const settings = input.settings || {};
         const pathname = resolvePathname(input);
+        const indexCheckPath = input.pathname || pathname;
         const pathValue = input.pathValue != null
             ? input.pathValue
             : normalizePath(pathname);
@@ -115,11 +121,11 @@
         }
 
         // Live site: "/" is the public home landing — not the construction splash.
-        if (pathValue === '' && !isExplicitIndexPath(pathname)) {
+        if (pathValue === '' && !isExplicitIndexPath(indexCheckPath)) {
             return { allowed: true, reason: null };
         }
 
-        if (isExplicitIndexPath(pathname) || pathValue === 'index.html') {
+        if (isExplicitIndexPath(indexCheckPath) || pathValue === 'index.html') {
             return { allowed: false, reason: 'home' };
         }
 
@@ -140,25 +146,24 @@
     }
 
     function buildVisibilityRedirect(pathValue, reason, settings) {
-        const inTools = pathValue.startsWith('tools/');
         const constructionActive = Boolean(settings?.constructionMode);
 
         if (reason === 'home') {
-            return inTools ? '/' : '/';
+            return '/';
         }
         if (reason === 'construction') {
-            return inTools ? '/index.html' : '/';
+            return '/';
         }
         if (reason === 'hidden') {
             if (constructionActive) {
-                return inTools ? '/index.html' : '/';
+                return '/';
             }
-            return inTools ? '/404.html' : '/404.html';
+            return '/404.html';
         }
         if (reason === 'admin-auth') {
-            return inTools ? '/admin.html' : '/admin.html';
+            return '/admin.html';
         }
-        return '/index.html';
+        return '/';
     }
 
     function resolveRouteDecision(input) {

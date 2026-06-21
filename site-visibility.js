@@ -76,6 +76,9 @@
     }
 
     function normalizePath(pathname) {
+        if (registryApi?.resolveVisibilityPathValue) {
+            return registryApi.resolveVisibilityPathValue(pathname);
+        }
         if (visibilityApi?.normalizePath) {
             return visibilityApi.normalizePath(pathname);
         }
@@ -146,7 +149,12 @@
     }
 
     function isToolsPath(pathname) {
-        return normalizePath(pathname).startsWith('tools/');
+        const pathValue = normalizePath(pathname);
+        if (pathValue.startsWith('tools/')) {
+            return true;
+        }
+        const normalized = normalizePathname(pathname);
+        return normalized === '/tools' || normalized.startsWith('/tools/');
     }
 
     function resolveRelativeUrl(targetPath) {
@@ -478,7 +486,7 @@
             return false;
         }
 
-        const target = window.location.pathname.includes('/tools/') ? '../home.html' : '/home.html';
+        const target = '/';
         logRouteDecision({
             constructionMode: false,
             routeDecision: 'redirect',

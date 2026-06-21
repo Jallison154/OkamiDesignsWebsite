@@ -2,16 +2,58 @@
     'use strict';
 
     const PUBLIC_PAGES = [
-        { key: 'home', title: 'Home', filePaths: ['home.html'], analyticsPath: '/', trackAnalytics: true, isPublicLanding: true },
-        { key: 'services', title: 'Services', filePaths: ['services.html'], analyticsPath: '/services.html', trackAnalytics: true },
-        { key: 'support', title: 'Support', filePaths: ['support.html'], analyticsPath: '/support.html', trackAnalytics: true },
-        { key: 'contact', title: 'Contact', filePaths: ['contact.html'], analyticsPath: '/contact.html', trackAnalytics: true },
-        { key: 'tools', title: 'Tools', filePaths: ['tools/index.html'], analyticsPath: '/tools/index.html', trackAnalytics: true },
+        {
+            key: 'home',
+            title: 'Home',
+            filePaths: ['home.html'],
+            publicPath: '/',
+            analyticsPath: '/',
+            canonicalPath: '/',
+            trackAnalytics: true,
+            isPublicLanding: true
+        },
+        {
+            key: 'services',
+            title: 'Services',
+            filePaths: ['services.html'],
+            publicPath: '/services',
+            analyticsPath: '/services',
+            canonicalPath: '/services',
+            trackAnalytics: true
+        },
+        {
+            key: 'support',
+            title: 'Support',
+            filePaths: ['support.html'],
+            publicPath: '/support',
+            analyticsPath: '/support',
+            canonicalPath: '/support',
+            trackAnalytics: true
+        },
+        {
+            key: 'contact',
+            title: 'Contact',
+            filePaths: ['contact.html'],
+            publicPath: '/contact',
+            analyticsPath: '/contact',
+            canonicalPath: '/contact',
+            trackAnalytics: true
+        },
+        {
+            key: 'tools',
+            title: 'Tools',
+            filePaths: ['tools/index.html'],
+            publicPath: '/tools',
+            analyticsPath: '/tools',
+            canonicalPath: '/tools',
+            trackAnalytics: true
+        },
         {
             key: 'ledVideoWallCalculator',
             title: 'LED Video Wall Calculator',
-            filePaths: ['tools/led-wall-visualizer.html', 'tools/led-video-wall-calculator'],
-            analyticsPath: '/tools/led-wall-visualizer.html',
+            filePaths: ['tools/led-wall-visualizer.html'],
+            publicPath: '/tools/led-video-wall-calculator',
+            analyticsPath: '/tools/led-video-wall-calculator',
             canonicalPath: '/tools/led-video-wall-calculator',
             trackAnalytics: true,
             productId: 'okami-led-wall-calculator'
@@ -20,11 +62,34 @@
             key: 'okamiSignalLab',
             title: 'Okami Signal Lab',
             filePaths: ['tools/signal-lab.html'],
-            analyticsPath: '/tools/signal-lab.html',
+            publicPath: '/tools/signal-lab',
+            analyticsPath: '/tools/signal-lab',
+            canonicalPath: '/tools/signal-lab',
             trackAnalytics: true,
             productId: 'okami-signal-lab'
         }
     ];
+
+    const EXTRA_PUBLIC_ROUTES = [
+        {
+            filePath: '3d-prints.html',
+            publicPath: '/3d-prints',
+            analyticsPath: '/3d-prints',
+            canonicalPath: '/3d-prints'
+        }
+    ];
+
+    const LEGACY_HTML_REDIRECTS = {
+        '/home.html': '/',
+        '/services.html': '/services',
+        '/support.html': '/support',
+        '/contact.html': '/contact',
+        '/tools.html': '/tools',
+        '/tools/index.html': '/tools',
+        '/tools/led-wall-visualizer.html': '/tools/led-video-wall-calculator',
+        '/tools/signal-lab.html': '/tools/signal-lab',
+        '/3d-prints.html': '/3d-prints'
+    };
 
     const TOOL_PAGE_KEYS = ['ledVideoWallCalculator', 'okamiSignalLab'];
 
@@ -45,35 +110,166 @@
         '50x.html'
     ]);
 
+    function normalizeRequestPathname(pathname) {
+        let normalized = (pathname || '/').split('?')[0].replace(/\\/g, '/').toLowerCase();
+        if (normalized.length > 1 && normalized.endsWith('/')) {
+            normalized = normalized.slice(0, -1);
+        }
+        return normalized || '/';
+    }
+
     function normalizeFilePath(pathname) {
-        let path = (pathname || '').replace(/^\//, '').toLowerCase();
-        if (!path || path === 'index.html') {
+        return resolveVisibilityPathValue(pathname);
+    }
+
+    function resolveVisibilityPathValue(requestPath) {
+        const normalized = normalizeRequestPathname(requestPath);
+
+        if (normalized === '/' || normalized === '/index.html') {
             return '';
         }
-        return path;
+
+        for (const page of PUBLIC_PAGES) {
+            if (page.publicPath && page.publicPath.toLowerCase() === normalized) {
+                return page.filePaths[0];
+            }
+            for (const candidate of page.filePaths) {
+                const candidatePath = `/${candidate}`.toLowerCase();
+                if (candidatePath === normalized || candidate.toLowerCase() === normalized.replace(/^\//, '')) {
+                    return candidate;
+                }
+            }
+        }
+
+        for (const route of EXTRA_PUBLIC_ROUTES) {
+            if (route.publicPath.toLowerCase() === normalized) {
+                return route.filePath;
+            }
+            if (`/${route.filePath}`.toLowerCase() === normalized) {
+                return route.filePath;
+            }
+        }
+
+        return normalized.replace(/^\//, '');
+    }
+
+    function getLegacyRedirect(pathname) {
+        const normalized = normalizeRequestPathname(pathname);
+        return LEGACY_HTML_REDIRECTS[normalized] || null;
+    }
+
+    function resolveFilePathFromRequest(pathname) {
+        const normalized = normalizeRequestPathname(pathname);
+
+        if (normalized === '/' || normalized === '/index.html' || normalized === '/home.html') {
+            return null;
+        }
+
+        for (const page of PUBLIC_PAGES) {
+            if (page.publicPath && page.publicPath.toLowerCase() === normalized) {
+                return page.filePaths[0];
+            }
+        }
+
+        for (const route of EXTRA_PUBLIC_ROUTES) {
+            if (route.publicPath.toLowerCase() === normalized) {
+                return route.filePath;
+            }
+        }
+
+        const legacyPath = normalized.replace(/^\//, '');
+        if (legacyPath.endsWith('.html') && !EXEMPT_PATHS.has(legacyPath)) {
+            return legacyPath;
+        }
+
+        return null;
+    }
+
+    function isPublicCleanPath(pathname) {
+        const normalized = normalizeRequestPathname(pathname);
+        if (normalized === '/') {
+            return true;
+        }
+
+        for (const page of PUBLIC_PAGES) {
+            if (page.publicPath && page.publicPath.toLowerCase() === normalized) {
+                return true;
+            }
+        }
+
+        return EXTRA_PUBLIC_ROUTES.some((route) => route.publicPath.toLowerCase() === normalized);
+    }
+
+    function isManagedPublicRequest(pathname) {
+        const normalized = normalizeRequestPathname(pathname);
+
+        if (normalized === '/' || normalized === '/index.html') {
+            return true;
+        }
+
+        if (getLegacyRedirect(normalized)) {
+            return true;
+        }
+
+        if (isPublicCleanPath(normalized)) {
+            return true;
+        }
+
+        const filePath = normalized.replace(/^\//, '');
+        if (filePath.endsWith('.html') && !EXEMPT_PATHS.has(filePath)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    function getPublicPathForFilePath(filePath) {
+        const normalized = (filePath || '').replace(/^\//, '').toLowerCase();
+        if (!normalized || normalized === 'index.html') {
+            return '/';
+        }
+
+        for (const page of PUBLIC_PAGES) {
+            if (page.filePaths.some((candidate) => candidate.toLowerCase() === normalized)) {
+                return page.publicPath || page.canonicalPath || page.analyticsPath;
+            }
+        }
+
+        for (const route of EXTRA_PUBLIC_ROUTES) {
+            if (route.filePath.toLowerCase() === normalized) {
+                return route.publicPath;
+            }
+        }
+
+        return `/${normalized}`;
     }
 
     function normalizeAnalyticsPath(pathname) {
-        const filePath = normalizeFilePath(pathname);
+        const filePath = resolveVisibilityPathValue(pathname);
         if (!filePath) {
             return '/';
         }
         if (filePath === 'index.html') {
             return SPLASH_PAGE.analyticsPath;
         }
+
         for (const page of PUBLIC_PAGES) {
-            if (page.filePaths.some((candidate) => candidate.toLowerCase() === filePath)) {
-                return page.analyticsPath;
+            if (page.filePaths.some((candidate) => candidate.toLowerCase() === filePath.toLowerCase())) {
+                return page.anonicalPath || page.publicPath || page.analyticsPath;
             }
         }
-        if (SPLASH_PAGE.filePaths.some((candidate) => candidate.toLowerCase() === filePath)) {
-            return SPLASH_PAGE.analyticsPath;
+
+        for (const route of EXTRA_PUBLIC_ROUTES) {
+            if (route.filePath.toLowerCase() === filePath.toLowerCase()) {
+                return route.analyticsPath || route.publicPath;
+            }
         }
-        return `/${filePath}`;
+
+        return getPublicPathForFilePath(filePath);
     }
 
     function resolvePage(pathname) {
-        const filePath = normalizeFilePath(pathname);
+        const filePath = resolveVisibilityPathValue(pathname);
         if (!filePath) {
             const home = PUBLIC_PAGES.find((page) => page.key === 'home');
             return { ...home, filePath: '' };
@@ -82,18 +278,18 @@
             return { ...SPLASH_PAGE, filePath: 'index.html' };
         }
         for (const page of PUBLIC_PAGES) {
-            if (page.filePaths.some((candidate) => candidate.toLowerCase() === filePath)) {
+            if (page.filePaths.some((candidate) => candidate.toLowerCase() === filePath.toLowerCase())) {
                 return { ...page, filePath };
             }
         }
-        if (SPLASH_PAGE.filePaths.some((candidate) => candidate.toLowerCase() === filePath)) {
+        if (SPLASH_PAGE.filePaths.some((candidate) => candidate.toLowerCase() === filePath.toLowerCase())) {
             return { ...SPLASH_PAGE, filePath };
         }
         return null;
     }
 
     function getPageKeyFromPathValue(pathValue) {
-        const normalized = (pathValue || '').replace(/^\//, '').toLowerCase();
+        const normalized = resolveVisibilityPathValue(pathValue.startsWith('/') ? pathValue : `/${pathValue}`);
         if (!normalized) {
             return null;
         }
@@ -112,6 +308,24 @@
         return map;
     }
 
+    function getPublicServeRoutes() {
+        const routes = PUBLIC_PAGES
+            .filter((page) => page.publicPath && page.publicPath !== '/')
+            .map((page) => ({
+                publicPath: page.publicPath,
+                filePath: page.filePaths[0]
+            }));
+
+        EXTRA_PUBLIC_ROUTES.forEach((route) => {
+            routes.push({
+                publicPath: route.publicPath,
+                filePath: route.filePath
+            });
+        });
+
+        return routes;
+    }
+
     function getTrackablePages() {
         return [
             ...PUBLIC_PAGES.filter((page) => page.trackAnalytics),
@@ -128,7 +342,7 @@
     }
 
     function isExemptPath(pathname) {
-        return EXEMPT_PATHS.has(normalizeFilePath(pathname));
+        return EXEMPT_PATHS.has(resolveVisibilityPathValue(pathname));
     }
 
     function shouldTrackAnalytics(pathname) {
@@ -141,11 +355,21 @@
 
     const api = {
         PUBLIC_PAGES,
+        EXTRA_PUBLIC_ROUTES,
+        LEGACY_HTML_REDIRECTS,
         SPLASH_PAGE,
         TOOL_PAGE_KEYS,
         EXEMPT_PATHS,
         normalizeFilePath,
+        normalizeRequestPathname,
         normalizeAnalyticsPath,
+        resolveVisibilityPathValue,
+        getLegacyRedirect,
+        resolveFilePathFromRequest,
+        isPublicCleanPath,
+        isManagedPublicRequest,
+        getPublicPathForFilePath,
+        getPublicServeRoutes,
         resolvePage,
         getPageKeyFromPathValue,
         getVisibilityPagePaths,

@@ -126,13 +126,37 @@ function serveManagedRoot(req, res, settings, pathValue, isAdmin) {
             if (isAdmin) {
                 return res.sendFile(CONSTRUCTION_HTML);
             }
-            return res.redirect(302, '/');
+            return res.redirect(301, '/');
         }
         return res.sendFile(HOME_HTML);
     }
 
     return res.sendFile(CONSTRUCTION_HTML);
 }
+
+function legacyHtmlRedirectMiddleware(req, res, next) {
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+        return next();
+    }
+
+    if (req.path.startsWith('/api/') || req.path.startsWith('/files/')) {
+        return next();
+    }
+
+    if (req.path.toLowerCase() === '/index.html') {
+        return next();
+    }
+
+    const redirect = pageRegistry.getLegacyRedirect(req.path);
+    if (redirect) {
+        setNoCacheHeaders(res);
+        return res.redirect(301, redirect);
+    }
+
+    next();
+}
+
+app.use(legacyHtmlRedirectMiddleware);
 
 function setNoCacheHeaders(res) {
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -157,8 +181,8 @@ app.use((req, res, next) => {
     next();
 });
 
-function getServerAccessDecision(pathValue, settings, isAdmin) {
-    return getAccessDecision({ pathValue, settings, isAdmin });
+function getServerAccessDecision(pathValue, settings, isAdmin, pathname) {
+    return getAccessDecision({ pathValue, pathname, settings, isAdmin });
 }
 
 function buildVisibilityRedirect(pathValue, reason, settings) {
@@ -185,9 +209,7 @@ async function siteVisibilityMiddleware(req, res, next) {
     const pathValue = normalizeVisibilityPath(req.path);
     const requestPath = req.path.toLowerCase();
 
-    const isManagedPage = pathValue === ''
-        || pathValue.endsWith('.html')
-        || pathValue.startsWith('tools/');
+    const isManagedPage = pageRegistry.isManagedPublicRequest(req.path);
 
     if (!isManagedPage) {
         return next();
@@ -207,7 +229,7 @@ async function siteVisibilityMiddleware(req, res, next) {
             return res.redirect(301, '/');
         }
 
-        const access = getServerAccessDecision(pathValue, settings, isAdmin);
+        const access = getServerAccessDecision(pathValue, settings, isAdmin, req.path);
 
         if (access.allowed) {
             return next();
@@ -222,7 +244,8 @@ async function siteVisibilityMiddleware(req, res, next) {
             });
         }
 
-        return res.redirect(302, redirectTarget);
+        setNoCacheHeaders(res);
+        return res.redirect(301, redirectTarget);
     } catch (error) {
         console.error('Site visibility middleware error:', error);
         return next();
@@ -231,29 +254,11 @@ async function siteVisibilityMiddleware(req, res, next) {
 
 app.use(siteVisibilityMiddleware);
 
-const LED_CALCULATOR_HTML = path.join(__dirname, 'tools/led-wall-visualizer.html');
-const TOOLS_INDEX_HTML = path.join(__dirname, 'tools/index.html');
-const CONTACT_HTML = path.join(__dirname, 'contact.html');
-const PRINTS_3D_HTML = path.join(__dirname, '3d-prints.html');
-
-app.get('/tools', (req, res) => {
-    setNoCacheHeaders(res);
-    res.sendFile(TOOLS_INDEX_HTML);
-});
-
-app.get('/contact', (req, res) => {
-    setNoCacheHeaders(res);
-    res.sendFile(CONTACT_HTML);
-});
-
-app.get('/3d-prints', (req, res) => {
-    setNoCacheHeaders(res);
-    res.sendFile(PRINTS_3D_HTML);
-});
-
-app.get('/tools/led-video-wall-calculator', (req, res) => {
-    setNoCacheHeaders(res);
-    res.sendFile(LED_CALCULATOR_HTML);
+pageRegistry.getPublicServeRoutes().forEach(({ publicPath, filePath }) => {
+    app.get(publicPath, (req, res) => {
+        setNoCacheHeaders(res);
+        res.sendFile(path.join(__dirname, filePath));
+    });
 });
 
 // Chrome DevTools probes this automatically; avoid 404 + strict CSP console noise.

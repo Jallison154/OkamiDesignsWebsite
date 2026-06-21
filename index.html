@@ -180,7 +180,7 @@
         return response.ok ? response.json() : null;
       }).then(function (settings) {
         if (settings && !settings.constructionMode) {
-          window.location.replace('/home.html');
+          window.location.replace('/');
         }
       }).catch(function () {});
     })();

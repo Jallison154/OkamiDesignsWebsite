@@ -13,6 +13,48 @@
       },
       "lastViewedAt": "2026-06-16T00:41:33.969Z"
     },
+    "/services": {
+      "title": "Services",
+      "totalViews": 0,
+      "dailyViews": {},
+      "monthlyViews": {},
+      "lastViewedAt": null
+    },
+    "/support": {
+      "title": "Support",
+      "totalViews": 0,
+      "dailyViews": {},
+      "monthlyViews": {},
+      "lastViewedAt": null
+    },
+    "/contact": {
+      "title": "Contact",
+      "totalViews": 0,
+      "dailyViews": {},
+      "monthlyViews": {},
+      "lastViewedAt": null
+    },
+    "/tools": {
+      "title": "Tools",
+      "totalViews": 0,
+      "dailyViews": {},
+      "monthlyViews": {},
+      "lastViewedAt": null
+    },
+    "/tools/led-video-wall-calculator": {
+      "title": "LED Video Wall Calculator",
+      "totalViews": 0,
+      "dailyViews": {},
+      "monthlyViews": {},
+      "lastViewedAt": null
+    },
+    "/tools/signal-lab": {
+      "title": "Okami Signal Lab",
+      "totalViews": 0,
+      "dailyViews": {},
+      "monthlyViews": {},
+      "lastViewedAt": null
+    },
     "/services.html": {
       "title": "Services",
       "totalViews": 5,
@@ -81,18 +123,18 @@
     },
     "/home.html": {
       "title": "Home",
-      "totalViews": 36,
+      "totalViews": 38,
       "dailyViews": {
         "2026-06-14": 1,
         "2026-06-15": 13,
         "2026-06-16": 13,
-        "2026-06-21": 9
+        "2026-06-21": 11
       },
       "monthlyViews": {
-        "2026-06": 36
+        "2026-06": 38
       },
-      "lastViewedAt": "2026-06-21T02:58:08.568Z"
+      "lastViewedAt": "2026-06-21T03:09:16.975Z"
     }
   },
-  "updatedAt": "2026-06-21T02:58:08.568Z"
+  "updatedAt": "2026-06-21T03:09:16.975Z"
 }

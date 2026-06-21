@@ -1,27 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://okamidesigns.com/home.html</loc>
+    <loc>https://okamidesigns.com/</loc>
   </url>
   <url>
-    <loc>https://okamidesigns.com/services.html</loc>
+    <loc>https://okamidesigns.com/services</loc>
   </url>
   <url>
-    <loc>https://okamidesigns.com/support.html</loc>
+    <loc>https://okamidesigns.com/support</loc>
   </url>
   <url>
-    <loc>https://okamidesigns.com/contact.html</loc>
+    <loc>https://okamidesigns.com/contact</loc>
   </url>
   <url>
-    <loc>https://okamidesigns.com/tools/index.html</loc>
+    <loc>https://okamidesigns.com/tools</loc>
   </url>
   <url>
     <loc>https://okamidesigns.com/tools/led-video-wall-calculator</loc>
   </url>
   <url>
-    <loc>https://okamidesigns.com/tools/signal-lab.html</loc>
-  </url>
-  <url>
-    <loc>https://okamidesigns.com/</loc>
+    <loc>https://okamidesigns.com/tools/signal-lab</loc>
   </url>
 </urlset>

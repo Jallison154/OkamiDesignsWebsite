@@ -110,7 +110,11 @@ function handleDocumentLinkClick(event) {
     }
 
     const pathname = url.pathname;
-    const isHtmlPage = pathname.endsWith('.html') || pathname.endsWith('/') || pathname === '';
+    const registry = window.OkamiPageRegistry || window.OkamiShared?.Registry;
+    const isHtmlPage = pathname.endsWith('.html')
+        || pathname.endsWith('/')
+        || pathname === '/'
+        || (registry?.isPublicCleanPath?.(pathname) ?? false);
 
     if (!isHtmlPage) {
         return;
@@ -404,7 +408,12 @@ function reinitializeDynamicContent() {
 }
 
 function setActiveNavigation(url) {
+    const registry = window.OkamiPageRegistry || window.OkamiShared?.Registry;
+
     const normalizePath = (path) => {
+        if (registry?.resolveVisibilityPathValue) {
+            return registry.resolveVisibilityPathValue(path);
+        }
         const cleaned = (path || '').replace(/^\//, '');
         if (!cleaned || cleaned === '/' || cleaned === 'index.html') {
             return 'home.html';
