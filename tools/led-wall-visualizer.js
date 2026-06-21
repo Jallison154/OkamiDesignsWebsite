@@ -1583,7 +1583,6 @@
             resetPreviewCabinetStyles(cells);
         }
 
-        const cellWidth = wallWidth / state.panelsWide;
         cells.forEach((cell, index) => {
             const row = Math.floor(index / state.panelsWide);
             const col = index % state.panelsWide;
