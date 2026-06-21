@@ -3518,6 +3518,13 @@ html {
     letter-spacing: 0.5px;
 }
 
+.led-optional-label {
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.38);
+    text-transform: none;
+    letter-spacing: 0;
+}
+
 .led-stepper {
     display: flex;
     align-items: stretch;

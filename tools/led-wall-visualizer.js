@@ -9,14 +9,18 @@
         calculateCabinetResolution,
         calculateContentOverlay,
         calculateCabinetArtworkType,
-        computeWallProject
+        computeWallProject,
+        isCustomSpacingDisplayType
     } = Calc;
 
     const {
         DEFAULTS,
         PITCH_PRESETS,
         CABINET_PRESETS,
-        EXTENDED_PITCHES
+        EXTENDED_PITCHES,
+        DISPLAY_TYPE_STANDARD,
+        DISPLAY_TYPE_CUSTOM_SPACING,
+        DISPLAY_TYPE_TRANSPARENT_LEGACY
     } = Constants;
 
     const LABEL_TIER = {
@@ -83,8 +87,8 @@
             }
             updateAll();
         });
-        document.getElementById('mesh-pitch-horizontal-mm')?.addEventListener('input', onMeshPitchChange);
-        document.getElementById('mesh-pitch-vertical-mm')?.addEventListener('input', onMeshPitchChange);
+        document.getElementById('custom-spacing-horizontal-mm')?.addEventListener('input', onCustomSpacingChange);
+        document.getElementById('custom-spacing-vertical-mm')?.addEventListener('input', onCustomSpacingChange);
 
         document.getElementById('overlay-format')?.addEventListener('change', () => {
             toggleCustomFormatFields();
@@ -125,6 +129,10 @@
 
         document.getElementById('led-export-report')?.addEventListener('click', () => {
             void exportProjectReport();
+        });
+
+        document.getElementById('led-export-build-sheet')?.addEventListener('click', () => {
+            void exportBuildSheet();
         });
 
         const stage = document.getElementById('led-preview-stage');
@@ -333,16 +341,52 @@
         syncAdvFromHidden();
     }
 
+    function normalizeDisplayType(displayType) {
+        const type = displayType || DEFAULTS.displayType;
+        if (type === DISPLAY_TYPE_TRANSPARENT_LEGACY) {
+            return DISPLAY_TYPE_CUSTOM_SPACING;
+        }
+        return type;
+    }
+
+    function readCustomSpacingHorizontal() {
+        return readNumber('custom-spacing-horizontal-mm', DEFAULTS.meshPitchHorizontalMM);
+    }
+
+    function readCustomSpacingVertical() {
+        return readNumber('custom-spacing-vertical-mm', DEFAULTS.meshPitchVerticalMM);
+    }
+
+    function setCustomSpacingHorizontal(value) {
+        setInputValue('custom-spacing-horizontal-mm', value);
+    }
+
+    function setCustomSpacingVertical(value) {
+        setInputValue('custom-spacing-vertical-mm', value);
+    }
+
+    function seedCustomSpacingFromStandardPitch() {
+        const pitch = readNumber('pixel-pitch-mm', DEFAULTS.pixelPitchMM);
+        setCustomSpacingHorizontal(pitch);
+        setCustomSpacingVertical(pitch);
+    }
+
     function applyDisplayType(displayType) {
+        const previousType = normalizeDisplayType(getDisplayType());
+        const normalized = normalizeDisplayType(displayType);
         const layoutSnapshot = getCabinetLayoutSnapshot();
 
-        setInputValue('display-type', displayType);
+        if (normalized === DISPLAY_TYPE_CUSTOM_SPACING && previousType === DISPLAY_TYPE_STANDARD) {
+            seedCustomSpacingFromStandardPitch();
+        }
+
+        setInputValue('display-type', normalized);
         syncAutoPixelResolution();
         restoreCabinetLayoutSnapshot(layoutSnapshot);
         updateAll();
     }
 
-    function onMeshPitchChange() {
+    function onCustomSpacingChange() {
         syncAutoPixelResolution();
         updateAll();
     }
@@ -410,11 +454,7 @@
     }
 
     function getDisplayType() {
-        return document.getElementById('display-type')?.value || DEFAULTS.displayType;
-    }
-
-    function isTransparentDisplay() {
-        return getDisplayType() === 'transparent';
+        return normalizeDisplayType(document.getElementById('display-type')?.value || DEFAULTS.displayType);
     }
 
     function setPitchToCustom() {
@@ -574,8 +614,8 @@
         setInputValue('cabinet-width-mm', DEFAULTS.cabinetWidthMM);
         setInputValue('cabinet-height-mm', DEFAULTS.cabinetHeightMM);
         setInputValue('pixel-pitch-mm', DEFAULTS.pixelPitchMM);
-        setInputValue('mesh-pitch-horizontal-mm', DEFAULTS.meshPitchHorizontalMM);
-        setInputValue('mesh-pitch-vertical-mm', DEFAULTS.meshPitchVerticalMM);
+        setCustomSpacingHorizontal(DEFAULTS.meshPitchHorizontalMM);
+        setCustomSpacingVertical(DEFAULTS.meshPitchVerticalMM);
         setInputValue('panels-wide', DEFAULTS.panelsWide);
         setInputValue('panels-tall', DEFAULTS.panelsTall);
         document.getElementById('auto-calculate-resolution').checked = DEFAULTS.autoCalculateResolution;
@@ -586,6 +626,7 @@
         setInputValue('custom-format-width', DEFAULTS.customFormatWidth);
         setInputValue('custom-format-height', DEFAULTS.customFormatHeight);
         setOverlayFormat(DEFAULTS.overlayFormat);
+        setInputValue('project-name', '');
         const showNumbers = document.getElementById('show-cabinet-numbers');
         if (showNumbers) {
             showNumbers.checked = DEFAULTS.showCabinetNumbers;
@@ -631,8 +672,8 @@
             cabinetWidthMM: readNumber('cabinet-width-mm', DEFAULTS.cabinetWidthMM),
             cabinetHeightMM: readNumber('cabinet-height-mm', DEFAULTS.cabinetHeightMM),
             pixelPitchMM: readNumber('pixel-pitch-mm', DEFAULTS.pixelPitchMM),
-            meshPitchHorizontalMM: readNumber('mesh-pitch-horizontal-mm', DEFAULTS.meshPitchHorizontalMM),
-            meshPitchVerticalMM: readNumber('mesh-pitch-vertical-mm', DEFAULTS.meshPitchVerticalMM),
+            meshPitchHorizontalMM: readCustomSpacingHorizontal(),
+            meshPitchVerticalMM: readCustomSpacingVertical(),
             panelsWide: readInt('panels-wide', DEFAULTS.panelsWide),
             panelsTall: readInt('panels-tall', DEFAULTS.panelsTall),
             pixelWidth: readInt('pixel-width', DEFAULTS.pixelWidth),
@@ -640,6 +681,7 @@
             autoCalculateResolution: isAutoCalculateEnabled(),
             portCapacity: readInt('port-capacity', DEFAULTS.portCapacity),
             portFillThreshold: readPortFillThreshold(),
+            projectName: document.getElementById('project-name')?.value?.trim() || '',
             ...overlayInputsFromDom()
         };
     }
@@ -686,17 +728,38 @@
         ProjectIO.downloadReport(gatherInputs(), getState());
     }
 
+    function exportBuildSheet() {
+        try {
+            const BuildSheet = window.OkamiLedWallCalculator?.BuildSheetExport;
+            if (!BuildSheet?.openPrintView) {
+                throw new Error('Build sheet export is unavailable.');
+            }
+
+            const inputs = gatherInputs();
+            const state = getState();
+            const logoUrl = new URL('../GFX/Full/Okami_Designs_FullW.png', window.location.href).href;
+
+            BuildSheet.openPrintView(inputs, state, {
+                projectName: inputs.projectName,
+                logoUrl
+            });
+        } catch (error) {
+            window.alert(error.message || 'Could not export build sheet. Please try again.');
+        }
+    }
+
     function applyProjectInputs(inputs = {}) {
         const data = inputs || {};
 
         setInputValue('cabinet-preset', data.cabinetPreset ?? DEFAULTS.cabinetPreset);
         setInputValue('pitch-preset', data.pitchPreset ?? DEFAULTS.pitchPreset);
-        setInputValue('display-type', data.displayType ?? DEFAULTS.displayType);
+        setInputValue('display-type', normalizeDisplayType(data.displayType ?? DEFAULTS.displayType));
         setInputValue('cabinet-width-mm', data.cabinetWidthMM ?? DEFAULTS.cabinetWidthMM);
         setInputValue('cabinet-height-mm', data.cabinetHeightMM ?? DEFAULTS.cabinetHeightMM);
         setInputValue('pixel-pitch-mm', data.pixelPitchMM ?? DEFAULTS.pixelPitchMM);
-        setInputValue('mesh-pitch-horizontal-mm', data.meshPitchHorizontalMM ?? DEFAULTS.meshPitchHorizontalMM);
-        setInputValue('mesh-pitch-vertical-mm', data.meshPitchVerticalMM ?? DEFAULTS.meshPitchVerticalMM);
+        setCustomSpacingHorizontal(data.meshPitchHorizontalMM ?? DEFAULTS.meshPitchHorizontalMM);
+        setCustomSpacingVertical(data.meshPitchVerticalMM ?? DEFAULTS.meshPitchVerticalMM);
+        setInputValue('project-name', data.projectName ?? '');
         setInputValue('panels-wide', data.panelsWide ?? DEFAULTS.panelsWide);
         setInputValue('panels-tall', data.panelsTall ?? DEFAULTS.panelsTall);
         setInputValue('pixel-width', data.pixelWidth ?? DEFAULTS.pixelWidth);
@@ -714,7 +777,7 @@
         }
 
         document.querySelectorAll('[name="display-mode"]').forEach((input) => {
-            input.checked = input.value === (data.displayType ?? DEFAULTS.displayType);
+            input.checked = normalizeDisplayType(data.displayType ?? DEFAULTS.displayType) === input.value;
         });
 
         closeAdvancedView();
@@ -790,10 +853,10 @@
     }
 
     function formatQuickPitchLabel(state) {
-        if (state.displayType === 'transparent') {
-            const h = readNumber('mesh-pitch-horizontal-mm', DEFAULTS.meshPitchHorizontalMM);
-            const v = readNumber('mesh-pitch-vertical-mm', DEFAULTS.meshPitchVerticalMM);
-            return `${h} × ${v}mm`;
+        if (isCustomSpacingDisplayType(state.displayType)) {
+            const h = readCustomSpacingHorizontal();
+            const v = readCustomSpacingVertical();
+            return `${h} × ${v} mm`;
         }
 
         const pitchPreset = document.getElementById('pitch-preset')?.value || 'custom';
@@ -810,15 +873,15 @@
     }
 
     function updateAdvancedSettings(state) {
-        const isMesh = state.displayType === 'transparent';
-        const meshSettings = document.getElementById('led-mesh-settings');
+        const isCustomSpacing = isCustomSpacingDisplayType(state.displayType);
+        const spacingSettings = document.getElementById('led-custom-spacing-settings');
 
-        if (meshSettings) {
-            meshSettings.hidden = !isMesh;
+        if (spacingSettings) {
+            spacingSettings.hidden = !isCustomSpacing;
         }
 
         document.querySelectorAll('[name="display-mode"]').forEach((input) => {
-            input.checked = input.value === state.displayType;
+            input.checked = normalizeDisplayType(state.displayType) === input.value;
         });
 
         toggleCustomFormatFields();
@@ -848,7 +911,7 @@
 
         const customPitchField = document.getElementById('led-custom-pitch-field');
         if (customPitchField) {
-            customPitchField.hidden = pitchPreset !== 'custom' || state.displayType === 'transparent';
+            customPitchField.hidden = pitchPreset !== 'custom' || isCustomSpacingDisplayType(state.displayType);
         }
 
         syncPanelCountInputs(state);
@@ -1310,7 +1373,7 @@
                 expectTopPercent: 0
             },
             {
-                name: '500x1000 Mesh 3.9x7.8 19x5',
+                name: '500x1000 custom spacing 3.9×7.8 19×5',
                 wallWidth: 2432,
                 wallHeight: 640,
                 expectWidth: 1138,

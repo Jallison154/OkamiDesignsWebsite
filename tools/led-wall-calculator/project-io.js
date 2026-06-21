@@ -50,8 +50,21 @@
             '',
             'CABINET',
             `  Preset: ${inputs.cabinetPreset || 'custom'}`,
-            `  Size: ${inputs.cabinetWidthMM} × ${inputs.cabinetHeightMM} mm`,
-            `  Pixel pitch: P${inputs.pixelPitchMM}`,
+            `  Size: ${inputs.cabinetWidthMM} × ${inputs.cabinetHeightMM} mm`
+        ];
+
+        const Calc = global.OkamiLedWallCalculator;
+        const isCustomSpacing = Calc?.isCustomSpacingDisplayType?.(inputs.displayType);
+        if (isCustomSpacing) {
+            lines.push(
+                `  Display mode: Custom LED Spacing`,
+                `  LED spacing: ${inputs.meshPitchHorizontalMM} × ${inputs.meshPitchVerticalMM} mm`
+            );
+        } else {
+            lines.push(`  Pixel pitch: P${inputs.pixelPitchMM}`);
+        }
+
+        lines.push(
             '',
             'PROCESSOR',
             `  Ports required: ${state.portsRequired}`,

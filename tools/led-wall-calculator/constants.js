@@ -3,15 +3,20 @@
 
     const MM_PER_FOOT = 304.8;
 
+    const DISPLAY_TYPE_STANDARD = 'standard';
+    const DISPLAY_TYPE_CUSTOM_SPACING = 'customSpacing';
+    /** @deprecated Saved projects may still use this value — treated as customSpacing */
+    const DISPLAY_TYPE_TRANSPARENT_LEGACY = 'transparent';
+
     const DEFAULTS = {
         cabinetPreset: '500x500',
         pitchPreset: '2.6',
-        displayType: 'standard',
+        displayType: DISPLAY_TYPE_STANDARD,
         cabinetWidthMM: 500,
         cabinetHeightMM: 500,
         pixelPitchMM: 2.6,
-        meshPitchHorizontalMM: 3.9,
-        meshPitchVerticalMM: 7.8,
+        meshPitchHorizontalMM: 2.6,
+        meshPitchVerticalMM: 2.6,
         panelsWide: 10,
         panelsTall: 6,
         pixelWidth: 192,
@@ -77,6 +82,9 @@
     global.OkamiLedWallCalculator = global.OkamiLedWallCalculator || {};
     global.OkamiLedWallCalculator.Constants = {
         MM_PER_FOOT,
+        DISPLAY_TYPE_STANDARD,
+        DISPLAY_TYPE_CUSTOM_SPACING,
+        DISPLAY_TYPE_TRANSPARENT_LEGACY,
         DEFAULTS,
         COMMON_PITCHES,
         EXTENDED_PITCHES,

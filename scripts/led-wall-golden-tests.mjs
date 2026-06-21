@@ -243,6 +243,56 @@ const cases = [
         }
     },
     {
+        name: 'Custom LED Spacing 2.6×2.6 matches Standard P2.6 defaults',
+        fn: () => {
+            const standard = Calc.computeWallProject({
+                panelsWide: 10,
+                panelsTall: 6,
+                cabinetPreset: '500x500',
+                pitchPreset: '2.6',
+                displayType: 'standard',
+                autoCalculateResolution: true,
+                overlayFormat: '16:9'
+            });
+            const customSpacing = Calc.computeWallProject({
+                panelsWide: 10,
+                panelsTall: 6,
+                cabinetPreset: '500x500',
+                pitchPreset: '2.6',
+                displayType: 'customSpacing',
+                meshPitchHorizontalMM: 2.6,
+                meshPitchVerticalMM: 2.6,
+                autoCalculateResolution: true,
+                overlayFormat: '16:9'
+            });
+            assertEqual(customSpacing.totalPixelWidth, standard.totalPixelWidth, 'totalPixelWidth');
+            assertEqual(customSpacing.totalPixelHeight, standard.totalPixelHeight, 'totalPixelHeight');
+            assertEqual(customSpacing.portsRequired, standard.portsRequired, 'portsRequired');
+            assertNear(customSpacing.overlay.usedPercentage, standard.overlay.usedPercentage, 0.01, 'overlay usedPercentage');
+        }
+    },
+    {
+        name: 'Legacy transparent display type still loads custom spacing math',
+        fn: () => {
+            const r = Calc.computeWallProject({
+                panelsWide: 19,
+                panelsTall: 5,
+                cabinetPreset: '500x1000',
+                cabinetWidthMM: 500,
+                cabinetHeightMM: 1000,
+                displayType: 'transparent',
+                meshPitchHorizontalMM: 3.9,
+                meshPitchVerticalMM: 7.8,
+                autoCalculateResolution: true,
+                overlayFormat: 'none'
+            });
+            assertEqual(r.pixelWidth, 128, 'pixelWidth');
+            assertEqual(r.pixelHeight, 128, 'pixelHeight');
+            assertEqual(r.totalPixelWidth, 2432, 'totalPixelWidth');
+            assertEqual(r.totalPixelHeight, 640, 'totalPixelHeight');
+        }
+    },
+    {
         name: 'calculateCabinetResolution preset table P3.9',
         fn: () => {
             const r = Calc.calculateCabinetResolution({
@@ -252,6 +302,31 @@ const cases = [
             });
             assertEqual(r.pixelWidth, 128, 'pixelWidth');
             assertEqual(r.pixelHeight, 128, 'pixelHeight');
+        }
+    },
+    {
+        name: 'build sheet port mapping — 4 ports @ 90% fill',
+        fn: () => {
+            const ctx = { OkamiLedWallCalculator: {} };
+            const calcDir = path.join(__dirname, '..', 'tools', 'led-wall-calculator');
+            for (const file of ['constants.js', 'calculations.js', 'build-sheet-export.js']) {
+                vm.runInNewContext(fs.readFileSync(path.join(calcDir, file), 'utf8'), ctx);
+            }
+            const state = ctx.OkamiLedWallCalculator.computeWallProject({
+                panelsWide: 10,
+                panelsTall: 6,
+                cabinetPreset: '500x500',
+                pitchPreset: '2.6',
+                displayType: 'standard',
+                autoCalculateResolution: true,
+                portCapacity: 650000,
+                portFillThreshold: 90,
+                overlayFormat: 'none'
+            });
+            const mapping = ctx.OkamiLedWallCalculator.BuildSheetExport.calculatePortMapping(state);
+            assertEqual(mapping.length, 4, 'port count');
+            assertEqual(mapping[0].port, 1, 'first port number');
+            assertEqual(mapping[3].pixels, state.totalPixels - (585000 * 3), 'last port remainder pixels');
         }
     }
 ];

@@ -30,7 +30,7 @@ All functions live on `OkamiLedWallCalculator` and accept plain objects.
 
 | Function | Purpose |
 |----------|---------|
-| `calculateCabinetResolution()` | Pixels per cabinet from pitch / presets / mesh |
+| `calculateCabinetResolution()` | Pixels per cabinet from pitch / presets / custom LED spacing |
 | `calculateWallResolution()` | Total wall pixels from grid |
 | `calculatePhysicalSize()` | mm and feet from cabinet + grid |
 | `calculateAspectRatio()` | Pixel ratio + nearest standard label |
@@ -73,7 +73,7 @@ npm run test:calculations
 }
 ```
 
-Future: persist this JSON for projects, multi-wall arrays, PDF/PNG/SVG export, power/weight calculators, client reports — all call the same layer.
+Future: persist this JSON for projects, multi-wall arrays, PNG/SVG export, power/weight calculators — all call the same layer. **Build sheet export** (`build-sheet-export.js`) renders a printable HTML document from `inputs` + `computeWallProject()` state.
 
 ---
 

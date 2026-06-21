@@ -22,7 +22,15 @@
     }
 
     /**
-     * Per-cabinet pixel resolution from pitch, preset tables, or mesh (transparent).
+     * Custom LED Spacing mode (includes legacy saved value "transparent").
+     */
+    function isCustomSpacingDisplayType(displayType) {
+        const type = displayType || C.DEFAULTS.displayType;
+        return type === C.DISPLAY_TYPE_CUSTOM_SPACING || type === C.DISPLAY_TYPE_TRANSPARENT_LEGACY;
+    }
+
+    /**
+     * Per-cabinet pixel resolution from pitch, preset tables, or custom LED spacing.
      * Pure function — no DOM.
      */
     function calculateCabinetResolution(inputs = {}) {
@@ -33,7 +41,7 @@
         const cabinetPreset = inputs.cabinetPreset || 'custom';
         const pitchPreset = inputs.pitchPreset || 'custom';
 
-        if (displayType === 'transparent') {
+        if (isCustomSpacingDisplayType(displayType)) {
             const horizontalPitch = Number(inputs.meshPitchHorizontalMM) || C.DEFAULTS.meshPitchHorizontalMM;
             const verticalPitch = Number(inputs.meshPitchVerticalMM) || C.DEFAULTS.meshPitchVerticalMM;
             return {
@@ -365,6 +373,7 @@
     Object.assign(global.OkamiLedWallCalculator, {
         clampPanelCount,
         clampPortFillThreshold,
+        isCustomSpacingDisplayType,
         calculateCabinetResolution,
         calculateWallResolution,
         calculatePhysicalSize,
