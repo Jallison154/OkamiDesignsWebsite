@@ -6,7 +6,6 @@
         Constants,
         clampPanelCount,
         clampPortFillThreshold,
-        clampCircuitSafeLoadPercent,
         calculateCabinetResolution,
         calculateContentOverlay,
         calculateCabinetArtworkType,
@@ -685,6 +684,16 @@
     function readPortFillThreshold() {
         const value = parseInt(document.getElementById('port-fill-threshold')?.value, 10);
         return clampPortFillThreshold(value);
+    }
+
+    function clampCircuitSafeLoadPercent(value, fallback = DEFAULTS.circuitSafeLoadPercent) {
+        if (typeof Calc.clampCircuitSafeLoadPercent === 'function') {
+            return Calc.clampCircuitSafeLoadPercent(value, fallback);
+        }
+        if (!Number.isFinite(value)) {
+            return fallback;
+        }
+        return Math.min(80, Math.max(1, Math.round(value)));
     }
 
     function readCircuitSafeLoadPercent() {
