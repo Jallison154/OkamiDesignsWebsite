@@ -34,7 +34,34 @@ const Calc = loadCalculator();
 
 const cases = [
     {
-        name: '10×6 @ P2.6 500×500 (default quick start)',
+        name: '10×6 @ P3.9 500×500 (default quick start)',
+        fn: () => {
+            const { DEFAULTS } = Calc.Constants;
+            const r = Calc.computeWallProject({
+                panelsWide: DEFAULTS.panelsWide,
+                panelsTall: DEFAULTS.panelsTall,
+                cabinetPreset: DEFAULTS.cabinetPreset,
+                pitchPreset: DEFAULTS.pitchPreset,
+                pixelPitchMM: DEFAULTS.pixelPitchMM,
+                displayType: DEFAULTS.displayType,
+                autoCalculateResolution: DEFAULTS.autoCalculateResolution,
+                portCapacity: DEFAULTS.portCapacity,
+                portFillThreshold: DEFAULTS.portFillThreshold,
+                overlayFormat: DEFAULTS.overlayFormat
+            });
+            assertEqual(DEFAULTS.pitchPreset, '3.9', 'DEFAULTS.pitchPreset');
+            assertEqual(r.totalPixelWidth, 1280, 'totalPixelWidth');
+            assertEqual(r.totalPixelHeight, 768, 'totalPixelHeight');
+            assertEqual(r.totalPanels, 60, 'totalPanels');
+            assertEqual(r.totalPixels, 983040, 'totalPixels');
+            assertEqual(r.portsRequired, 2, 'portsRequired');
+            assertEqual(r.pixelWidth, 128, 'pixelWidth');
+            assertEqual(r.pixelHeight, 128, 'pixelHeight');
+            assertNear(r.overlay.usedPercentage, 93.75, 0.01, 'overlay usedPercentage');
+        }
+    },
+    {
+        name: '10×6 @ P2.6 500×500',
         fn: () => {
             const r = Calc.computeWallProject({
                 panelsWide: 10,
@@ -141,8 +168,113 @@ const cases = [
         }
     },
     {
-        name: '500×500 P2.9 10×6',
+        name: '500×500 P2.9 10×6 — overlay + ports',
         fn: () => {
+            const r = Calc.computeWallProject({
+                panelsWide: 10,
+                panelsTall: 6,
+                cabinetPreset: '500x500',
+                pitchPreset: '2.9',
+                displayType: 'standard',
+                autoCalculateResolution: true,
+                portCapacity: 650000,
+                portFillThreshold: 90,
+                overlayFormat: '16:9'
+            });
+            assertEqual(r.totalPixels, 1693440, 'totalPixels');
+            assertEqual(r.portsRequired, 3, 'portsRequired');
+            assertEqual(r.overlay.overlayPixelWidth, 1680, 'overlay width');
+            assertEqual(r.overlay.overlayPixelHeight, 945, 'overlay height');
+            assertNear(r.overlay.usedPercentage, 93.75, 0.01, 'overlay usedPercentage');
+        }
+    },
+    {
+        name: '500×1000 P2.9 10×6 — tall portrait overlay',
+        fn: () => {
+            const r = Calc.computeWallProject({
+                panelsWide: 10,
+                panelsTall: 6,
+                cabinetPreset: '500x1000',
+                pitchPreset: '2.9',
+                displayType: 'standard',
+                autoCalculateResolution: true,
+                portCapacity: 650000,
+                portFillThreshold: 90,
+                overlayFormat: '16:9'
+            });
+            assertEqual(r.totalPixelHeight, 2016, 'totalPixelHeight');
+            assertEqual(r.cabinetArtworkType, 'tall', 'cabinetArtworkType');
+            assertEqual(r.overlay.overlayPixelHeight, 945, 'overlay height');
+            assertEqual(r.overlay.unusedVertical, 1071, 'unused vertical');
+            if (r.overlay.overlayPixelHeight % r.pixelHeight === 0) {
+                throw new Error('overlay height snapped to cabinet grid');
+            }
+        }
+    },
+    {
+        name: '500×1000 P2.9 19×5 — wide wall overlay',
+        fn: () => {
+            const r = Calc.computeWallProject({
+                panelsWide: 19,
+                panelsTall: 5,
+                cabinetPreset: '500x1000',
+                pitchPreset: '2.9',
+                displayType: 'standard',
+                autoCalculateResolution: true,
+                overlayFormat: '16:9'
+            });
+            assertEqual(r.totalPanels, 95, 'totalPanels');
+            assertEqual(r.totalPixelWidth, 3192, 'totalPixelWidth');
+            assertEqual(r.overlay.overlayPixelWidth, 2987, 'overlay width');
+            assertEqual(r.overlay.unusedHorizontal, 205, 'unused horizontal');
+        }
+    },
+    {
+        name: '500×500 P3.9 18×5 — letterbox left/right',
+        fn: () => {
+            const r = Calc.computeWallProject({
+                panelsWide: 18,
+                panelsTall: 5,
+                cabinetPreset: '500x500',
+                pitchPreset: '3.9',
+                displayType: 'standard',
+                autoCalculateResolution: true,
+                overlayFormat: '16:9'
+            });
+            assertEqual(r.totalPixelWidth, 2304, 'totalPixelWidth');
+            assertEqual(r.totalPixelHeight, 640, 'totalPixelHeight');
+            assertEqual(r.overlay.overlayPixelHeight, 640, 'overlay full height');
+            assertEqual(r.overlay.overlayPixelWidth, 1138, 'overlay width');
+            assertEqual(r.overlay.unusedHorizontal, 1166, 'unused horizontal');
+        }
+    },
+    {
+        name: '500×500 P5.9 20×8',
+        fn: () => {
+            const r = Calc.computeWallProject({
+                panelsWide: 20,
+                panelsTall: 8,
+                cabinetPreset: '500x500',
+                pitchPreset: '5.9',
+                displayType: 'standard',
+                autoCalculateResolution: true,
+                overlayFormat: 'none'
+            });
+            assertEqual(r.pixelWidth, 84, 'pixelWidth');
+            assertEqual(r.totalPanels, 160, 'totalPanels');
+            assertEqual(r.totalPixels, 1128960, 'totalPixels');
+            assertEqual(r.portsRequired, 2, 'portsRequired');
+        }
+    },
+    {
+        name: 'physical size feet/inches — 500×500 P2.9 10×6',
+        fn: () => {
+            const formatFeetInches = (feetDecimal) => {
+                const totalInches = Math.round(feetDecimal * 12);
+                const feet = Math.floor(totalInches / 12);
+                const inches = totalInches % 12;
+                return `${feet}' ${inches}"`;
+            };
             const r = Calc.computeWallProject({
                 panelsWide: 10,
                 panelsTall: 6,
@@ -152,9 +284,8 @@ const cases = [
                 autoCalculateResolution: true,
                 overlayFormat: 'none'
             });
-            assertEqual(r.pixelWidth, 168, 'pixelWidth');
-            assertEqual(r.totalPixelWidth, 1680, 'totalPixelWidth');
-            assertEqual(r.totalPixelHeight, 1008, 'totalPixelHeight');
+            assertEqual(formatFeetInches(r.physicalWidthFt), `16' 5"`, 'physical width');
+            assertEqual(formatFeetInches(r.physicalHeightFt), `9' 10"`, 'physical height');
         }
     },
     {
@@ -206,19 +337,20 @@ const cases = [
     {
         name: 'port safe capacity metrics — default 10×6 wall',
         fn: () => {
+            const { DEFAULTS } = Calc.Constants;
             const r = Calc.computeWallProject({
-                panelsWide: 10,
-                panelsTall: 6,
-                cabinetPreset: '500x500',
-                pitchPreset: '2.6',
-                displayType: 'standard',
+                panelsWide: DEFAULTS.panelsWide,
+                panelsTall: DEFAULTS.panelsTall,
+                cabinetPreset: DEFAULTS.cabinetPreset,
+                pitchPreset: DEFAULTS.pitchPreset,
+                displayType: DEFAULTS.displayType,
                 autoCalculateResolution: true,
-                portCapacity: 650000,
-                portFillThreshold: 90,
+                portCapacity: DEFAULTS.portCapacity,
+                portFillThreshold: DEFAULTS.portFillThreshold,
                 overlayFormat: 'none'
             });
             assertEqual(r.usablePixelsPerPort, 585000, 'usablePixelsPerPort');
-            assertEqual(r.portsRequired, 4, 'portsRequired');
+            assertEqual(r.portsRequired, 2, 'portsRequired');
             assertEqual(r.peakSafeCapacityUsedPercent, 100, 'peakSafeCapacityUsedPercent');
             assertEqual(r.peakRawMaxLoadPercent, 90, 'peakRawMaxLoadPercent');
             assertEqual(r.processorPortHeadroomPercent, 10, 'processorPortHeadroomPercent');
@@ -242,24 +374,24 @@ const cases = [
     {
         name: 'reset defaults — full project snapshot',
         fn: () => {
-            const defaults = {
-                panelsWide: 10,
-                panelsTall: 6,
-                cabinetPreset: '500x500',
-                pitchPreset: '2.6',
-                displayType: 'standard',
-                cabinetWidthMM: 500,
-                cabinetHeightMM: 500,
-                pixelPitchMM: 2.6,
-                autoCalculateResolution: true,
-                portCapacity: 650000,
-                portFillThreshold: 90,
-                overlayFormat: '16:9'
-            };
-            const r = Calc.computeWallProject(defaults);
-            assertEqual(r.totalPixelWidth, 1920, 'totalPixelWidth');
-            assertEqual(r.totalPixelHeight, 1152, 'totalPixelHeight');
-            assertEqual(r.portsRequired, 4, 'portsRequired');
+            const { DEFAULTS } = Calc.Constants;
+            const r = Calc.computeWallProject({
+                panelsWide: DEFAULTS.panelsWide,
+                panelsTall: DEFAULTS.panelsTall,
+                cabinetPreset: DEFAULTS.cabinetPreset,
+                pitchPreset: DEFAULTS.pitchPreset,
+                displayType: DEFAULTS.displayType,
+                cabinetWidthMM: DEFAULTS.cabinetWidthMM,
+                cabinetHeightMM: DEFAULTS.cabinetHeightMM,
+                pixelPitchMM: DEFAULTS.pixelPitchMM,
+                autoCalculateResolution: DEFAULTS.autoCalculateResolution,
+                portCapacity: DEFAULTS.portCapacity,
+                portFillThreshold: DEFAULTS.portFillThreshold,
+                overlayFormat: DEFAULTS.overlayFormat
+            });
+            assertEqual(r.totalPixelWidth, 1280, 'totalPixelWidth');
+            assertEqual(r.totalPixelHeight, 768, 'totalPixelHeight');
+            assertEqual(r.portsRequired, 2, 'portsRequired');
             assertEqual(r.cabinetArtworkType, 'square', 'cabinetArtworkType');
             assertNear(r.overlay.usedPercentage, 93.75, 0.01, 'overlay usedPercentage');
         }

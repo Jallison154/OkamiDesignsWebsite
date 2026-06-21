@@ -278,7 +278,35 @@
         return settingsLoading;
     }
 
+    function isLocalDevelopmentHost() {
+        const host = (window.location.hostname || '').toLowerCase();
+        return host === 'localhost'
+            || host === '127.0.0.1'
+            || host === '[::1]'
+            || host.endsWith('.local');
+    }
+
+    function isRoutingDebugEnabled() {
+        const params = new URLSearchParams(window.location.search);
+        const flag = params.get('routingDebug');
+        if (flag === '1' || flag === 'true') {
+            return true;
+        }
+        if (flag === '0' || flag === 'false') {
+            return false;
+        }
+        return isLocalDevelopmentHost();
+    }
+
+    function removeRoutingDebugBar() {
+        document.getElementById('site-routing-debug')?.remove();
+    }
+
     function logRouteDecision(details) {
+        if (!isRoutingDebugEnabled()) {
+            return;
+        }
+
         console.info('[Okami Route Guard]', {
             path: window.location.pathname,
             ...details,
@@ -287,6 +315,10 @@
     }
 
     function logVisibilityDebug(settings, context = 'init') {
+        if (!isRoutingDebugEnabled()) {
+            return;
+        }
+
         const landing = settings?.constructionMode ? 'construction (/)' : 'home (/)';
         console.info('[Okami Site Visibility]', {
             context,
@@ -473,6 +505,11 @@
     }
 
     function renderRoutingDebug(settings) {
+        if (!isRoutingDebugEnabled()) {
+            removeRoutingDebugBar();
+            return;
+        }
+
         const payload = {
             currentPath: window.location.pathname,
             constructionMode: Boolean(settings?.constructionMode),
@@ -830,6 +867,7 @@
             return;
         }
 
+        removeRoutingDebugBar();
         hidePageUntilCheck();
 
         try {
@@ -892,7 +930,9 @@
         getLastSettingsSource,
         logVisibilityDebug,
         resolveRouteDecision,
-        getLoadedNavItems
+        getLoadedNavItems,
+        isRoutingDebugEnabled,
+        removeRoutingDebugBar
     };
 
     window.addEventListener('pageshow', (event) => {

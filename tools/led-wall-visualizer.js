@@ -1043,7 +1043,7 @@
         const pitchLabel = formatQuickPitchLabel(state);
         setText('summary-cabinet-pitch', `${cabinetLabel} • ${pitchLabel}`);
         setText('summary-cabinet-resolution', formatPixelPair(state.pixelWidth, state.pixelHeight, false));
-        setText('summary-wall-resolution', formatPixelPair(state.totalPixelWidth, state.totalPixelHeight, false));
+        setText('summary-wall-resolution', formatPixelPair(state.totalPixelWidth, state.totalPixelHeight, true));
         setText('summary-processor-ports', String(state.portsRequired));
         setText(
             'summary-physical-size',

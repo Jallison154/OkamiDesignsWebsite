@@ -29,6 +29,23 @@
         return presetKey === '500x500' || presetKey === '500x1000';
     }
 
+    function resolveCabinetDimensions(inputs = {}) {
+        const presetKey = inputs.cabinetPreset;
+        const preset = isMmCabinetPreset(presetKey) ? C.CABINET_PRESETS[presetKey] : null;
+
+        if (preset) {
+            return {
+                cabinetWidthMM: preset.width,
+                cabinetHeightMM: preset.height
+            };
+        }
+
+        return {
+            cabinetWidthMM: Number(inputs.cabinetWidthMM) || C.DEFAULTS.cabinetWidthMM,
+            cabinetHeightMM: Number(inputs.cabinetHeightMM) || C.DEFAULTS.cabinetHeightMM
+        };
+    }
+
     /**
      * Custom LED Spacing mode (includes legacy saved value "transparent").
      */
@@ -405,11 +422,17 @@
         const autoCalculate = rawInputs.autoCalculateResolution !== false
             && rawInputs.autoCalculateResolution !== 'false';
 
-        let pixelWidth = Number(rawInputs.pixelWidth) || C.DEFAULTS.pixelWidth;
-        let pixelHeight = Number(rawInputs.pixelHeight) || C.DEFAULTS.pixelHeight;
+        const cabinetDimensions = resolveCabinetDimensions(rawInputs);
+        const resolvedInputs = {
+            ...rawInputs,
+            ...cabinetDimensions
+        };
+
+        let pixelWidth = Number(resolvedInputs.pixelWidth) || C.DEFAULTS.pixelWidth;
+        let pixelHeight = Number(resolvedInputs.pixelHeight) || C.DEFAULTS.pixelHeight;
 
         if (autoCalculate) {
-            const cabinetPixels = calculateCabinetResolution(rawInputs);
+            const cabinetPixels = calculateCabinetResolution(resolvedInputs);
             pixelWidth = cabinetPixels.pixelWidth;
             pixelHeight = cabinetPixels.pixelHeight;
         }
@@ -417,16 +440,16 @@
         const wall = calculateWallResolution({
             pixelWidth,
             pixelHeight,
-            panelsWide: rawInputs.panelsWide,
-            panelsTall: rawInputs.panelsTall
+            panelsWide: resolvedInputs.panelsWide,
+            panelsTall: resolvedInputs.panelsTall
         });
 
         const physical = calculatePhysicalSize({
-            cabinetWidthMM: rawInputs.cabinetWidthMM,
-            cabinetHeightMM: rawInputs.cabinetHeightMM,
+            cabinetWidthMM: cabinetDimensions.cabinetWidthMM,
+            cabinetHeightMM: cabinetDimensions.cabinetHeightMM,
             panelsWide: wall.panelsWide,
             panelsTall: wall.panelsTall,
-            mmPerFoot: rawInputs.mmPerFoot
+            mmPerFoot: resolvedInputs.mmPerFoot
         });
 
         const aspect = calculateAspectRatio({
@@ -436,8 +459,8 @@
 
         const processor = calculateProcessorPorts({
             totalPixels: wall.totalPixels,
-            portCapacity: rawInputs.portCapacity,
-            portFillThreshold: rawInputs.portFillThreshold
+            portCapacity: resolvedInputs.portCapacity,
+            portFillThreshold: resolvedInputs.portFillThreshold
         });
 
         const portLoading = summarizePortLoading({
@@ -445,7 +468,7 @@
             totalPixels: wall.totalPixels
         });
 
-        const overlayTarget = resolveOverlayTargetRatio(rawInputs);
+        const overlayTarget = resolveOverlayTargetRatio(resolvedInputs);
         const overlay = overlayTarget
             ? calculateContentOverlay({
                 totalPixelWidth: wall.totalPixelWidth,
@@ -456,10 +479,10 @@
 
         const power = calculatePowerRequirements({
             totalPanels: wall.totalPanels,
-            wattsPerPanel: rawInputs.wattsPerPanel,
-            circuitAmperage: rawInputs.circuitAmperage,
-            circuitVoltage: rawInputs.circuitVoltage,
-            circuitSafeLoadPercent: rawInputs.circuitSafeLoadPercent
+            wattsPerPanel: resolvedInputs.wattsPerPanel,
+            circuitAmperage: resolvedInputs.circuitAmperage,
+            circuitVoltage: resolvedInputs.circuitVoltage,
+            circuitSafeLoadPercent: resolvedInputs.circuitSafeLoadPercent
         });
 
         return {
@@ -470,15 +493,15 @@
             ...processor,
             ...portLoading,
             ...power,
-            overlayFormat: rawInputs.overlayFormat ?? 'none',
+            overlayFormat: resolvedInputs.overlayFormat ?? 'none',
             overlayFormatLabel: overlayTarget ? overlayTarget.label : null,
             overlayActive: overlayTarget !== null,
             overlay,
-            cabinetArtworkType: calculateCabinetArtworkType(rawInputs),
-            displayType: rawInputs.displayType || C.DEFAULTS.displayType,
-            cabinetWidthMM: Number(rawInputs.cabinetWidthMM) || C.DEFAULTS.cabinetWidthMM,
-            cabinetHeightMM: Number(rawInputs.cabinetHeightMM) || C.DEFAULTS.cabinetHeightMM,
-            pixelPitchMM: Number(rawInputs.pixelPitchMM) || C.DEFAULTS.pixelPitchMM
+            cabinetArtworkType: calculateCabinetArtworkType(cabinetDimensions),
+            displayType: resolvedInputs.displayType || C.DEFAULTS.displayType,
+            cabinetWidthMM: cabinetDimensions.cabinetWidthMM,
+            cabinetHeightMM: cabinetDimensions.cabinetHeightMM,
+            pixelPitchMM: Number(resolvedInputs.pixelPitchMM) || C.DEFAULTS.pixelPitchMM
         };
     }
 
@@ -488,6 +511,7 @@
         clampPortFillThreshold,
         clampCircuitSafeLoadPercent,
         isCustomSpacingDisplayType,
+        resolveCabinetDimensions,
         calculateCabinetResolution,
         calculateWallResolution,
         calculatePhysicalSize,

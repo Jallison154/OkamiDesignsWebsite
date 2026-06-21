@@ -235,7 +235,8 @@
                 title: 'Resolution',
                 primary: formatPixelPair(state.totalPixelWidth, state.totalPixelHeight),
                 lines: [
-                    `${formatPixelPair(state.pixelWidth, state.pixelHeight)} px/cabinet`
+                    `${formatPixelPair(state.pixelWidth, state.pixelHeight)} px/cabinet`,
+                    `${formatNumber(state.totalPixels)} total px`
                 ]
             },
             processor,
