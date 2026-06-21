@@ -49,22 +49,15 @@
             `  Aspect ratio: ${state.closestRatio?.label || state.aspectRatio.toFixed(4)}`
         ];
 
-        if (state.curvedWallActive) {
+        if (inputs.curvedWallMode === true || inputs.curvedWallMode === 'true') {
             const Summary = global.OkamiLedWallCalculator?.WallProjectSummary;
-            const formatDual = Summary?.formatDualLength;
-            const formatDegree = (degrees) => {
-                const rounded = Math.round(Number(degrees) * 10) / 10;
-                return Number.isInteger(rounded) ? `${rounded}°` : `${rounded.toFixed(1)}°`;
-            };
-            lines.push(
-                '',
-                'CURVED WALL',
-                `  Surface width: ${formatDual?.(state.surfaceWidthFeet, state.surfaceWidthMM) || `${state.surfaceWidthFeet.toFixed(2)}'`}`,
-                `  Venue width required: ${formatDual?.(state.chordWidthFeet, state.chordWidthMM) || `${state.chordWidthFeet.toFixed(2)}'`}`,
-                `  Curve radius: ${formatDual?.(state.radiusFeet, state.radiusMM) || `${state.radiusFeet.toFixed(2)}'`}`,
-                `  Curve depth: ${formatDual?.(state.curveDepthFeet, state.curveDepthMM) || `${state.curveDepthFeet.toFixed(2)}'`}`,
-                `  Total curve angle: ${formatDegree(state.totalCurveAngle)} (${formatDegree(state.cabinetAngleDegrees)} per cabinet)`
-            );
+            const rows = Summary?.buildCurvedWallDetailRows?.(state, inputs) || [];
+            if (rows.length) {
+                lines.push('', 'CURVED WALL');
+                rows.forEach((row) => {
+                    lines.push(`  ${row.label}: ${row.value}`);
+                });
+            }
         }
 
         lines.push(

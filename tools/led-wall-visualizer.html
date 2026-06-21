@@ -20,7 +20,7 @@
     <meta name="twitter:description" content="Calculate LED video wall resolution, cabinet layouts, processor ports, aspect ratios, and content fit with the free Okami Designs LED Video Wall Calculator.">
     <meta name="twitter:image" content="https://okamidesigns.com/images/led-cabinet-square.png">
     <link rel="icon" href="../images/Okami_Designs_HeadWhite.png" type="image/png">
-    <link rel="stylesheet" href="../styles.css?v=20260716">
+    <link rel="stylesheet" href="../styles.css?v=20260718">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -253,7 +253,7 @@
                                         <label class="led-advanced-toggle" for="curved-wall-mode">
                                             <input type="checkbox" id="curved-wall-mode">
                                             <span class="led-advanced-toggle-card">
-                                                <span class="led-advanced-toggle-label">Enable Curved Wall Mode</span>
+                                                <span class="led-advanced-toggle-label">Enable Curved Wall</span>
                                                 <span class="led-advanced-toggle-state" id="curved-wall-mode-state">Off</span>
                                             </span>
                                         </label>
@@ -552,20 +552,23 @@
                         </div>
                         <div class="led-preview-layout">
                             <div class="led-preview-main">
-                                <div class="led-preview-stage" id="led-preview-stage">
-                                    <div class="led-preview-wall-container" id="led-preview-wall-container">
-                                        <div class="led-preview-col-axis" id="led-preview-col-axis" aria-hidden="true"></div>
-                                        <div class="led-preview-row-axis" id="led-preview-row-axis" aria-hidden="true"></div>
-                                        <div class="led-preview-wall" id="led-preview-wall"></div>
+                                <div class="led-preview-measure" id="led-preview-measure">
+                                    <div class="led-preview-scale-wrap" id="led-preview-scale-wrap">
+                                        <div class="led-preview-scale-layer" id="led-preview-scale-layer">
+                                            <div class="led-preview-wall-container" id="led-preview-wall-container">
+                                                <div class="led-preview-col-axis" id="led-preview-col-axis" aria-hidden="true"></div>
+                                                <div class="led-preview-row-axis" id="led-preview-row-axis" aria-hidden="true"></div>
+                                                <div class="led-preview-wall" id="led-preview-wall"></div>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div class="led-cabinet-tooltip" id="led-cabinet-tooltip" role="tooltip" hidden></div>
                                 </div>
                             </div>
                             <aside class="led-top-view-panel" id="led-top-view-panel" hidden aria-labelledby="led-top-view-title">
                                 <h3 id="led-top-view-title" class="led-top-view-title">Top View Curve</h3>
-                                <p class="led-top-view-note">Stage front ↓</p>
+                                <p class="led-top-view-note">Stage front ↓ · venue fit reference</p>
                                 <div class="led-top-view-diagram" id="led-top-view-diagram"></div>
-                                <dl class="led-top-view-metrics" id="led-top-view-metrics"></dl>
                             </aside>
                         </div>
                         <div class="led-overlay-debug" id="led-overlay-debug" hidden>
@@ -630,6 +633,6 @@
     <script src="led-wall-calculator/wall-project-summary.js?v=20260713"></script>
     <script src="vendor/jspdf.umd.min.js?v=20260713"></script>
     <script src="led-wall-calculator/build-sheet-pdf.js?v=20260713"></script>
-    <script src="led-wall-visualizer.js?v=20260716"></script>
+    <script src="led-wall-visualizer.js?v=20260718"></script>
 </body>
 </html>

@@ -5084,25 +5084,9 @@ html {
     cursor: pointer;
 }
 
-.led-preview-stage {
-    flex: 1 1 auto;
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: clamp(220px, 36vh, 320px);
-    padding: clamp(10px, 2vw, 16px);
-    background: rgba(0, 0, 0, 0.35);
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    overflow: hidden;
-}
-
 .led-preview-wall-container {
     position: relative;
     display: inline-block;
-    max-width: 100%;
-    max-height: 100%;
 }
 
 .led-preview-wall-container.has-axis-labels {
@@ -5275,10 +5259,6 @@ html {
 .led-preview-wall {
     position: relative;
     display: grid;
-    width: 100%;
-    height: 100%;
-    max-width: 100%;
-    max-height: 100%;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
@@ -5292,9 +5272,37 @@ html {
 .led-preview-main {
     flex: 1 1 auto;
     min-width: 0;
-    min-height: 0;
+    min-height: clamp(260px, 38vh, 340px);
     display: flex;
     flex-direction: column;
+}
+
+.led-preview-measure {
+    position: relative;
+    flex: 1 1 auto;
+    width: 100%;
+    height: clamp(240px, 36vh, 320px);
+    min-height: 240px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    overflow: hidden;
+}
+
+.led-preview-scale-wrap {
+    position: relative;
+    flex-shrink: 0;
+    overflow: visible;
+}
+
+.led-preview-scale-layer {
+    transform-origin: 0 0;
+    will-change: transform;
 }
 
 .led-top-view-panel {
@@ -5400,28 +5408,6 @@ html {
     .led-top-view-diagram {
         max-height: 160px;
     }
-}
-
-.led-preview-wall--curved {
-    display: block;
-    transform-style: preserve-3d;
-    overflow: hidden;
-}
-
-.led-preview-stage--curved {
-    perspective: 1400px;
-    perspective-origin: 50% 28%;
-}
-
-.led-preview-wall-container.has-curved-preview {
-    align-items: center;
-    justify-content: center;
-}
-
-.led-cabinet--arc {
-    position: absolute;
-    transform-origin: center center;
-    backface-visibility: hidden;
 }
 
 .led-advanced-error {
@@ -5599,7 +5585,7 @@ html {
             "preview preview";
     }
 
-    .led-preview-stage {
+    .led-preview-measure {
         min-height: clamp(300px, 44vw, 540px);
     }
 
@@ -5812,7 +5798,7 @@ html {
         flex-direction: column;
     }
 
-    .led-preview-stage {
+    .led-preview-measure {
         flex: 1 1 auto;
         min-height: 0;
         height: 100%;
@@ -5926,7 +5912,7 @@ html {
         letter-spacing: 0.8px;
     }
 
-    .led-preview-stage {
+    .led-preview-measure {
         min-height: 0;
     }
 
@@ -6009,7 +5995,7 @@ html {
         height: 100%;
     }
 
-    .led-preview-stage {
+    .led-preview-measure {
         flex: 1 1 auto;
         min-height: 0;
         height: auto;
@@ -6097,7 +6083,7 @@ html {
         gap: 10px;
     }
 
-    .led-preview-stage {
+    .led-preview-measure {
         min-height: clamp(240px, 58vw, 420px);
         padding: 10px;
     }

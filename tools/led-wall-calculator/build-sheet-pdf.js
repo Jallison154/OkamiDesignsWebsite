@@ -242,11 +242,15 @@
         return { diagramW, diagramH, wallAspect };
     }
 
+    function isCurvedWallExportEnabled(state, inputs = {}) {
+        return Summary()?.isCurvedWallModeEnabled?.(state, inputs) === true;
+    }
+
     function drawTopViewCurveDiagram(doc, state, x0, y0, boxW, boxH) {
         const Calc = global.OkamiLedWallCalculator;
         const diagram = Calc?.computeTopViewCurveDiagram?.(state);
         const viewBox = Calc?.computeTopViewCurveViewBox?.(diagram);
-        if (!diagram || !viewBox || !state.curvedWallActive) {
+        if (!diagram || !viewBox) {
             return y0;
         }
 
@@ -297,31 +301,11 @@
             );
         }
 
-        const summaryApi = Summary();
-        const formatDual = summaryApi?.formatDualLength;
-        const formatDegree = summaryApi?.formatDegreeLabel;
-        const rows = [
-            ['Surface Width', formatDual?.(diagram.surfaceWidthFeet, state.surfaceWidthMM)],
-            ['Venue Width Required', formatDual?.(diagram.chordWidthFeet, state.chordWidthMM)],
-            ['Curve Depth', formatDual?.(diagram.curveDepthFeet, state.curveDepthMM)],
-            ['Radius', diagram.radiusFeet != null ? formatDual?.(diagram.radiusFeet, state.radiusMM) : 'N/A'],
-            ['Total Curve Angle', formatDegree?.(diagram.totalCurveAngle)]
-        ].filter((row) => row[1]);
-
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(6);
-        setTextColor(doc, COLORS.muted);
-        let labelY = y0 + boxH + 4;
-        rows.forEach(([label, value]) => {
-            doc.text(`${label}: ${value}`, x0, labelY);
-            labelY += 3.2;
-        });
-
-        return labelY + 1;
+        return y0 + boxH + 2;
     }
 
-    function drawTopViewCurveSection(doc, state, startY, maxHeight) {
-        if (!state?.curvedWallActive) {
+    function drawTopViewCurveSection(doc, state, inputs, startY, maxHeight) {
+        if (!isCurvedWallExportEnabled(state, inputs) || state?.curvedWallAngleExceeded) {
             return startY;
         }
 
@@ -528,8 +512,8 @@
         return rows;
     }
 
-    function buildCurvedWallDetailRows(state) {
-        return Summary()?.buildCurvedWallDetailRows?.(state) || [];
+    function buildCurvedWallDetailRows(state, inputs = {}) {
+        return Summary()?.buildCurvedWallDetailRows?.(state, inputs) || [];
     }
 
     function buildNotesRows(model) {
@@ -676,8 +660,8 @@
 
         y = drawWallVisual(doc, wallState, y + 2, visualMaxH);
 
-        if (wallState.curvedWallActive) {
-            y = drawTopViewCurveSection(doc, wallState, y + 2, 42);
+        if (isCurvedWallExportEnabled(wallState, inputs)) {
+            y = drawTopViewCurveSection(doc, wallState, inputs, y + 2, 42);
         }
 
         const detailCompact = {
@@ -700,11 +684,11 @@
 
         leftY = drawDetailSection(doc, 'Cabinet Details', cabinetRows, leftX, leftY, columnWidth, detailCompact);
         leftY = drawDetailSection(doc, 'Resolution Details', resolutionRows, leftX, leftY + 0.5, columnWidth, detailCompact);
-        if (wallState.curvedWallActive) {
+        if (isCurvedWallExportEnabled(wallState, inputs)) {
             leftY = drawDetailSection(
                 doc,
                 'Curved Wall',
-                buildCurvedWallDetailRows(wallState),
+                buildCurvedWallDetailRows(wallState, inputs),
                 leftX,
                 leftY + 0.5,
                 columnWidth,

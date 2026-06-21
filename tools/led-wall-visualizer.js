@@ -54,12 +54,25 @@
 
     const OVERLAY_DEBUG = new URLSearchParams(window.location.search).has('debug');
     const CABINET_NUMBERS_SESSION_KEY = 'led-show-cabinet-numbers';
+    const PREVIEW_INTRINSIC_WIDTH = 480;
+    const PREVIEW_MIN_SCALE = 0.2;
+    const PREVIEW_MAX_SCALE = 1;
+    const PREVIEW_AXIS_GUTTER_X = 28;
+    const PREVIEW_AXIS_GUTTER_Y = 22;
+    const PREVIEW_MEASURE_PADDING = 24;
     const CABINET_ART = {
         square: { src: '../images/led-cabinet-square.png', status: 'loading' },
         tall: { src: '../images/led-cabinet-500x1000.png', status: 'loading' }
     };
 
     let resizeObserver = null;
+    let previewResizeRaf = null;
+    let lastMeasureWidth = 0;
+    let lastMeasureHeight = 0;
+    let lastAppliedPreviewScale = 0;
+    let lastPreviewLayoutKey = '';
+    let lastPreviewContentKey = '';
+    let lastTopViewPanelKey = '';
     let syncingPreset = false;
     let previewHoverBound = false;
     let advancedViewOpen = false;
@@ -165,10 +178,10 @@
             void downloadBuildSheetPdf();
         });
 
-        const stage = document.getElementById('led-preview-stage');
-        if (stage && 'ResizeObserver' in window) {
-            resizeObserver = new ResizeObserver(() => renderPreview(getState()));
-            resizeObserver.observe(stage);
+        const measure = document.getElementById('led-preview-measure');
+        if (measure && 'ResizeObserver' in window) {
+            resizeObserver = new ResizeObserver(onPreviewMeasureResize);
+            resizeObserver.observe(measure);
         }
 
         window.addEventListener('resize', onResize);
@@ -187,8 +200,8 @@
             return;
         }
 
-        const stage = document.getElementById('led-preview-stage');
-        if (!stage) {
+        const measure = document.getElementById('led-preview-measure');
+        if (!measure) {
             return;
         }
 
@@ -206,7 +219,7 @@
                 }
             }, { rootMargin: '120px' });
 
-            observer.observe(stage);
+            observer.observe(measure);
             return;
         }
 
@@ -554,10 +567,127 @@
         setInputValue('pitch-preset', 'custom');
     }
 
-    function onResize() {
-        if (document.getElementById('led-wall-app')) {
-            renderPreview(getState());
+    function onPreviewMeasureResize(entries) {
+        const entry = entries[0];
+        if (!entry) {
+            return;
         }
+
+        const width = Math.round(entry.contentRect.width);
+        const height = Math.round(entry.contentRect.height);
+        if (Math.abs(width - lastMeasureWidth) <= 1 && Math.abs(height - lastMeasureHeight) <= 1) {
+            return;
+        }
+
+        if (previewResizeRaf) {
+            cancelAnimationFrame(previewResizeRaf);
+        }
+
+        previewResizeRaf = requestAnimationFrame(() => {
+            previewResizeRaf = null;
+            applyPreviewScaleOnly(getState());
+        });
+    }
+
+    function onResize() {
+        if (!document.getElementById('led-wall-app')) {
+            return;
+        }
+
+        applyPreviewScaleOnly(getState());
+    }
+
+    function computePreviewContentKey(state) {
+        return [
+            state.panelsWide,
+            state.panelsTall,
+            state.cabinetWidthMM,
+            state.cabinetHeightMM,
+            state.totalPanels,
+            state.displayType,
+            isCabinetNumbersEnabled()
+        ].join('|');
+    }
+
+    function computePreviewIntrinsicLayout(state) {
+        const aspect = getWallPhysicalAspect(state);
+        const wallWidth = PREVIEW_INTRINSIC_WIDTH;
+        const wallHeight = wallWidth / aspect;
+        const cellWidth = wallWidth / state.panelsWide;
+        const tier = getLabelTier(cellWidth);
+        const numbersEnabled = isCabinetNumbersEnabled();
+        const showAxisLabels = numbersEnabled && tier === LABEL_TIER.TINY;
+
+        let contentWidth = wallWidth;
+        let contentHeight = wallHeight;
+        if (showAxisLabels) {
+            contentWidth += PREVIEW_AXIS_GUTTER_X;
+            contentHeight += PREVIEW_AXIS_GUTTER_Y;
+        }
+
+        return {
+            wallWidth,
+            wallHeight,
+            contentWidth,
+            contentHeight,
+            showAxisLabels,
+            tier,
+            cellWidth
+        };
+    }
+
+    function computePreviewScaleFactor(contentWidth, contentHeight, measureWidth, measureHeight) {
+        const availableWidth = Math.max(measureWidth - PREVIEW_MEASURE_PADDING, 80);
+        const availableHeight = Math.max(measureHeight - PREVIEW_MEASURE_PADDING, 80);
+        const scale = Math.min(
+            availableWidth / contentWidth,
+            availableHeight / contentHeight
+        );
+        return Math.max(PREVIEW_MIN_SCALE, Math.min(PREVIEW_MAX_SCALE, scale));
+    }
+
+    function applyPreviewScaleOnly(state) {
+        const measure = document.getElementById('led-preview-measure');
+        const scaleWrap = document.getElementById('led-preview-scale-wrap');
+        const scaleLayer = document.getElementById('led-preview-scale-layer');
+        if (!measure || !scaleWrap || !scaleLayer) {
+            return;
+        }
+
+        const layout = computePreviewIntrinsicLayout(state);
+        const measureWidth = Math.round(measure.clientWidth);
+        const measureHeight = Math.round(measure.clientHeight);
+        const scale = computePreviewScaleFactor(
+            layout.contentWidth,
+            layout.contentHeight,
+            measureWidth,
+            measureHeight
+        );
+
+        const layoutKey = `${layout.contentWidth}x${layout.contentHeight}`;
+
+        if (
+            Math.abs(scale - lastAppliedPreviewScale) < 0.001
+            && layoutKey === lastPreviewLayoutKey
+            && Math.abs(measureWidth - lastMeasureWidth) <= 1
+            && Math.abs(measureHeight - lastMeasureHeight) <= 1
+        ) {
+            return;
+        }
+
+        lastAppliedPreviewScale = scale;
+        lastPreviewLayoutKey = layoutKey;
+        lastMeasureWidth = measureWidth;
+        lastMeasureHeight = measureHeight;
+
+        const visualWidth = layout.contentWidth * scale;
+        const visualHeight = layout.contentHeight * scale;
+
+        scaleWrap.style.width = `${visualWidth}px`;
+        scaleWrap.style.height = `${visualHeight}px`;
+        scaleLayer.style.width = `${layout.contentWidth}px`;
+        scaleLayer.style.height = `${layout.contentHeight}px`;
+        scaleLayer.style.transform = `scale(${scale})`;
     }
 
     function onAdvFieldChange(advId) {
@@ -1339,7 +1469,7 @@
 
     function showCabinetTooltip(cell, cabinetNumber, row, col) {
         const tooltip = document.getElementById('led-cabinet-tooltip');
-        const stage = document.getElementById('led-preview-stage');
+        const stage = document.getElementById('led-preview-measure');
         if (!tooltip || !stage || !isDesktopPreview()) {
             return;
         }
@@ -1433,115 +1563,73 @@
     function renderTopViewCurvePanel(state) {
         const panel = document.getElementById('led-top-view-panel');
         const diagramEl = document.getElementById('led-top-view-diagram');
-        const metricsEl = document.getElementById('led-top-view-metrics');
-        if (!panel || !diagramEl || !metricsEl) {
+        if (!panel || !diagramEl) {
             return;
         }
 
-        const showPanel = state.curvedWallMode === true
-            && state.curvedWallActive === true
-            && !state.curvedWallAngleExceeded;
+        const showPanel = state.curvedWallMode === true && !state.curvedWallAngleExceeded;
+
+        const panelKey = showPanel
+            ? [
+                state.panelsWide,
+                state.cabinetAngleDegrees,
+                state.surfaceWidthFeet,
+                state.chordWidthFeet,
+                state.curveDepthFeet,
+                state.radiusFeet,
+                state.totalCurveAngle
+            ].join('|')
+            : 'hidden';
 
         panel.hidden = !showPanel;
         if (!showPanel) {
-            diagramEl.innerHTML = '';
-            metricsEl.innerHTML = '';
+            if (lastTopViewPanelKey !== panelKey) {
+                diagramEl.innerHTML = '';
+                lastTopViewPanelKey = panelKey;
+            }
             return;
         }
+
+        if (panelKey === lastTopViewPanelKey) {
+            return;
+        }
+        lastTopViewPanelKey = panelKey;
 
         const diagram = computeTopViewCurveDiagram(state);
         const viewBox = computeTopViewCurveViewBox(diagram);
         diagramEl.innerHTML = buildTopViewCurveSvg(diagram, viewBox);
-
-        const Summary = window.OkamiLedWallCalculator?.WallProjectSummary;
-        const formatDual = Summary?.formatDualLength || ((feet, mm) => formatFeetInches(feet));
-        const formatDegree = Summary?.formatDegreeLabel || ((deg) => `${deg}°`);
-        const radiusLabel = diagram.radiusFeet != null
-            ? formatDual(diagram.radiusFeet, state.radiusMM)
-            : 'N/A';
-
-        const rows = [
-            { label: 'Surface Width', value: formatDual(diagram.surfaceWidthFeet, state.surfaceWidthMM) },
-            { label: 'Venue Width Required', value: formatDual(diagram.chordWidthFeet, state.chordWidthMM) },
-            { label: 'Curve Depth', value: formatDual(diagram.curveDepthFeet, state.curveDepthMM) },
-            { label: 'Radius', value: radiusLabel },
-            { label: 'Total Curve Angle', value: formatDegree(diagram.totalCurveAngle) }
-        ];
-
-        metricsEl.innerHTML = rows.map((row) => (
-            `<div class="led-top-view-metric"><dt>${row.label}</dt><dd>${row.value}</dd></div>`
-        )).join('');
     }
 
     function renderPreview(state) {
-        const stage = document.getElementById('led-preview-stage');
         const wall = document.getElementById('led-preview-wall');
-        if (!stage || !wall) {
+        if (!wall) {
             return;
         }
 
         hideCabinetTooltip();
 
-        const wallPhysicalAspect = getWallPhysicalAspect(state);
-        const numbersEnabled = isCabinetNumbersEnabled();
-        const axisGutterX = 28;
-        const axisGutterY = 22;
+        const contentKey = computePreviewContentKey(state);
+        const layout = computePreviewIntrinsicLayout(state);
+        const contentChanged = contentKey !== lastPreviewContentKey;
 
-        function fitWallToStage(stageWidth, stageHeight, reserveAxisSpace) {
-            let availableWidth = stageWidth;
-            let availableHeight = stageHeight;
-
-            if (reserveAxisSpace) {
-                availableWidth -= axisGutterX;
-                availableHeight -= axisGutterY;
-            }
-
-            if (availableWidth / availableHeight > wallPhysicalAspect) {
-                return {
-                    wallHeight: availableHeight,
-                    wallWidth: availableHeight * wallPhysicalAspect
-                };
-            }
-
-            return {
-                wallWidth: availableWidth,
-                wallHeight: availableWidth / wallPhysicalAspect
-            };
-        }
-
-        const stageWidth = stage.clientWidth - 32;
-        const stageHeight = stage.clientHeight - 32;
-        let { wallWidth, wallHeight } = fitWallToStage(stageWidth, stageHeight, false);
-        let cellWidth = wallWidth / state.panelsWide;
-        let tier = getLabelTier(cellWidth);
-        let showAxisLabels = numbersEnabled && tier === LABEL_TIER.TINY;
-
-        if (showAxisLabels) {
-            ({ wallWidth, wallHeight } = fitWallToStage(stageWidth, stageHeight, true));
-            cellWidth = wallWidth / state.panelsWide;
-            tier = getLabelTier(cellWidth);
-            showAxisLabels = numbersEnabled && tier === LABEL_TIER.TINY;
-        }
-
-        wall.style.width = `${wallWidth}px`;
-        wall.style.height = `${wallHeight}px`;
+        wall.style.width = `${layout.wallWidth}px`;
+        wall.style.height = `${layout.wallHeight}px`;
 
         const totalPanels = state.totalPanels;
-        const cellHeight = wallHeight / state.panelsTall;
         const wallContainer = document.getElementById('led-preview-wall-container');
         const colAxis = document.getElementById('led-preview-col-axis');
         const rowAxis = document.getElementById('led-preview-row-axis');
 
         if (wallContainer) {
-            wallContainer.classList.toggle('has-axis-labels', showAxisLabels);
+            wallContainer.classList.toggle('has-axis-labels', layout.showAxisLabels);
         }
         if (colAxis) {
-            colAxis.hidden = !showAxisLabels;
+            colAxis.hidden = !layout.showAxisLabels;
         }
         if (rowAxis) {
-            rowAxis.hidden = !showAxisLabels;
+            rowAxis.hidden = !layout.showAxisLabels;
         }
-        if (showAxisLabels) {
+        if (layout.showAxisLabels) {
             renderAxisLabels(colAxis, rowAxis, state);
         }
 
@@ -1560,15 +1648,16 @@
             overlayLayer.hidden = true;
             fragment.appendChild(overlayLayer);
             wall.appendChild(fragment);
+            lastPreviewContentKey = '';
         }
 
         applyCabinetArtToWall(wall, state);
 
-        wall.classList.remove('led-preview-wall--curved');
         wall.style.display = 'grid';
         wall.style.gridTemplateColumns = `repeat(${state.panelsWide}, ${state.cabinetWidthMM}fr)`;
         wall.style.gridTemplateRows = `repeat(${state.panelsTall}, ${state.cabinetHeightMM}fr)`;
 
+        const numbersEnabled = isCabinetNumbersEnabled();
         const cells = wall.querySelectorAll('.led-cabinet');
         cells.forEach((cell, index) => {
             const row = Math.floor(index / state.panelsWide);
@@ -1581,12 +1670,12 @@
             cell.dataset.col = String(col);
             cell.classList.remove('label-large', 'label-medium', 'label-small');
 
-            if (label && numbersEnabled && shouldShowCabinetNumber(cabinetNumber, tier)) {
+            if (label && numbersEnabled && shouldShowCabinetNumber(cabinetNumber, layout.tier)) {
                 label.textContent = String(cabinetNumber);
-                label.style.fontSize = `${getTierFontSize(tier, cellWidth)}px`;
-                if (tier === LABEL_TIER.LARGE) {
+                label.style.fontSize = `${getTierFontSize(layout.tier, layout.cellWidth)}px`;
+                if (layout.tier === LABEL_TIER.LARGE) {
                     cell.classList.add('label-large');
-                } else if (tier === LABEL_TIER.MEDIUM) {
+                } else if (layout.tier === LABEL_TIER.MEDIUM) {
                     cell.classList.add('label-medium');
                 } else {
                     cell.classList.add('label-small');
@@ -1597,9 +1686,13 @@
             }
         });
 
+        if (contentChanged) {
+            lastPreviewContentKey = contentKey;
+        }
+
         bindPreviewHover(wall);
         renderOverlayLayer(state);
-        renderTopViewCurvePanel(state);
+        applyPreviewScaleOnly(state);
     }
 
     function renderOverlayLayer(state) {
@@ -1637,13 +1730,14 @@
         updateQuickStartUI(state);
         updateProjectSummary(state, inputs);
         updateCurvedWallBadge(state);
+        renderTopViewCurvePanel(state);
         renderPreview(state);
     }
 
     function updateCurvedWallBadge(state) {
         const badge = document.getElementById('led-curved-wall-badge');
         if (badge) {
-            badge.hidden = !state.curvedWallActive;
+            badge.hidden = !(state.curvedWallMode === true && state.curvedWallActive === true);
         }
     }
 

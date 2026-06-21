@@ -227,6 +227,25 @@
         return Number.isInteger(rounded) ? `${rounded}°` : `${rounded.toFixed(1)}°`;
     }
 
+    function isCurvedWallModeEnabled(state, inputs = {}) {
+        if (state?.curvedWallMode === true) {
+            return true;
+        }
+        return inputs?.curvedWallMode === true || inputs?.curvedWallMode === 'true';
+    }
+
+    function formatCabinetAngleDisplay(state, inputs = {}) {
+        const preset = String(inputs.cabinetAnglePreset ?? '0');
+        if (preset === '0') {
+            return 'Flat / 0°';
+        }
+        if (preset === 'custom') {
+            const degrees = state?.cabinetAngleDegrees ?? inputs.customCabinetAngleDegrees;
+            return `${formatDegreeLabel(degrees)} (Custom)`;
+        }
+        return `${preset}°`;
+    }
+
     function buildWallSummarySection(state) {
         const widthFt = formatFeetInches(state.physicalWidthFt);
         const heightFt = formatFeetInches(state.physicalHeightFt);
@@ -243,8 +262,8 @@
         };
     }
 
-    function buildCurvedWallSummarySection(state) {
-        if (!state.curvedWallActive) {
+    function buildCurvedWallSummarySection(state, inputs = {}) {
+        if (!isCurvedWallModeEnabled(state, inputs)) {
             return {
                 visible: false,
                 title: 'Curved Wall',
@@ -254,49 +273,75 @@
             };
         }
 
+        if (state.curvedWallAngleExceeded) {
+            return {
+                visible: true,
+                title: 'Curved Wall',
+                primary: 'Adjust angle',
+                lines: [state.curvedWallValidationMessage || 'Total curve angle exceeds 180°.'],
+                badge: null
+            };
+        }
+
+        const radiusLabel = state.radiusFeet != null
+            ? formatDualLength(state.radiusFeet, state.radiusMM)
+            : 'N/A';
+
         return {
             visible: true,
             title: 'Curved Wall',
             primary: formatDualLength(state.chordWidthFeet, state.chordWidthMM),
             lines: [
+                `Cabinet Angle: ${formatCabinetAngleDisplay(state, inputs)}`,
                 `Venue Width Required: ${formatDualLength(state.chordWidthFeet, state.chordWidthMM)}`,
                 `Surface Width: ${formatDualLength(state.surfaceWidthFeet, state.surfaceWidthMM)}`,
-                `Curve Radius: ${formatDualLength(state.radiusFeet, state.radiusMM)}`,
+                `Curve Radius: ${radiusLabel}`,
                 `Curve Depth: ${formatDualLength(state.curveDepthFeet, state.curveDepthMM)}`,
-                `Total Curve Angle: ${formatDegreeLabel(state.totalCurveAngle)} (${formatDegreeLabel(state.cabinetAngleDegrees)}/cab)`
+                `Total Curve Angle: ${formatDegreeLabel(state.totalCurveAngle)}`
             ],
-            badge: 'Curved'
+            badge: state.curvedWallActive ? 'Curved' : null
         };
     }
 
     /**
-     * Detail rows for PDF / export when curved wall mode is active.
+     * Detail rows for PDF / export when curved wall mode is enabled.
      */
-    function buildCurvedWallDetailRows(state) {
-        if (!state?.curvedWallActive) {
+    function buildCurvedWallDetailRows(state, inputs = {}) {
+        if (!isCurvedWallModeEnabled(state, inputs)) {
             return [];
         }
 
+        if (state.curvedWallAngleExceeded) {
+            return [
+                { label: 'Curved Wall', value: 'Enabled' },
+                { label: 'Cabinet Angle', value: formatCabinetAngleDisplay(state, inputs) },
+                { label: 'Status', value: state.curvedWallValidationMessage || 'Invalid curve angle' }
+            ];
+        }
+
+        const radiusLabel = state.radiusFeet != null
+            ? formatDualLength(state.radiusFeet, state.radiusMM)
+            : 'N/A';
+
         return [
+            { label: 'Curved Wall', value: 'Enabled' },
+            { label: 'Cabinet Angle', value: formatCabinetAngleDisplay(state, inputs) },
             {
-                label: 'Surface Width',
+                label: 'Surface Width / Arc Length',
                 value: formatDualLength(state.surfaceWidthFeet, state.surfaceWidthMM)
             },
             {
-                label: 'Venue Width Required',
+                label: 'Venue Width Required / Chord Width',
                 value: formatDualLength(state.chordWidthFeet, state.chordWidthMM)
             },
-            {
-                label: 'Curve Radius',
-                value: formatDualLength(state.radiusFeet, state.radiusMM)
-            },
+            { label: 'Curve Radius', value: radiusLabel },
             {
                 label: 'Curve Depth',
                 value: formatDualLength(state.curveDepthFeet, state.curveDepthMM)
             },
             {
                 label: 'Total Curve Angle',
-                value: `${formatDegreeLabel(state.totalCurveAngle)} (${formatDegreeLabel(state.cabinetAngleDegrees)} per cabinet)`
+                value: formatDegreeLabel(state.totalCurveAngle)
             }
         ];
     }
@@ -311,7 +356,7 @@
 
         return {
             wall: buildWallSummarySection(state),
-            curvedWall: buildCurvedWallSummarySection(state),
+            curvedWall: buildCurvedWallSummarySection(state, inputs),
             resolution: {
                 title: 'Resolution',
                 primary: formatPixelPair(state.totalPixelWidth, state.totalPixelHeight),
@@ -372,6 +417,8 @@
         buildWallSummarySection,
         buildCurvedWallSummarySection,
         buildCurvedWallDetailRows,
+        isCurvedWallModeEnabled,
+        formatCabinetAngleDisplay,
         buildProjectSummary,
         buildKpiCards,
         describeContentFitStatus,
