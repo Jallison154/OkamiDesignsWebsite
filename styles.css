@@ -3275,6 +3275,185 @@ html {
     text-decoration: underline;
 }
 
+/* Homepage — tools-first hero & featured tools */
+.home-page .hero-section {
+    min-height: auto;
+    padding: clamp(48px, 8vh, 80px) 0 clamp(32px, 5vh, 48px);
+}
+
+.hero-headline {
+    font-family: 'Montserrat', sans-serif;
+    font-size: clamp(1.65rem, 3.8vw, 2.85rem);
+    font-weight: 800;
+    line-height: 1.2;
+    color: var(--primary-text);
+    margin: 0 auto 22px;
+    max-width: 820px;
+    letter-spacing: -0.5px;
+}
+
+.hero-headline .title-accent {
+    color: var(--accent-color);
+    display: inline;
+}
+
+.hero-cta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
+.cta-button-secondary {
+    background: transparent;
+    color: var(--accent-color);
+    border: 2px solid rgba(255, 106, 45, 0.65);
+    box-shadow: none;
+}
+
+.cta-button-secondary::before {
+    display: none;
+}
+
+.cta-button-secondary:hover {
+    background: rgba(255, 106, 45, 0.12);
+    color: var(--primary-text);
+    border-color: var(--accent-color);
+    box-shadow: 0 8px 24px rgba(255, 106, 45, 0.2);
+}
+
+.featured-tools {
+    position: relative;
+    z-index: 10;
+    padding: clamp(24px, 4vh, 40px) 0 clamp(64px, 10vh, 96px);
+    text-align: left;
+}
+
+.featured-tools-header {
+    max-width: 720px;
+    margin: 0 auto 32px;
+    text-align: center;
+}
+
+.featured-tools-title {
+    font-family: 'Montserrat', sans-serif;
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    font-weight: 800;
+    color: var(--primary-text);
+    margin: 0 0 12px;
+    letter-spacing: -0.5px;
+}
+
+.featured-tools-intro {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--secondary-text);
+}
+
+.featured-tools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+    gap: clamp(16px, 2.5vw, 24px);
+    margin-bottom: 36px;
+}
+
+.featured-tool-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: clamp(20px, 3vw, 28px);
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(22, 22, 22, 0.72);
+    backdrop-filter: blur(8px);
+    min-height: 220px;
+}
+
+.featured-tool-tag {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.9px;
+    text-transform: uppercase;
+    color: var(--accent-color);
+}
+
+.featured-tool-name {
+    font-family: 'Montserrat', sans-serif;
+    font-size: clamp(1.1rem, 2.2vw, 1.35rem);
+    font-weight: 800;
+    color: var(--primary-text);
+    margin: 0;
+    line-height: 1.25;
+}
+
+.featured-tool-desc {
+    flex: 1;
+    margin: 0;
+    font-size: 0.92rem;
+    line-height: 1.55;
+    color: var(--secondary-text);
+}
+
+.featured-tool-btn {
+    display: inline-block;
+    align-self: flex-start;
+    margin-top: 4px;
+    padding: 10px 18px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--primary-bg);
+    background: var(--gradient-primary);
+    border-radius: 5px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.featured-tool-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 22px rgba(255, 106, 45, 0.35);
+}
+
+.home-contact-note {
+    text-align: center;
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--secondary-text);
+}
+
+.home-contact-note a {
+    color: var(--accent-color);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.home-contact-note a:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+    .home-page .hero-stats {
+        gap: 24px;
+    }
+
+    .hero-cta-row {
+        flex-direction: column;
+        width: 100%;
+        max-width: 320px;
+        margin: 0 auto;
+    }
+
+    .hero-cta-row .cta-button {
+        width: 100%;
+        text-align: center;
+    }
+}
+
 .calculator-layout {
     display: grid;
     grid-template-columns: 1fr;

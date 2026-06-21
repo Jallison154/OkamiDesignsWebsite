@@ -426,7 +426,7 @@
         if (document.querySelector('.under-construction') || /Coming Soon|Under Construction/i.test(document.title)) {
             return 'construction (index.html splash)';
         }
-        if (document.querySelector('.hero-title') || document.querySelector('.hero-section')) {
+        if (document.querySelector('.hero-headline') || document.querySelector('.hero-title') || document.querySelector('.hero-section')) {
             return 'home.html';
         }
         return window.location.pathname || 'unknown';

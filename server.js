@@ -232,6 +232,24 @@ async function siteVisibilityMiddleware(req, res, next) {
 app.use(siteVisibilityMiddleware);
 
 const LED_CALCULATOR_HTML = path.join(__dirname, 'tools/led-wall-visualizer.html');
+const TOOLS_INDEX_HTML = path.join(__dirname, 'tools/index.html');
+const CONTACT_HTML = path.join(__dirname, 'contact.html');
+const PRINTS_3D_HTML = path.join(__dirname, '3d-prints.html');
+
+app.get('/tools', (req, res) => {
+    setNoCacheHeaders(res);
+    res.sendFile(TOOLS_INDEX_HTML);
+});
+
+app.get('/contact', (req, res) => {
+    setNoCacheHeaders(res);
+    res.sendFile(CONTACT_HTML);
+});
+
+app.get('/3d-prints', (req, res) => {
+    setNoCacheHeaders(res);
+    res.sendFile(PRINTS_3D_HTML);
+});
 
 app.get('/tools/led-video-wall-calculator', (req, res) => {
     setNoCacheHeaders(res);
