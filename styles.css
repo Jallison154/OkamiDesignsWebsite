@@ -3145,7 +3145,6 @@ html {
 /* LED Video Wall Calculator */
 .led-calculator-page {
     --calculator-sidebar-width: minmax(300px, 360px);
-    --calculator-results-width: minmax(280px, 340px);
     --calculator-layout-gap: clamp(12px, 2vw, 16px);
     overflow-x: hidden;
 }
@@ -4666,6 +4665,12 @@ html {
     }
 }
 
+@media (min-width: 1200px) and (max-width: 1399px) {
+    .results-row.led-project-summary .led-result-card--summary .led-result-primary {
+        font-size: clamp(0.85rem, 1vw, 0.98rem);
+    }
+}
+
 .led-advanced-readout {
     font-size: 0.78rem;
     color: var(--secondary-text);
@@ -5278,9 +5283,11 @@ html {
         flex: 1;
         min-height: 0;
         height: 100%;
-        grid-template-columns: var(--calculator-sidebar-width) var(--calculator-results-width) minmax(0, 1fr);
-        grid-template-rows: minmax(0, 1fr);
-        grid-template-areas: "sidebar results preview";
+        grid-template-columns: var(--calculator-sidebar-width) minmax(0, 1fr);
+        grid-template-rows: auto minmax(0, 1fr);
+        grid-template-areas:
+            "sidebar results"
+            "sidebar preview";
         gap: var(--calculator-layout-gap);
         overflow: hidden;
     }
@@ -5315,37 +5322,61 @@ html {
         grid-area: results;
         display: flex;
         flex-direction: column;
+        flex-shrink: 0;
         min-height: 0;
         min-width: 0;
-        overflow: hidden;
+        overflow: visible;
         align-self: stretch;
+        padding: clamp(6px, 0.8vw, 10px);
     }
 
     .results-row.led-project-summary .led-result-cards--project-summary {
-        flex: 1 1 auto;
+        flex: 0 0 auto;
         min-height: 0;
-        overflow-y: auto;
-        overscroll-behavior: contain;
-        grid-template-columns: 1fr;
-        gap: 8px;
+        overflow: visible;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: clamp(6px, 0.8vw, 10px);
         align-content: start;
     }
 
     .results-row.led-project-summary .led-result-card--summary {
-        min-height: clamp(96px, 11vh, 118px);
+        min-height: 0;
+        padding: 8px 10px 10px;
+        border-top-width: 2px;
+    }
+
+    .results-row.led-project-summary .led-result-card--summary .led-result-card-title {
+        font-size: 9px;
+        letter-spacing: 0.7px;
+        margin-bottom: 4px;
     }
 
     .results-row.led-project-summary .led-result-card--summary .led-result-primary {
-        font-size: clamp(1.1rem, 1.5vw, 1.45rem);
+        font-size: clamp(0.92rem, 1.15vw, 1.1rem);
+        line-height: 1.1;
+        align-items: flex-start;
     }
 
     .results-row.led-project-summary .led-result-card--summary .led-result-secondary {
-        font-size: clamp(10px, 0.9vw, 12px);
-        margin-top: 6px;
+        font-size: clamp(9px, 0.75vw, 10px);
+        line-height: 1.35;
+        margin-top: 4px;
+    }
+
+    .results-row.led-project-summary .led-result-badge {
+        top: 6px;
+        right: 6px;
+        font-size: 8px;
+        padding: 2px 5px;
     }
 
     .results-row.led-project-summary .led-panel-title {
         flex-shrink: 0;
+        font-size: 0.72rem;
+        letter-spacing: 0.8px;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        color: var(--secondary-text);
     }
 
     .wall-preview-card {
@@ -5391,9 +5422,15 @@ html {
     .led-preview-panel {
         flex: 1 1 auto;
         min-height: 0;
+        display: flex;
+        flex-direction: column;
     }
 
-    .results-row.led-project-summary {
+    .led-preview-stage {
+        flex: 1 1 auto;
+        min-height: 0;
+        height: 100%;
+        max-height: none;
         padding: clamp(8px, 1vw, 12px);
     }
 
@@ -5444,14 +5481,7 @@ html {
     .led-preview-header {
         justify-content: flex-end;
         margin-bottom: clamp(4px, 0.6vh, 8px);
-    }
-
-    .led-preview-stage {
-        flex: 1 1 auto;
-        min-height: clamp(260px, 42vh, 620px);
-        height: auto;
-        max-height: none;
-        padding: clamp(8px, 1vw, 12px);
+        flex-shrink: 0;
     }
 
     .led-cabinet {
@@ -5461,10 +5491,6 @@ html {
     .led-result-cards {
         grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
         gap: 8px;
-    }
-
-    .led-result-card--summary {
-        min-height: clamp(118px, 14vh, 140px);
     }
 
     .led-grid-results .led-result-card {
@@ -5515,11 +5541,11 @@ html {
     }
 
     .led-preview-stage {
-        min-height: clamp(320px, 52vh, 820px);
+        min-height: 0;
     }
 
-    .led-grid-results .led-result-primary {
-        font-size: clamp(1.25rem, 1.4vw, 1.85rem);
+    .results-row.led-project-summary .led-result-card--summary .led-result-primary {
+        font-size: clamp(1rem, 1.1vw, 1.2rem);
     }
 }
 
