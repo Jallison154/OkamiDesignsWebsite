@@ -35,6 +35,11 @@ cp -r webstudio-export/* web/dist/
 # Ensure proper permissions
 chmod -R 755 web/dist/
 
+if [ ! -f ".env" ] && [ -f ".env.example" ]; then
+    cp .env.example .env
+    echo "⚠️  Created .env from .env.example — set ADMIN_PASSWORD_HASH before admin login."
+fi
+
 # Stop existing container
 echo "🛑 Stopping existing container..."
 docker-compose down

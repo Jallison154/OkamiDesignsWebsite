@@ -68,7 +68,15 @@ docker compose down
 docker compose up -d
 ```
 
-Ensure `docker-compose.yml` includes `env_file: .env` (or set the same variables in your host/orchestrator).
+Ensure `docker-compose.yml` mounts the project directory (default). The API container reads `.env` from that mount — you do **not** need `env_file:` in Compose (missing files cause deploy errors).
+
+```bash
+cp .env.example .env
+# edit .env, then:
+docker compose down && docker compose up -d
+```
+
+Or run: `sh scripts/ensure-env.sh` to create `.env` from `.env.example` if missing.
 
 **Cloudflare Tunnel:** restart `cloudflared` only if you changed the tunnel target or the process behind it is not running. If the Node app restarted on the same port, the tunnel usually does not need a restart.
 

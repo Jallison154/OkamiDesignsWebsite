@@ -34,6 +34,16 @@ if [ -d ".git" ]; then
     fi
 fi
 
+# .env is optional for docker-compose; Node loads it from the mounted project directory.
+if [ ! -f ".env" ]; then
+    if [ -f ".env.example" ]; then
+        cp .env.example .env
+        echo "⚠️  Created .env from .env.example — set ADMIN_PASSWORD_HASH before admin login."
+    else
+        echo "⚠️  No .env file (optional). Create one for admin login: cp .env.example .env"
+    fi
+fi
+
 # Stop existing container
 echo "🛑 Stopping existing container..."
 docker-compose down
