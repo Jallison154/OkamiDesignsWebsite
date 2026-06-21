@@ -160,9 +160,9 @@
 
         if (card.secondary) {
             textY = drawCenteredLines(doc, [card.secondary], x, textY + 0.5, width, {
-                fontSize: 7,
-                fontStyle: 'normal',
-                color: COLORS.muted
+                fontSize: card.secondaryBold ? 7.5 : 7,
+                fontStyle: card.secondaryBold ? 'bold' : 'normal',
+                color: card.secondaryBold ? COLORS.text : COLORS.muted
             });
         }
 
@@ -366,9 +366,10 @@
     function buildProcessorDetailRows(model, state) {
         const picked = pickRows(model.sections.processor, [
             'Total ports required',
-            'Avg. port utilization',
-            'Peak port utilization',
-            'Processor loading',
+            'Safe capacity used (peak port)',
+            'Safe fill threshold',
+            'Actual max port load (peak)',
+            'Safety headroom (peak)',
             'Usable pixels per port',
             'Fill threshold'
         ]);

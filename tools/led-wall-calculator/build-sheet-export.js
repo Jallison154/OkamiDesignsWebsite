@@ -256,6 +256,10 @@
             warnings.push(`Content overlay (${state.overlayFormatLabel}) uses ${Math.round(state.overlay.usedPercentage)}% of the wall — significant inactive pixels remain outside the target format.`);
         }
 
+        if (state.atSafePortLimit) {
+            warnings.push('At least one port is at the configured safe fill limit. Add another port for more headroom.');
+        }
+
         return warnings;
     }
 
@@ -322,12 +326,13 @@
                 ]),
                 processor: buildDetailRows([
                     { label: 'Port capacity setting', value: state.portCapacity ? `${formatNumber(state.portCapacity)} px max/port` : null },
-                    { label: 'Fill threshold', value: hasValue(state.portFillThreshold) ? `${state.portFillThreshold}%` : null },
+                    { label: 'Safe fill threshold', value: hasValue(state.portFillThreshold) ? `${state.portFillThreshold}%` : null },
                     { label: 'Usable pixels per port', value: state.usablePixelsPerPort ? `${formatNumber(state.usablePixelsPerPort)} px` : null },
                     { label: 'Total ports required', value: hasValue(state.portsRequired) ? formatNumber(state.portsRequired) : null },
-                    { label: 'Avg. port utilization', value: formatPercent(state.avgPortUtilizationPercent) },
-                    { label: 'Peak port utilization', value: formatPercent(state.peakPortUtilizationPercent) },
-                    { label: 'Processor loading', value: formatPercent(state.processorLoadingPercent) },
+                    { label: 'Safe capacity used (peak port)', value: formatPercent(state.peakSafeCapacityUsedPercent ?? state.peakPortUtilizationPercent) },
+                    { label: 'Actual max port load (peak)', value: formatPercent(state.peakRawMaxLoadPercent) },
+                    { label: 'Safety headroom (peak)', value: formatPercent(state.processorPortHeadroomPercent) },
+                    { label: 'Safe capacity used (avg port)', value: formatPercent(state.avgPortUtilizationPercent) },
                     { label: 'Avg. cabinets per port (est.)', value: avgCabinetsPerPort ? `~${avgCabinetsPerPort}` : null },
                     { label: 'Sending hardware', value: 'Confirm processor / sending card model with manufacturer — capacity settings above are user-defined.' }
                 ]),

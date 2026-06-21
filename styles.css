@@ -4041,6 +4041,13 @@ html {
     color: rgba(255, 255, 255, 0.62);
 }
 
+.led-result-emphasis {
+    display: block;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 4px;
+}
+
 .led-result-card--summary.led-result-card--inactive {
     border-top-color: rgba(255, 255, 255, 0.18);
     background: rgba(0, 0, 0, 0.2);

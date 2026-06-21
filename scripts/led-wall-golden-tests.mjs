@@ -204,6 +204,28 @@ const cases = [
         }
     },
     {
+        name: 'port safe capacity metrics — default 10×6 wall',
+        fn: () => {
+            const r = Calc.computeWallProject({
+                panelsWide: 10,
+                panelsTall: 6,
+                cabinetPreset: '500x500',
+                pitchPreset: '2.6',
+                displayType: 'standard',
+                autoCalculateResolution: true,
+                portCapacity: 650000,
+                portFillThreshold: 90,
+                overlayFormat: 'none'
+            });
+            assertEqual(r.usablePixelsPerPort, 585000, 'usablePixelsPerPort');
+            assertEqual(r.portsRequired, 4, 'portsRequired');
+            assertEqual(r.peakSafeCapacityUsedPercent, 100, 'peakSafeCapacityUsedPercent');
+            assertEqual(r.peakRawMaxLoadPercent, 90, 'peakRawMaxLoadPercent');
+            assertEqual(r.processorPortHeadroomPercent, 10, 'processorPortHeadroomPercent');
+            assertEqual(r.atSafePortLimit, true, 'atSafePortLimit');
+        }
+    },
+    {
         name: 'content overlay 16:9 on 1920×1152 wall',
         fn: () => {
             const overlay = Calc.calculateContentOverlay({

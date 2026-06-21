@@ -308,6 +308,7 @@
 
         let assignedPixels = 0;
         let peakFill = 0;
+        let peakPortPixels = 0;
         let fillSum = 0;
 
         for (let portNum = 1; portNum <= portsRequired; portNum += 1) {
@@ -317,18 +318,31 @@
                 : Math.min(usablePixelsPerPort, remaining);
             const fillPercent = (portPixels / usablePixelsPerPort) * 100;
             peakFill = Math.max(peakFill, fillPercent);
+            peakPortPixels = Math.max(peakPortPixels, portPixels);
             fillSum += fillPercent;
             assignedPixels += portPixels;
         }
 
+        const peakSafeCapacityUsedPercent = peakFill;
+        const peakRawMaxLoadPercent = portCapacity > 0
+            ? (peakPortPixels / portCapacity) * 100
+            : null;
+        const processorPortHeadroomPercent = peakRawMaxLoadPercent != null
+            ? Math.max(0, 100 - peakRawMaxLoadPercent)
+            : null;
         const processorLoadingPercent = portCapacity > 0
             ? (totalPixels / (portsRequired * portCapacity)) * 100
             : null;
+        const atSafePortLimit = peakSafeCapacityUsedPercent >= 99.5;
 
         return {
             avgPortUtilizationPercent: fillSum / portsRequired,
             peakPortUtilizationPercent: peakFill,
-            processorLoadingPercent
+            peakSafeCapacityUsedPercent,
+            peakRawMaxLoadPercent,
+            processorPortHeadroomPercent,
+            processorLoadingPercent,
+            atSafePortLimit
         };
     }
 

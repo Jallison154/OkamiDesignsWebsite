@@ -983,15 +983,22 @@
             'summary-physical-size',
             `${formatFeetInches(state.physicalWidthFt)} × ${formatFeetInches(state.physicalHeightFt)}`
         );
-        setText('summary-port-utilization', formatPercentLabel(state.peakPortUtilizationPercent, 'peak'));
-        setText('summary-power', `${formatWatts(state.totalEstimatedWatts)} · ${state.circuitsRequired} circuits`);
+        setText(
+            'summary-port-utilization',
+            formatSafePortUtilizationLabel(state)
+        );
+        setText('summary-power', Number.isFinite(state.circuitsRequired)
+            ? `${state.circuitsRequired.toLocaleString()} circuits · ${formatWatts(state.totalEstimatedWatts)}`
+            : formatWatts(state.totalEstimatedWatts));
     }
 
-    function formatPercentLabel(value, label) {
-        if (!Number.isFinite(value)) {
+    function formatSafePortUtilizationLabel(state) {
+        const threshold = state.portFillThreshold ?? DEFAULTS.portFillThreshold;
+        const safePeak = state.peakSafeCapacityUsedPercent ?? state.peakPortUtilizationPercent;
+        if (!Number.isFinite(safePeak)) {
             return '—';
         }
-        return `${value.toFixed(1)}% ${label}`;
+        return `${safePeak.toFixed(0)}% of ${threshold}% safe`;
     }
 
     function applyProjectSummaryCard(key, card) {
@@ -1005,7 +1012,32 @@
         }
 
         setText(`result-${key}-primary`, card.primary || '—');
-        setMultilineText(`result-${key}-secondary`, card.lines || []);
+
+        const secondaryEl = document.getElementById(`result-${key}-secondary`);
+        if (!secondaryEl) {
+            return;
+        }
+
+        secondaryEl.textContent = '';
+
+        if (card.emphasis) {
+            const emphasisEl = document.createElement('strong');
+            emphasisEl.className = 'led-result-emphasis';
+            emphasisEl.textContent = card.emphasis;
+            secondaryEl.appendChild(emphasisEl);
+        }
+
+        const detailLines = (card.lines || []).filter(Boolean);
+        if (detailLines.length) {
+            if (card.emphasis) {
+                secondaryEl.appendChild(document.createTextNode('\n'));
+            }
+            secondaryEl.appendChild(document.createTextNode(detailLines.join('\n')));
+        }
+
+        if (!card.emphasis && !detailLines.length) {
+            secondaryEl.textContent = '—';
+        }
     }
 
     function updateProjectSummary(state, inputs) {

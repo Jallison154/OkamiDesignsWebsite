@@ -137,6 +137,81 @@
         };
     }
 
+    function buildProcessorSummaryLines(state) {
+        const threshold = hasValue(state.portFillThreshold) ? state.portFillThreshold : 90;
+        const safePeak = state.peakSafeCapacityUsedPercent ?? state.peakPortUtilizationPercent;
+        const usablePort = formatPortCapacity(state.usablePixelsPerPort);
+        const maxPort = formatPortCapacity(state.portCapacity);
+        const lines = [];
+
+        if (hasValue(safePeak)) {
+            lines.push(`${formatPercent(safePeak)} of ${threshold}% safe capacity`);
+        }
+        if (usablePort && maxPort) {
+            lines.push(`${usablePort} usable / ${maxPort} max per port`);
+        }
+        if (hasValue(state.peakRawMaxLoadPercent)) {
+            lines.push(`Actual max port load: ${formatPercent(state.peakRawMaxLoadPercent)}`);
+        }
+        if (hasValue(state.processorPortHeadroomPercent)) {
+            lines.push(`Safety headroom: ${formatPercent(state.processorPortHeadroomPercent)}`);
+        }
+        if (state.atSafePortLimit || (hasValue(safePeak) && safePeak >= 99.5)) {
+            lines.push('At safe limit — add another port for more headroom.');
+        }
+
+        return lines;
+    }
+
+    function buildPowerSummarySection(state) {
+        const headroom = hasValue(state.circuitHeadroomPercent)
+            ? state.circuitHeadroomPercent
+            : (hasValue(state.circuitSafeLoadPercent) ? 100 - state.circuitSafeLoadPercent : 20);
+        const circuitAmperage = state.circuitAmperage;
+        const circuitsRequired = state.circuitsRequired;
+        const circuitWord = circuitsRequired === 1 ? 'Circuit' : 'Circuits';
+        const title = hasValue(circuitAmperage) ? `Power • ${circuitAmperage}A` : 'Power';
+
+        const primary = hasValue(circuitsRequired)
+            ? `${formatNumber(circuitsRequired)} ${circuitWord}`
+            : '—';
+
+        const emphasis = hasValue(state.totalEstimatedWatts)
+            ? `${formatWatts(state.totalEstimatedWatts)} estimated`
+            : null;
+
+        const lines = [
+            hasValue(state.totalEstimatedAmps)
+                ? `${Number(state.totalEstimatedAmps).toFixed(1)}A total`
+                : null,
+            hasValue(state.usableWattsPerCircuit)
+                ? `${formatNumber(Math.round(state.usableWattsPerCircuit))} W usable/circuit`
+                : null,
+            `${headroom}% headroom included`
+        ].filter(Boolean);
+
+        const ampsAtVoltage = hasValue(state.totalEstimatedAmps) && hasValue(state.circuitVoltage)
+            ? `${Number(state.totalEstimatedAmps).toFixed(1)}A @ ${state.circuitVoltage}V`
+            : null;
+
+        const supportingDetail = [
+            ampsAtVoltage,
+            hasValue(state.usableWattsPerCircuit)
+                ? `${formatNumber(Math.round(state.usableWattsPerCircuit))} W usable/circuit`
+                : null,
+            `${headroom}% headroom included`
+        ].filter(Boolean).join(' · ');
+
+        return {
+            title,
+            primary,
+            emphasis,
+            lines,
+            ampsAtVoltage,
+            supportingDetail
+        };
+    }
+
     /**
      * Shared project summary for the calculator UI and PDF build sheet.
      */
@@ -157,33 +232,10 @@
             wallLines.push(physicalMetric);
         }
 
-        const usablePort = formatPortCapacity(state.usablePixelsPerPort);
-        const maxPort = formatPortCapacity(state.portCapacity);
-        const portCapacityLine = usablePort && maxPort
-            ? `${usablePort} usable / ${maxPort} max per port`
-            : (usablePort || maxPort || null);
-
         const portsRequired = hasValue(state.portsRequired) ? state.portsRequired : null;
         const portWord = portsRequired === 1 ? 'Port' : 'Ports';
-
-        const headroom = hasValue(state.circuitHeadroomPercent)
-            ? state.circuitHeadroomPercent
-            : (hasValue(state.circuitSafeLoadPercent) ? 100 - state.circuitSafeLoadPercent : 20);
-
-        const powerLines = [
-            formatAmps(state.totalEstimatedAmps) ? `${formatAmps(state.totalEstimatedAmps)} estimated` : null,
-            hasValue(state.circuitsRequired)
-                ? `${formatNumber(state.circuitsRequired)} circuit${state.circuitsRequired === 1 ? '' : 's'} required`
-                : null,
-            hasValue(state.usableWattsPerCircuit)
-                ? `${formatNumber(Math.round(state.usableWattsPerCircuit))} W usable per circuit`
-                : null,
-            `${headroom}% headroom included`
-        ].filter(Boolean);
-
-        const ampsAtVoltage = hasValue(state.totalEstimatedAmps) && hasValue(state.circuitVoltage)
-            ? `${Number(state.totalEstimatedAmps).toFixed(0)}A @ ${state.circuitVoltage}V`
-            : (formatAmps(state.totalEstimatedAmps) || null);
+        const processorLines = buildProcessorSummaryLines(state);
+        const power = buildPowerSummarySection(state);
 
         const contentFit = buildContentFitSection(state, inputs);
 
@@ -203,19 +255,9 @@
             processor: {
                 title: 'Processor',
                 primary: portsRequired != null ? `${formatNumber(portsRequired)} ${portWord}` : '—',
-                lines: [
-                    formatPercent(state.peakPortUtilizationPercent)
-                        ? `${formatPercent(state.peakPortUtilizationPercent)} peak port fill`
-                        : null,
-                    portCapacityLine
-                ].filter(Boolean)
+                lines: processorLines
             },
-            power: {
-                title: 'Power',
-                primary: formatWatts(state.totalEstimatedWatts),
-                lines: powerLines,
-                ampsAtVoltage
-            },
+            power,
             contentFit
         };
     }
@@ -244,10 +286,11 @@
                 tertiary: null
             },
             {
-                title: 'Est. Power Draw',
+                title: summary.power.title,
                 primary: summary.power.primary,
-                secondary: summary.power.ampsAtVoltage,
-                tertiary: summary.power.lines[1] || null
+                secondary: summary.power.emphasis,
+                secondaryBold: true,
+                tertiary: summary.power.supportingDetail || summary.power.ampsAtVoltage
             },
             {
                 title: summary.contentFit.title,
@@ -265,6 +308,8 @@
     }
 
     const api = {
+        buildProcessorSummaryLines,
+        buildPowerSummarySection,
         buildProjectSummary,
         buildKpiCards,
         describeContentFitStatus,
