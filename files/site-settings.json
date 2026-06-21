@@ -1,15 +1,42 @@
 {
   "constructionMode": false,
   "pages": {
-    "home": { "visible": true, "navOrder": 1 },
-    "tools": { "visible": true, "navOrder": 2 },
-    "prints": { "visible": true, "navOrder": 3 },
-    "support": { "visible": true, "navOrder": 4 },
-    "contact": { "visible": true, "navOrder": 5 },
-    "donate": { "visible": true, "navOrder": 6 },
-    "services": { "visible": true, "navOrder": 7 },
-    "ledVideoWallCalculator": { "visible": true, "navOrder": 8 },
-    "okamiSignalLab": { "visible": true, "navOrder": 9 }
+    "home": {
+      "visible": true,
+      "navOrder": 1
+    },
+    "tools": {
+      "visible": true,
+      "navOrder": 2
+    },
+    "prints": {
+      "visible": true,
+      "navOrder": 3
+    },
+    "support": {
+      "visible": true,
+      "navOrder": 4
+    },
+    "contact": {
+      "visible": true,
+      "navOrder": 5
+    },
+    "donate": {
+      "visible": true,
+      "navOrder": 6
+    },
+    "services": {
+      "visible": true,
+      "navOrder": 7
+    },
+    "ledVideoWallCalculator": {
+      "visible": true,
+      "navOrder": 8
+    },
+    "okamiSignalLab": {
+      "visible": true,
+      "navOrder": 9
+    }
   },
-  "updatedAt": "2026-06-21T03:52:27.918Z"
+  "updatedAt": "2026-06-21T04:08:47.342Z"
 }

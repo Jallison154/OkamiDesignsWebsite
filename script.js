@@ -43,19 +43,32 @@ document.addEventListener('DOMContentLoaded', function() {
     // Mobile menu toggle
     initMobileMenu();
 
-    // Tools dropdown navigation
-    initNavDropdown();
-
+    // Tools dropdown navigation — bound after nav is rendered from server settings
     if (window.SiteVisibility && typeof window.SiteVisibility.refreshNavigationSettings === 'function') {
-        window.SiteVisibility.refreshNavigationSettings(true);
+        window.SiteVisibility.refreshNavigationSettings(true).then(() => {
+            initNavDropdown();
+            initMobileMenu();
+            setActiveNavigation(window.location.href);
+        });
     } else if (window.SiteVisibility && typeof window.SiteVisibility.fetchSiteSettings === 'function') {
         window.SiteVisibility.fetchSiteSettings(true).then((settings) => {
             window.SiteVisibility.applyNavigation(settings);
+            initNavDropdown();
+            initMobileMenu();
+            setActiveNavigation(window.location.href);
         });
+    } else {
+        initNavDropdown();
+        setActiveNavigation(window.location.href);
     }
 
+    document.addEventListener('okami:nav-rendered', () => {
+        initNavDropdown();
+        initMobileMenu();
+        setActiveNavigation(window.location.href);
+    });
+
     // Set initial navigation state and history entry
-    setActiveNavigation(window.location.href);
     if (!window.history.state) {
         window.history.replaceState({ url: window.location.href }, '', window.location.href);
     }
@@ -423,14 +436,22 @@ function reinitializeDynamicContent() {
         window.initSignalLab();
     }
 
-    initNavDropdown();
-
     if (window.SiteVisibility && typeof window.SiteVisibility.refreshNavigationSettings === 'function') {
-        window.SiteVisibility.refreshNavigationSettings(true);
+        window.SiteVisibility.refreshNavigationSettings(true).then(() => {
+            initNavDropdown();
+            initMobileMenu();
+            setActiveNavigation(window.location.pathname + window.location.search + window.location.hash);
+        });
     } else if (window.SiteVisibility && typeof window.SiteVisibility.fetchSiteSettings === 'function') {
         window.SiteVisibility.fetchSiteSettings(true).then((settings) => {
             window.SiteVisibility.applyNavigation(settings);
+            initNavDropdown();
+            initMobileMenu();
+            setActiveNavigation(window.location.pathname + window.location.search + window.location.hash);
         });
+    } else {
+        initNavDropdown();
+        initMobileMenu();
     }
 }
 
@@ -1263,60 +1284,63 @@ function initMobileMenu() {
     const mobileNav = document.querySelector('.nav-mobile');
     
     if (!mobileToggle || !mobileNav) return;
+
+    if (mobileToggle.dataset.menuBound !== 'true') {
+        mobileToggle.addEventListener('click', function() {
+            mobileToggle.classList.toggle('active');
+            mobileNav.classList.toggle('active');
+            
+            if (mobileNav.classList.contains('active')) {
+                document.body.style.overflow = 'hidden';
+            } else {
+                document.body.style.overflow = '';
+            }
+        });
+
+        document.addEventListener('click', function(e) {
+            if (mobileNav.classList.contains('active')) {
+                if (!mobileNav.contains(e.target) && !mobileToggle.contains(e.target)) {
+                    mobileToggle.classList.remove('active');
+                    mobileNav.classList.remove('active');
+                    document.body.style.overflow = '';
+                }
+            }
+        });
+
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 768) {
+                mobileToggle.classList.remove('active');
+                mobileNav.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        });
+
+        mobileToggle.dataset.menuBound = 'true';
+    }
     
-    // Toggle menu on button click
-    mobileToggle.addEventListener('click', function() {
-        mobileToggle.classList.toggle('active');
-        mobileNav.classList.toggle('active');
-        
-        // Prevent body scroll when menu is open
-        if (mobileNav.classList.contains('active')) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = '';
+    mobileNav.querySelectorAll('.nav-link').forEach((link) => {
+        if (link.dataset.menuCloseBound === 'true') {
+            return;
         }
-    });
-    
-    // Close menu when clicking on a link
-    const mobileLinks = mobileNav.querySelectorAll('.nav-link');
-    mobileLinks.forEach(link => {
+
         link.addEventListener('click', function() {
             mobileToggle.classList.remove('active');
             mobileNav.classList.remove('active');
             document.body.style.overflow = '';
         });
+        link.dataset.menuCloseBound = 'true';
     });
     
-    // Close menu when clicking outside
-    document.addEventListener('click', function(e) {
-        if (mobileNav.classList.contains('active')) {
-            if (!mobileNav.contains(e.target) && !mobileToggle.contains(e.target)) {
-                mobileToggle.classList.remove('active');
-                mobileNav.classList.remove('active');
-                document.body.style.overflow = '';
-            }
-        }
-    });
-    
-    // Handle logout button in mobile menu (admin page)
     const logoutBtnMobile = document.getElementById('logout-btn-mobile');
-    if (logoutBtnMobile) {
+    if (logoutBtnMobile && logoutBtnMobile.dataset.menuBound !== 'true') {
         const logoutBtn = document.getElementById('logout-btn');
         if (logoutBtn) {
             logoutBtnMobile.addEventListener('click', function() {
                 logoutBtn.click();
             });
+            logoutBtnMobile.dataset.menuBound = 'true';
         }
     }
-    
-    // Close menu on window resize if it goes back to desktop
-    window.addEventListener('resize', function() {
-        if (window.innerWidth > 768) {
-            mobileToggle.classList.remove('active');
-            mobileNav.classList.remove('active');
-            document.body.style.overflow = '';
-        }
-    });
 }
 
 // Performance monitoring

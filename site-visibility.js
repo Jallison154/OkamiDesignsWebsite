@@ -46,6 +46,9 @@
     let redirectInFlight = false;
 
     let adminSessionActive = false;
+    let toolsDesktopTemplate = null;
+    let toolsMobileTemplate = null;
+    let navTemplatesCaptured = false;
 
     async function refreshAdminSession() {
         try {
@@ -231,22 +234,29 @@
                         settingsCache = mergeSettings(await response.json());
                         return settingsCache;
                     }
+
+                    console.warn('Site settings API error:', response.status);
+                    lastSettingsSource = 'server-error';
+                    settingsCache = mergeSettings({});
+                    return settingsCache;
                 } catch (error) {
                     console.warn('Site settings API unavailable:', error.message || error);
                 }
 
-                try {
-                    const staticPrefix = window.location.pathname.includes('/tools/')
-                        ? '../files/site-settings.json'
-                        : 'files/site-settings.json';
-                    const response = await fetch(`${staticPrefix}?t=${Date.now()}`, { cache: 'no-store' });
-                    if (response.ok) {
-                        lastSettingsSource = 'static';
-                        settingsCache = mergeSettings(await response.json());
-                        return settingsCache;
+                if (window.location.protocol === 'file:') {
+                    try {
+                        const staticPrefix = window.location.pathname.includes('/tools/')
+                            ? '../files/site-settings.json'
+                            : 'files/site-settings.json';
+                        const response = await fetch(`${staticPrefix}?t=${Date.now()}`, { cache: 'no-store' });
+                        if (response.ok) {
+                            lastSettingsSource = 'static';
+                            settingsCache = mergeSettings(await response.json());
+                            return settingsCache;
+                        }
+                    } catch (error) {
+                        console.warn('Static site settings unavailable:', error.message || error);
                     }
-                } catch (error) {
-                    console.warn('Static site settings unavailable:', error.message || error);
                 }
 
                 lastSettingsSource = 'config';
@@ -618,67 +628,22 @@
         }
     }
 
-    function setNavItemVisible(element, visible) {
-        if (!element) {
+    function captureNavTemplates() {
+        if (navTemplatesCaptured) {
             return;
         }
 
-        element.classList.toggle('nav-item-hidden', !visible);
-        element.hidden = !visible;
-        element.style.display = visible ? '' : 'none';
-        element.setAttribute('aria-hidden', visible ? 'false' : 'true');
-    }
+        const desktopTools = document.querySelector('nav.nav .nav-dropdown');
+        const mobileTools = document.querySelector('nav.nav-mobile .nav-mobile-group');
 
-    function getPageLinkSelectors(page) {
-        const selectors = new Set();
-
-        if (page.publicPath) {
-            selectors.add(`a.nav-link[href="${page.publicPath}"]`);
-            selectors.add(`a.contact-btn[href="${page.publicPath}"]`);
+        if (desktopTools) {
+            toolsDesktopTemplate = desktopTools.cloneNode(true);
+        }
+        if (mobileTools) {
+            toolsMobileTemplate = mobileTools.cloneNode(true);
         }
 
-        (page.filePaths || []).forEach((filePath) => {
-            selectors.add(`a.nav-link[href="/${filePath}"]`);
-            selectors.add(`a.nav-link[href="${filePath}"]`);
-            selectors.add(`a.nav-link[href="../${filePath}"]`);
-            selectors.add(`a.contact-btn[href="/${filePath}"]`);
-            selectors.add(`a.contact-btn[href="${filePath}"]`);
-            selectors.add(`a.contact-btn[href="../${filePath}"]`);
-        });
-
-        return [...selectors];
-    }
-
-    function ensureNavPageKeys() {
-        const pages = registryApi?.PUBLIC_PAGES;
-        if (!pages?.length) {
-            return;
-        }
-
-        pages.forEach((page) => {
-            getPageLinkSelectors(page).forEach((selector) => {
-                document.querySelectorAll(selector).forEach((link) => {
-                    if (link.classList.contains('nav-dropdown-item') || link.classList.contains('nav-sublink')) {
-                        return;
-                    }
-                    link.dataset.navPageKey = page.key;
-                });
-            });
-        });
-
-        const donateItem = registryApi?.DONATE_NAV_ITEM;
-        if (donateItem) {
-            document.querySelectorAll(`[data-nav-page-key="${donateItem.key}"]`).forEach((link) => {
-                link.dataset.navPageKey = donateItem.key;
-            });
-        }
-    }
-
-    function findNavLinksForPath(path) {
-        const selectors = [`a[href="${path}"]`];
-        const relativePath = path.startsWith('/') ? path.slice(1) : path;
-        selectors.push(`a[href="../${relativePath}"]`);
-        return document.querySelectorAll(selectors.join(', '));
+        navTemplatesCaptured = Boolean(toolsDesktopTemplate || toolsMobileTemplate);
     }
 
     function createTopNavLink(item, isMobile) {
@@ -687,12 +652,10 @@
         link.dataset.navPageKey = item.key;
         link.textContent = item.navLabel;
 
-        if (item.isContactBtn) {
+        if (item.isContactBtn || item.key === 'contact') {
             link.className = 'nav-link contact-btn';
         } else if (item.isDonateBtn || item.key === 'donate') {
             link.className = 'nav-link nav-donate-link';
-        } else if (isMobile && item.key !== 'contact') {
-            link.className = 'nav-link';
         } else {
             link.className = 'nav-link';
         }
@@ -705,124 +668,79 @@
         return link;
     }
 
-    function ensureTopNavItems(navRoot, isMobile) {
-        const topNavKeys = registryApi?.getTopNavItemKeys?.() || [];
-        topNavKeys.forEach((key) => {
-            const item = registryApi?.getNavItemDefinition?.(key);
-            if (!item || item.isToolsDropdown) {
-                return;
+    function buildToolsNavNode(settings, isMobile) {
+        const template = isMobile ? toolsMobileTemplate : toolsDesktopTemplate;
+        if (!template) {
+            return null;
+        }
+
+        const anyToolVisible = TOOL_PAGE_KEYS.some((key) => isPageVisible(settings, key));
+        if (!isPageVisible(settings, 'tools') || !anyToolVisible) {
+            return null;
+        }
+
+        const node = template.cloneNode(true);
+        const menu = node.querySelector(isMobile ? '.nav-mobile-submenu' : '.nav-dropdown-menu');
+        if (!menu) {
+            return node;
+        }
+
+        menu.querySelectorAll('[data-tools-hub]').forEach((link) => {
+            if (!isPageVisible(settings, 'tools')) {
+                link.remove();
             }
-
-            const selector = `[data-nav-page-key="${key}"]`;
-            if (navRoot.querySelector(selector)) {
-                return;
-            }
-
-            const existing = item.external
-                ? null
-                : navRoot.querySelector(`a.nav-link[href="${item.url}"], a.contact-btn[href="${item.url}"]`);
-
-            if (existing) {
-                existing.dataset.navPageKey = key;
-                return;
-            }
-
-            navRoot.appendChild(createTopNavLink({
-                ...item,
-                isContactBtn: item.isContactBtn || key === 'contact',
-                isDonateBtn: key === 'donate'
-            }, isMobile));
         });
+
+        const sortedToolKeys = getSortedNavKeys(settings, TOOL_PAGE_KEYS);
+        sortedToolKeys.forEach((key) => {
+            const link = menu.querySelector(`[data-tool-key="${key}"]`);
+            if (!link) {
+                return;
+            }
+            if (!isPageVisible(settings, key)) {
+                link.remove();
+                return;
+            }
+            menu.appendChild(link);
+        });
+
+        return node;
     }
 
-    function getTopNavElement(navRoot, key, isMobile) {
-        if (key === 'tools') {
-            return navRoot.querySelector(isMobile ? ':scope > .nav-mobile-group' : ':scope > .nav-dropdown');
-        }
+    function renderPublicNavigation(settings) {
+        captureNavTemplates();
 
-        const keyed = navRoot.querySelector(`:scope > [data-nav-page-key="${key}"]`);
-        if (keyed) {
-            return keyed;
-        }
-
-        const item = registryApi?.getNavItemDefinition?.(key);
-        if (!item || item.external) {
-            return navRoot.querySelector(`:scope > [data-nav-page-key="${key}"]`);
-        }
-
-        return navRoot.querySelector(
-            `:scope > a.nav-link[href="${item.url}"], :scope > a.contact-btn[href="${item.url}"]`
-        );
-    }
-
-    function applyNavOrderFromSettings(settings) {
         const topNavKeys = registryApi?.getTopNavItemKeys?.() || [];
         const sortedKeys = getSortedNavKeys(settings, topNavKeys);
 
         document.querySelectorAll('nav.nav, nav.nav-mobile').forEach((navRoot) => {
             const isMobile = navRoot.classList.contains('nav-mobile');
-            ensureTopNavItems(navRoot, isMobile);
+            navRoot.innerHTML = '';
 
             sortedKeys.forEach((key) => {
                 if (!isPageVisible(settings, key)) {
                     return;
                 }
 
-                const element = getTopNavElement(navRoot, key, isMobile);
-                if (element) {
-                    navRoot.appendChild(element);
-                }
-            });
-        });
-
-        const toolKeys = getSortedNavKeys(settings, TOOL_PAGE_KEYS);
-        document.querySelectorAll('.nav-dropdown-menu, .nav-mobile-submenu').forEach((menuRoot) => {
-            const toolsHub = menuRoot.querySelector('[data-tools-hub]');
-            if (toolsHub) {
-                menuRoot.insertBefore(toolsHub, menuRoot.firstChild);
-            }
-
-            toolKeys.forEach((key) => {
-                const link = menuRoot.querySelector(`[data-tool-key="${key}"]`);
-                if (link) {
-                    menuRoot.appendChild(link);
-                }
-            });
-        });
-    }
-
-    function applyNavigation(settings) {
-        const topNavKeys = registryApi?.getTopNavItemKeys?.() || [];
-
-        applyNavOrderFromSettings(settings);
-        ensureNavPageKeys();
-
-        topNavKeys.forEach((key) => {
-            document.querySelectorAll(`[data-nav-page-key="${key}"]`).forEach((link) => {
-                if (link.classList.contains('nav-dropdown-item') || link.classList.contains('nav-sublink')) {
+                if (key === 'tools') {
+                    const toolsNode = buildToolsNavNode(settings, isMobile);
+                    if (toolsNode) {
+                        navRoot.appendChild(toolsNode);
+                    }
                     return;
                 }
-                setNavItemVisible(link, isPageVisible(settings, key));
+
+                const item = registryApi?.getNavItemDefinition?.(key);
+                if (!item) {
+                    return;
+                }
+
+                navRoot.appendChild(createTopNavLink({
+                    ...item,
+                    isContactBtn: item.isContactBtn || key === 'contact',
+                    isDonateBtn: key === 'donate'
+                }, isMobile));
             });
-        });
-
-        document.querySelectorAll('[data-tool-key]').forEach((link) => {
-            const pageKey = link.dataset.toolKey;
-            if (!pageKey) {
-                return;
-            }
-            setNavItemVisible(link, isPageVisible(settings, pageKey));
-        });
-
-        document.querySelectorAll('[data-tools-hub]').forEach((link) => {
-            setNavItemVisible(link, isPageVisible(settings, 'tools'));
-        });
-
-        const anyToolVisible = TOOL_PAGE_KEYS.some((key) => isPageVisible(settings, key));
-        const showToolsMenu = isPageVisible(settings, 'tools') && anyToolVisible;
-
-        document.querySelectorAll('.nav-dropdown, .nav-mobile-group').forEach((dropdown) => {
-            setNavItemVisible(dropdown, showToolsMenu);
         });
 
         document.querySelectorAll('[data-tools-card]').forEach((card) => {
@@ -838,8 +756,31 @@
         });
 
         document.querySelectorAll('.okami-site-footer').forEach((footer) => {
-            setNavItemVisible(footer, isPageVisible(settings, 'donate'));
+            footer.hidden = !isPageVisible(settings, 'donate');
+            footer.style.display = isPageVisible(settings, 'donate') ? '' : 'none';
         });
+
+        document.dispatchEvent(new CustomEvent('okami:nav-rendered'));
+    }
+
+    function applyNavigation(settings) {
+        renderPublicNavigation(settings);
+    }
+
+    function getLoadedNavItems(settings) {
+        const topNavKeys = registryApi?.getTopNavItemKeys?.() || [];
+        return getSortedNavKeys(settings, topNavKeys)
+            .filter((key) => isPageVisible(settings, key))
+            .map((key, index) => {
+                const item = registryApi?.getNavItemDefinition?.(key);
+                return {
+                    order: index + 1,
+                    key,
+                    label: item?.navLabel || item?.title || key,
+                    url: item?.url || '/',
+                    external: Boolean(item?.external)
+                };
+            });
     }
 
     async function applyLiveSettingsUpdate(settings) {
@@ -950,7 +891,8 @@
         isSettingsLoading,
         getLastSettingsSource,
         logVisibilityDebug,
-        resolveRouteDecision
+        resolveRouteDecision,
+        getLoadedNavItems
     };
 
     window.addEventListener('pageshow', (event) => {

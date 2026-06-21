@@ -98,8 +98,9 @@
     }
 
     function formatNavItemPath(item) {
-        if (window.OkamiPageRegistry?.formatNavItemPath) {
-            return window.OkamiPageRegistry.formatNavItemPath(item);
+        const registry = getRegistryApi();
+        if (registry?.formatNavItemPath) {
+            return registry.formatNavItemPath(item);
         }
         if (item?.external) {
             return item.url;
@@ -107,8 +108,13 @@
         return item?.url || '/';
     }
 
+    function getRegistryApi() {
+        return window.OkamiShared?.Registry || window.OkamiPageRegistry || null;
+    }
+
     function getAdminNavItems(settings) {
-        const registryItems = window.OkamiPageRegistry?.getAdminNavItems?.();
+        const registry = getRegistryApi();
+        const registryItems = registry?.getAdminNavItems?.();
         if (!registryItems?.length) {
             return [];
         }
@@ -123,7 +129,7 @@
         return sortedKeys.map((key) => itemsByKey[key]).filter(Boolean);
     }
 
-    function buildVisibilityPageRow(item, settings) {
+    function buildVisibilityPageRow(item, settings, orderNumber) {
         const pathLabel = formatNavItemPath(item);
         const isVisible = isPageVisible(settings, item.key);
         const pathHint = item.external ? 'External link' : 'Site page';
@@ -131,6 +137,7 @@
         return `
             <div class="visibility-page-row" data-page-key="${escapeHtml(item.key)}">
                 <div class="visibility-page-order" aria-label="Reorder page">
+                    <span class="visibility-page-order-num" aria-label="Order">${orderNumber}</span>
                     <button type="button" class="visibility-order-btn visibility-order-up" data-page-key="${escapeHtml(item.key)}" aria-label="Move ${escapeHtml(item.title)} up">↑</button>
                     <button type="button" class="visibility-order-btn visibility-order-down" data-page-key="${escapeHtml(item.key)}" aria-label="Move ${escapeHtml(item.title)} down">↓</button>
                 </div>
@@ -151,6 +158,11 @@
     function updateVisibilityOrderButtonState(container) {
         const rows = [...container.querySelectorAll('.visibility-page-row')];
         rows.forEach((row, index) => {
+            const orderNum = row.querySelector('.visibility-page-order-num');
+            if (orderNum) {
+                orderNum.textContent = String(index + 1);
+            }
+
             const upButton = row.querySelector('.visibility-order-up');
             const downButton = row.querySelector('.visibility-order-down');
             if (upButton) {
@@ -189,11 +201,16 @@
     }
 
     function bindVisibilityOrderButtons(container) {
-        if (!container || container.dataset.orderBound === 'true') {
+        if (!container || document.body.dataset.visibilityOrderBound === 'true') {
             return;
         }
 
-        container.addEventListener('click', (event) => {
+        document.addEventListener('click', (event) => {
+            const list = document.getElementById('visibility-page-list');
+            if (!list || !list.contains(event.target)) {
+                return;
+            }
+
             const upButton = event.target.closest('.visibility-order-up');
             if (upButton?.dataset.pageKey) {
                 moveVisibilityPageRow(upButton.dataset.pageKey, -1);
@@ -206,7 +223,7 @@
             }
         });
 
-        container.dataset.orderBound = 'true';
+        document.body.dataset.visibilityOrderBound = 'true';
     }
 
     function renderVisibilityPageList(settings = getDefaultSiteSettings()) {
@@ -218,11 +235,12 @@
         const normalized = normalizeSiteSettings(settings);
         const items = getAdminNavItems(normalized);
         if (!items.length) {
+            container.innerHTML = '<p class="visibility-page-list-error">Navigation registry failed to load. Ensure shared/registry/pages.js is included before admin.js.</p>';
             return;
         }
 
         container.innerHTML = items
-            .map((item) => buildVisibilityPageRow(item, normalized))
+            .map((item, index) => buildVisibilityPageRow(item, normalized, index + 1))
             .join('');
 
         bindVisibilityOrderButtons(container);
@@ -636,6 +654,18 @@
         }
     }
 
+    function formatNavItemsDebugList(settings) {
+        const items = getAdminNavItems(normalizeSiteSettings(settings));
+        if (!items.length) {
+            return '—';
+        }
+
+        return items.map((item, index) => {
+            const visible = isPageVisible(settings, item.key) ? 'visible' : 'hidden';
+            return `${index + 1}. ${item.title} (${visible})`;
+        }).join('; ');
+    }
+
     function updateVisibilitySettingsDebug(settings, source = lastLoadedSettingsSource) {
         lastLoadedSettingsSource = source;
         lastLoadedSettingsUpdatedAt = settings?.updatedAt || null;
@@ -643,6 +673,7 @@
         const modeEl = document.getElementById('debug-construction-mode');
         const sourceEl = document.getElementById('debug-settings-source');
         const updatedEl = document.getElementById('debug-settings-updated');
+        const navItemsEl = document.getElementById('debug-nav-items');
 
         if (modeEl) {
             modeEl.textContent = String(Boolean(settings?.constructionMode));
@@ -654,6 +685,9 @@
             updatedEl.textContent = settings?.updatedAt
                 ? new Date(settings.updatedAt).toLocaleString()
                 : '—';
+        }
+        if (navItemsEl) {
+            navItemsEl.textContent = formatNavItemsDebugList(settings);
         }
     }
 
@@ -676,25 +710,15 @@
         }
 
         if (!settings) {
-            try {
-                const response = await fetch(`files/site-settings.json?t=${Date.now()}`, { cache: 'no-store' });
-                if (response.ok) {
-                    settings = normalizeSiteSettings(await response.json());
-                    source = 'static-fallback';
-                }
-            } catch (error) {
-                console.warn('Failed to load static site settings:', error.message || error);
-            }
-        }
-
-        if (!settings) {
-            const stored = localStorage.getItem(SITE_SETTINGS_STORAGE_KEY);
-            if (stored) {
+            if (window.location.protocol === 'file:') {
                 try {
-                    settings = normalizeSiteSettings(JSON.parse(stored));
-                    source = 'local-fallback';
+                    const response = await fetch(`files/site-settings.json?t=${Date.now()}`, { cache: 'no-store' });
+                    if (response.ok) {
+                        settings = normalizeSiteSettings(await response.json());
+                        source = 'static-fallback';
+                    }
                 } catch (error) {
-                    console.warn('Failed to parse stored site settings:', error.message || error);
+                    console.warn('Failed to load static site settings:', error.message || error);
                 }
             }
         }
