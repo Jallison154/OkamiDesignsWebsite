@@ -1,5 +1,14 @@
 // Admin API client - Replaces IndexedDB with backend API
 const API_BASE = '/api';
+const API_TIMEOUT_MS = 8000;
+
+function fetchWithTimeout(url, options = {}, timeoutMs = API_TIMEOUT_MS) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    return fetch(url, { ...options, signal: controller.signal })
+        .finally(() => clearTimeout(timeoutId));
+}
 
 // Upload files to backend
 async function uploadFile({ file, logo, displayName, slug }) {
@@ -124,40 +133,35 @@ async function updateFileMetadata(fileId, updates) {
     }
 }
 
-// Site visibility settings
+// Site visibility settings — server is the source of truth
 async function getSiteSettings() {
-    try {
-        const response = await fetch(`${API_BASE}/site-settings`, { cache: 'no-store' });
-        if (!response.ok) {
-            throw new Error(`Failed to fetch site settings: ${response.statusText}`);
-        }
-        return await response.json();
-    } catch (error) {
-        console.error('Error fetching site settings:', error);
-        throw error;
+    const response = await fetchWithTimeout(`${API_BASE}/site-settings`, { cache: 'no-store' });
+    if (!response.ok) {
+        throw new Error(`Failed to fetch site settings (${response.status})`);
     }
+    return await response.json();
 }
 
 async function saveSiteSettings(settings) {
-    try {
-        const response = await fetch(`${API_BASE}/site-settings`, {
-            method: 'PUT',
-            credentials: 'same-origin',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(settings)
-        });
+    const response = await fetchWithTimeout(`${API_BASE}/site-settings`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        cache: 'no-store',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(settings)
+    });
 
-        if (!response.ok) {
-            throw new Error(`Failed to save site settings: ${response.statusText}`);
-        }
-
-        return await response.json();
-    } catch (error) {
-        console.error('Error saving site settings:', error);
+    if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        const error = new Error(body.error || `Failed to save site settings (${response.status})`);
+        error.status = response.status;
+        error.code = body.error || null;
         throw error;
     }
+
+    return await response.json();
 }
 
 async function getAnalyticsReport() {
@@ -198,16 +202,24 @@ async function resetAnalytics(scope) {
     }
 }
 
-// Check if API is available
-async function checkAPIHealth() {
+// Probe the same endpoint the public site uses
+async function checkSiteSettingsApi() {
     try {
-        const response = await fetch(`${API_BASE}/health`, {
-            method: 'GET',
-            signal: AbortSignal.timeout(3000) // 3 second timeout
-        });
+        const response = await fetchWithTimeout(`${API_BASE}/site-settings`, { cache: 'no-store' }, 5000);
         return response.ok;
     } catch (error) {
-        console.log('API health check failed:', error.message);
+        console.warn('Site settings API probe failed:', error.message || error);
+        return false;
+    }
+}
+
+/** @deprecated Use checkSiteSettingsApi — kept for callers that still reference it */
+async function checkAPIHealth() {
+    try {
+        const response = await fetchWithTimeout(`${API_BASE}/health`, { cache: 'no-store' }, 5000);
+        return response.ok;
+    } catch (error) {
+        console.warn('API health check failed:', error.message || error);
         return false;
     }
 }
@@ -259,4 +271,3 @@ async function adminLogout() {
         cache: 'no-store'
     });
 }
-

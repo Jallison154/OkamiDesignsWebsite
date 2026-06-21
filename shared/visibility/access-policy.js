@@ -24,6 +24,25 @@
         return normalized.replace(/^\//, '');
     }
 
+    function normalizePathname(pathname) {
+        return (pathname || '/').split('?')[0].replace(/\\/g, '/').toLowerCase().replace(/\/$/, '') || '/';
+    }
+
+    function isExplicitIndexPath(pathname) {
+        const normalized = normalizePathname(pathname);
+        return normalized === '/index.html' || normalized.endsWith('/index.html');
+    }
+
+    function isConstructionLandingPath(pathname) {
+        const normalized = normalizePathname(pathname);
+        return normalized === '/' || normalized === '/index.html';
+    }
+
+    function isAdminRoutePath(pathname) {
+        const pathValue = normalizePath(pathname);
+        return pathValue === ADMIN_LOGIN_PAGE || pathValue === ADMIN_ANALYTICS_PAGE;
+    }
+
     function getRegistry() {
         if (typeof module !== 'undefined' && module.exports) {
             try {
@@ -50,15 +69,29 @@
         return input.role === 'admin';
     }
 
+    function resolvePathname(input) {
+        if (input.pathname) {
+            return input.pathname;
+        }
+        if (input.pathValue === '' || input.pathValue == null) {
+            return '/';
+        }
+        if (String(input.pathValue).startsWith('/')) {
+            return input.pathValue;
+        }
+        return `/${input.pathValue}`;
+    }
+
     /**
      * Shared visibility decision for server middleware and browser routing.
      * @param {{ pathValue?: string, pathname?: string, settings: object, role?: string, isAdmin?: boolean }} input
      */
     function getAccessDecision(input) {
         const settings = input.settings || {};
+        const pathname = resolvePathname(input);
         const pathValue = input.pathValue != null
             ? input.pathValue
-            : normalizePath(input.pathname);
+            : normalizePath(pathname);
 
         if (pathValue === '404.html' || pathValue === '50x.html' || pathValue === ADMIN_LOGIN_PAGE) {
             return { allowed: true, reason: null };
@@ -70,18 +103,23 @@
                 : { allowed: false, reason: 'admin-auth' };
         }
 
-        if (isAdminRole(input)) {
+        if (isAdminRole(input) || isAdminRoutePath(pathname)) {
             return { allowed: true, reason: null };
         }
 
         if (settings.constructionMode) {
-            if (pathValue === '') {
+            if (isConstructionLandingPath(pathname)) {
                 return { allowed: true, reason: null };
             }
             return { allowed: false, reason: 'construction' };
         }
 
-        if (pathValue === '') {
+        // Live site: "/" is the public home landing — not the construction splash.
+        if (pathValue === '' && !isExplicitIndexPath(pathname)) {
+            return { allowed: true, reason: null };
+        }
+
+        if (isExplicitIndexPath(pathname) || pathValue === 'index.html') {
             return { allowed: false, reason: 'home' };
         }
 
@@ -101,8 +139,10 @@
         return settings?.constructionMode ? 'construction' : 'home';
     }
 
-    function buildVisibilityRedirect(pathValue, reason) {
+    function buildVisibilityRedirect(pathValue, reason, settings) {
         const inTools = pathValue.startsWith('tools/');
+        const constructionActive = Boolean(settings?.constructionMode);
+
         if (reason === 'home') {
             return inTools ? '/' : '/';
         }
@@ -110,12 +150,41 @@
             return inTools ? '/index.html' : '/';
         }
         if (reason === 'hidden') {
+            if (constructionActive) {
+                return inTools ? '/index.html' : '/';
+            }
             return inTools ? '/404.html' : '/404.html';
         }
         if (reason === 'admin-auth') {
             return inTools ? '/admin.html' : '/admin.html';
         }
         return '/index.html';
+    }
+
+    function resolveRouteDecision(input) {
+        const pathname = resolvePathname(input);
+        const pathValue = input.pathValue != null
+            ? input.pathValue
+            : normalizePath(pathname);
+        const access = getAccessDecision(input);
+
+        if (access.allowed) {
+            return {
+                action: 'none',
+                reason: null,
+                target: null,
+                pathname,
+                pathValue
+            };
+        }
+
+        return {
+            action: 'redirect',
+            reason: access.reason,
+            target: buildVisibilityRedirect(pathValue, access.reason, input.settings),
+            pathname,
+            pathValue
+        };
     }
 
     function isSystemPage(pathname) {
@@ -127,9 +196,14 @@
         ADMIN_LOGIN_PAGE,
         ADMIN_ANALYTICS_PAGE,
         normalizePath,
+        normalizePathname,
         normalizeVisibilityPath,
+        isExplicitIndexPath,
+        isConstructionLandingPath,
+        isAdminRoutePath,
         getAccessDecision,
         resolvePublicLandingPage,
+        resolveRouteDecision,
         buildVisibilityRedirect,
         isSystemPage
     };

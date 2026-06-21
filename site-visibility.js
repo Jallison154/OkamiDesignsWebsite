@@ -36,13 +36,14 @@
     const SYSTEM_PAGES = visibilityApi?.SYSTEM_PAGES || new Set(['404.html', '50x.html']);
     const ADMIN_LOGIN_PAGE = visibilityApi?.ADMIN_LOGIN_PAGE || 'admin.html';
     const ADMIN_ANALYTICS_PAGE = visibilityApi?.ADMIN_ANALYTICS_PAGE || 'admin-analytics.html';
-    const SETTINGS_POLL_INTERVAL_MS = 15000;
 
     let settingsCache = null;
     let settingsPromise = null;
-    let settingsPollTimer = null;
+    let settingsLoading = false;
     let lastAppliedSettingsSignature = null;
     let lastSettingsSource = 'config';
+    let initialRouteApplied = false;
+    let redirectInFlight = false;
 
     let adminSessionActive = false;
 
@@ -75,6 +76,9 @@
     }
 
     function normalizePath(pathname) {
+        if (visibilityApi?.normalizePath) {
+            return visibilityApi.normalizePath(pathname);
+        }
         const path = (pathname || '').replace(/^\//, '').toLowerCase();
         if (!path || path === 'index.html') {
             return '';
@@ -82,8 +86,19 @@
         return path;
     }
 
+    function normalizePathname(pathname) {
+        if (visibilityApi?.normalizePathname) {
+            return visibilityApi.normalizePathname(pathname);
+        }
+        return (pathname || '/').split('?')[0].replace(/\\/g, '/').toLowerCase().replace(/\/$/, '') || '/';
+    }
+
     function isSplashPage(pathname) {
-        return normalizePath(pathname) === '';
+        if (visibilityApi?.isConstructionLandingPath) {
+            return visibilityApi.isConstructionLandingPath(pathname);
+        }
+        const normalized = normalizePathname(pathname);
+        return normalized === '/' || normalized === '/index.html';
     }
 
     function isSystemPage(pathname) {
@@ -99,6 +114,9 @@
     }
 
     function isAdminRoute(pathname) {
+        if (visibilityApi?.isAdminRoutePath) {
+            return visibilityApi.isAdminRoutePath(pathname);
+        }
         const path = normalizePath(pathname);
         return path === ADMIN_LOGIN_PAGE || path === ADMIN_ANALYTICS_PAGE;
     }
@@ -131,20 +149,27 @@
         return normalizePath(pathname).startsWith('tools/');
     }
 
-    function getSplashUrl() {
-        return window.location.pathname.includes('/tools/') ? '../index.html' : '/';
-    }
+    function resolveRelativeUrl(targetPath) {
+        if (!targetPath) {
+            return null;
+        }
 
-    function getNotFoundUrl() {
-        return window.location.pathname.includes('/tools/') ? '../404.html' : '404.html';
-    }
+        if (/^https?:\/\//i.test(targetPath)) {
+            return targetPath;
+        }
 
-    function getHomeUrl() {
-        return window.location.pathname.includes('/tools/') ? '../' : '/';
-    }
+        if (targetPath.startsWith('/')) {
+            return targetPath;
+        }
 
-    function getAdminLoginUrl() {
-        return window.location.pathname.includes('/tools/') ? '../admin.html' : 'admin.html';
+        if (window.location.pathname.includes('/tools/')) {
+            if (targetPath.startsWith('../')) {
+                return targetPath;
+            }
+            return `../${targetPath}`;
+        }
+
+        return targetPath;
     }
 
     function getSettingsSignature(settings) {
@@ -165,6 +190,7 @@
         }
 
         if (!settingsPromise) {
+            settingsLoading = true;
             settingsPromise = (async () => {
                 try {
                     const response = await fetch('/api/site-settings', { cache: 'no-store' });
@@ -194,7 +220,9 @@
                 lastSettingsSource = 'config';
                 settingsCache = mergeSettings(DEFAULT_SITE_SETTINGS);
                 return settingsCache;
-            })();
+            })().finally(() => {
+                settingsLoading = false;
+            });
         }
 
         return settingsPromise;
@@ -202,6 +230,18 @@
 
     function getLastSettingsSource() {
         return lastSettingsSource;
+    }
+
+    function isSettingsLoading() {
+        return settingsLoading;
+    }
+
+    function logRouteDecision(details) {
+        console.info('[Okami Route Guard]', {
+            path: window.location.pathname,
+            ...details,
+            timestamp: new Date().toISOString()
+        });
     }
 
     function logVisibilityDebug(settings, context = 'init') {
@@ -233,6 +273,93 @@
         };
     }
 
+    function resolveRouteDecision(settings, pathname) {
+        const role = getUserRole();
+
+        if (visibilityApi?.resolveRouteDecision) {
+            return visibilityApi.resolveRouteDecision({
+                pathname,
+                settings,
+                role
+            });
+        }
+
+        const access = canAccessPage(pathname, role, settings);
+        if (access.allowed) {
+            return {
+                action: 'none',
+                reason: null,
+                target: null,
+                pathname
+            };
+        }
+
+        const pathValue = normalizePath(pathname);
+        let target = '/';
+
+        if (access.reason === 'home') {
+            target = resolveRelativeUrl('/');
+        } else if (access.reason === 'construction') {
+            target = resolveRelativeUrl('/');
+        } else if (access.reason === 'hidden') {
+            target = settings?.constructionMode
+                ? resolveRelativeUrl('/')
+                : resolveRelativeUrl('404.html');
+        } else if (access.reason === 'admin-auth') {
+            target = resolveRelativeUrl('admin.html');
+        }
+
+        return {
+            action: 'redirect',
+            reason: access.reason,
+            target,
+            pathname
+        };
+    }
+
+    function normalizeComparablePath(urlOrPath) {
+        try {
+            const parsed = new URL(urlOrPath, window.location.origin);
+            return parsed.pathname.toLowerCase().replace(/\/$/, '') || '/';
+        } catch {
+            return normalizePathname(urlOrPath);
+        }
+    }
+
+    function safeRedirect(target, decision, settings) {
+        if (!target || redirectInFlight) {
+            logRouteDecision({
+                constructionMode: Boolean(settings?.constructionMode),
+                routeDecision: decision?.action || 'none',
+                reason: decision?.reason || null,
+                redirectTarget: target || null,
+                skipped: 'redirect-in-flight-or-empty-target'
+            });
+            return false;
+        }
+
+        const currentPath = normalizeComparablePath(window.location.href);
+        const targetPath = normalizeComparablePath(target);
+
+        logRouteDecision({
+            constructionMode: Boolean(settings?.constructionMode),
+            routeDecision: decision?.action || 'redirect',
+            reason: decision?.reason || null,
+            redirectTarget: targetPath,
+            currentPath,
+            skipped: currentPath === targetPath
+        });
+
+        if (currentPath === targetPath) {
+            revealPage();
+            return false;
+        }
+
+        redirectInFlight = true;
+        window.location.replace(target);
+        return true;
+    }
+
     /**
      * Central route visibility check.
      * @param {string} pathname
@@ -249,7 +376,7 @@
             });
         }
 
-        if (isSystemPage(pathname) || isAdminLoginPage(pathname)) {
+        if (isSystemPage(pathname) || isAdminLoginPage(pathname) || isAdminRoute(pathname)) {
             return { allowed: true, reason: null };
         }
 
@@ -263,11 +390,23 @@
             return { allowed: true, reason: null };
         }
 
-        if (settings.constructionMode && !isSplashPage(pathname)) {
+        if (settings.constructionMode) {
+            if (isSplashPage(pathname)) {
+                return { allowed: true, reason: null };
+            }
             return { allowed: false, reason: 'construction' };
         }
 
-        if (!settings.constructionMode && isSplashPage(pathname)) {
+        const pathValue = normalizePath(pathname);
+        const explicitIndex = visibilityApi?.isExplicitIndexPath
+            ? visibilityApi.isExplicitIndexPath(pathname)
+            : normalizePathname(pathname).endsWith('/index.html');
+
+        if (pathValue === '' && !explicitIndex) {
+            return { allowed: true, reason: null };
+        }
+
+        if (explicitIndex) {
             return { allowed: false, reason: 'home' };
         }
 
@@ -283,56 +422,60 @@
         return { allowed: true, reason: null };
     }
 
-    function getAccessBlockReason(settings, pathname) {
-        const access = canAccessPage(pathname, getUserRole(), settings);
-        return access.allowed ? null : access.reason;
-    }
-
-    function redirectForReason(reason, settings) {
-        if (reason === 'home') {
-            window.location.replace(getHomeUrl());
-            return;
-        }
-
-        if (reason === 'construction') {
-            window.location.replace(getSplashUrl());
-            return;
-        }
-
-        if (reason === 'hidden') {
-            if (settings?.constructionMode) {
-                window.location.replace(getSplashUrl());
-            } else {
-                window.location.replace(getNotFoundUrl());
-            }
-            return;
-        }
-
-        if (reason === 'admin-auth') {
-            window.location.replace(getAdminLoginUrl());
-        }
-    }
-
     function revealPage() {
         document.documentElement.classList.remove('site-visibility-pending');
     }
 
     function hidePageUntilCheck() {
-        if (getUserRole() !== 'admin') {
+        if (getUserRole() !== 'admin' && !isAdminRoute(window.location.pathname)) {
             document.documentElement.classList.add('site-visibility-pending');
         }
     }
 
-    async function enforceCurrentPage() {
-        const settings = await fetchSiteSettings();
-        const reason = getAccessBlockReason(settings, window.location.pathname);
-        if (reason) {
-            redirectForReason(reason, settings);
-            return false;
+    async function applyRouteGuard(settings, context = 'init') {
+        if (settingsLoading) {
+            logRouteDecision({
+                constructionMode: Boolean(settings?.constructionMode),
+                routeDecision: 'wait',
+                reason: 'settings-loading',
+                redirectTarget: null
+            });
+            return true;
+        }
+
+        if (isAdminRoute(window.location.pathname)) {
+            revealPage();
+            logRouteDecision({
+                constructionMode: Boolean(settings?.constructionMode),
+                routeDecision: 'none',
+                reason: 'admin-route',
+                redirectTarget: null,
+                context
+            });
+            return true;
+        }
+
+        const decision = resolveRouteDecision(settings, window.location.pathname);
+
+        if (decision.action === 'redirect') {
+            const redirected = safeRedirect(decision.target, decision, settings);
+            return !redirected;
         }
 
         revealPage();
+        logRouteDecision({
+            constructionMode: Boolean(settings?.constructionMode),
+            routeDecision: 'none',
+            reason: null,
+            redirectTarget: null,
+            context
+        });
         return true;
+    }
+
+    async function enforceCurrentPage() {
+        const settings = await fetchSiteSettings();
+        return applyRouteGuard(settings, 'enforce-current');
     }
 
     async function canAccessUrl(url) {
@@ -351,16 +494,20 @@
     }
 
     async function enforceUrlAccess(url) {
+        if (settingsLoading) {
+            return true;
+        }
+
         const settings = await fetchSiteSettings();
 
         try {
             const parsed = new URL(url, window.location.origin);
-            const access = canAccessPage(parsed.pathname, getUserRole(), settings);
-            if (access.allowed) {
+            const decision = resolveRouteDecision(settings, parsed.pathname);
+            if (decision.action !== 'redirect') {
                 return true;
             }
 
-            redirectForReason(access.reason, settings);
+            safeRedirect(decision.target, decision, settings);
             return false;
         } catch {
             return true;
@@ -434,75 +581,70 @@
     async function applyLiveSettingsUpdate(settings) {
         applyNavigation(settings);
 
-        if (getUserRole() === 'admin') {
+        if (getUserRole() === 'admin' || isAdminRoute(window.location.pathname)) {
             return;
         }
 
-        const reason = getAccessBlockReason(settings, window.location.pathname);
-        if (reason) {
-            redirectForReason(reason, settings);
-        }
+        await applyRouteGuard(settings, 'settings-update');
     }
 
-    function startSettingsPolling() {
-        if (settingsPollTimer) {
-            return;
-        }
-
-        settingsPollTimer = window.setInterval(async () => {
-            await pollSettingsUpdate();
-        }, SETTINGS_POLL_INTERVAL_MS);
-
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden) {
-                pollSettingsUpdate();
-            }
-        });
-
+    function listenForSettingsUpdates() {
         window.addEventListener('storage', (event) => {
-            if (event.key === 'okami-site-settings-updated') {
-                pollSettingsUpdate();
+            if (event.key !== 'okami-site-settings-updated') {
+                return;
             }
+
+            fetchSiteSettings(true).then((settings) => {
+                const nextSignature = getSettingsSignature(settings);
+                if (lastAppliedSettingsSignature === nextSignature) {
+                    return;
+                }
+                lastAppliedSettingsSignature = nextSignature;
+                applyLiveSettingsUpdate(settings);
+            }).catch((error) => {
+                console.warn('Site settings refresh failed:', error.message || error);
+            });
         });
-    }
-
-    async function pollSettingsUpdate() {
-        const previousSignature = lastAppliedSettingsSignature;
-        const settings = await fetchSiteSettings(true);
-        const nextSignature = getSettingsSignature(settings);
-
-        if (previousSignature === nextSignature) {
-            return;
-        }
-
-        lastAppliedSettingsSignature = nextSignature;
-        await applyLiveSettingsUpdate(settings);
     }
 
     async function initSiteVisibility() {
+        if (initialRouteApplied) {
+            return;
+        }
+
         hidePageUntilCheck();
 
         try {
             await refreshAdminSession();
-            const allowed = await enforceCurrentPage();
+            const settings = await fetchSiteSettings();
+
+            if (settingsLoading) {
+                await settingsPromise;
+            }
+
+            const allowed = await applyRouteGuard(settings, 'init');
             if (!allowed) {
+                initialRouteApplied = true;
                 return;
             }
 
-            const settings = await fetchSiteSettings();
             logVisibilityDebug(settings, 'init');
             lastAppliedSettingsSignature = getSettingsSignature(settings);
             applyNavigation(settings);
-            startSettingsPolling();
+            listenForSettingsUpdates();
+            initialRouteApplied = true;
         } catch (error) {
             console.warn('Site visibility init failed, showing page:', error.message || error);
             revealPage();
+            initialRouteApplied = true;
         }
     }
 
     function refreshSiteVisibility() {
         settingsCache = null;
         settingsPromise = null;
+        initialRouteApplied = false;
+        redirectInFlight = false;
         return initSiteVisibility();
     }
 
@@ -521,8 +663,10 @@
         getPageKeyFromUrl,
         isAdminRoute,
         isSplashPage,
+        isSettingsLoading,
         getLastSettingsSource,
-        logVisibilityDebug
+        logVisibilityDebug,
+        resolveRouteDecision
     };
 
     initSiteVisibility();

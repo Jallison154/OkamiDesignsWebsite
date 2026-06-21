@@ -58,6 +58,16 @@ async function buildUniqueFilename(manifest, slugCandidate, extension, excludeId
 app.use(express.json());
 app.set('trust proxy', 1);
 
+app.use('/api/admin', (req, res, next) => {
+    setAdminSecurityHeaders(res);
+    next();
+});
+
+app.use('/api/site-settings', (req, res, next) => {
+    setNoCacheHeaders(res);
+    next();
+});
+
 const { normalizeVisibilityPath, getAccessDecision, buildVisibilityRedirect: sharedBuildVisibilityRedirect, resolvePublicLandingPage } = accessPolicy;
 
 const HOME_HTML = path.join(__dirname, 'home.html');
@@ -147,9 +157,9 @@ function getServerAccessDecision(pathValue, settings, isAdmin) {
 
 function buildVisibilityRedirect(pathValue, reason, settings) {
     if (reason === 'hidden' && settings?.constructionMode) {
-        return sharedBuildVisibilityRedirect(pathValue, 'construction');
+        return sharedBuildVisibilityRedirect(pathValue, 'construction', settings);
     }
-    return sharedBuildVisibilityRedirect(pathValue, reason);
+    return sharedBuildVisibilityRedirect(pathValue, reason, settings);
 }
 
 async function siteVisibilityMiddleware(req, res, next) {
@@ -786,7 +796,6 @@ app.put('/api/files/:id', requireAdmin, async (req, res) => {
 // Site visibility settings
 app.get('/api/site-settings', async (req, res) => {
     try {
-        setNoCacheHeaders(res);
         const settings = await readSiteSettings();
         res.json({
             constructionMode: settings.constructionMode,
@@ -798,6 +807,23 @@ app.get('/api/site-settings', async (req, res) => {
         res.status(500).json({ error: 'Failed to read site settings' });
     }
 });
+
+async function handleSaveSiteSettings(req, res) {
+    try {
+        const settings = await writeSiteSettings(req.body || {});
+        res.json({
+            success: true,
+            settings: {
+                constructionMode: settings.constructionMode,
+                pages: settings.pages,
+                updatedAt: settings.updatedAt || null
+            }
+        });
+    } catch (error) {
+        console.error('Error saving site settings:', error);
+        res.status(500).json({ error: 'Failed to save site settings' });
+    }
+}
 
 app.post('/api/admin/login', async (req, res) => {
     setAdminSecurityHeaders(res);
@@ -849,23 +875,8 @@ app.get('/api/admin/session', (req, res) => {
     });
 });
 
-app.put('/api/site-settings', requireAdmin, async (req, res) => {
-    try {
-        setNoCacheHeaders(res);
-        const settings = await writeSiteSettings(req.body || {});
-        res.json({
-            success: true,
-            settings: {
-                constructionMode: settings.constructionMode,
-                pages: settings.pages,
-                updatedAt: settings.updatedAt || null
-            }
-        });
-    } catch (error) {
-        console.error('Error saving site settings:', error);
-        res.status(500).json({ error: 'Failed to save site settings' });
-    }
-});
+app.post('/api/site-settings', requireAdmin, handleSaveSiteSettings);
+app.put('/api/site-settings', requireAdmin, handleSaveSiteSettings);
 
 // Site analytics
 app.post('/api/analytics/view', analyticsRateLimit, async (req, res) => {

@@ -129,6 +129,13 @@ async function run() {
             fail('GET /api/site-settings (public read)', `status ${settingsGet.status}`);
         }
 
+        const settingsCacheControl = settingsGet.headers.get('cache-control') || '';
+        if (settingsCacheControl.includes('no-store')) {
+            pass('GET /api/site-settings sends no-store cache header');
+        } else {
+            fail('GET /api/site-settings sends no-store cache header', settingsCacheControl || 'missing');
+        }
+
         const loginFail = await request(baseUrl, '/api/admin/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -193,6 +200,20 @@ async function run() {
             pass('PUT /api/site-settings with admin session');
         } else {
             fail('PUT /api/site-settings with admin session', `status ${settingsPutOk.status}`);
+        }
+
+        const settingsPostOk = await request(baseUrl, '/api/site-settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Cookie: adminCookie
+            },
+            body: JSON.stringify(settingsGet.body)
+        });
+        if (settingsPostOk.status === 200 && settingsPostOk.body?.success) {
+            pass('POST /api/site-settings with admin session');
+        } else {
+            fail('POST /api/site-settings with admin session', `status ${settingsPostOk.status}`);
         }
 
         const analyticsDenied = await request(baseUrl, '/api/analytics');

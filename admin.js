@@ -46,6 +46,7 @@
     const SITE_SETTINGS_STORAGE_KEY = 'okami-site-settings';
     let lastLoadedSettingsSource = 'config';
     let lastLoadedSettingsUpdatedAt = null;
+    let apiConnectionStatus = 'disconnected';
 
     function getSettingsApi() {
         return window.OkamiShared?.Settings || null;
@@ -485,6 +486,25 @@
         state.textContent = toggle.checked ? (state.dataset.on || 'On') : (state.dataset.off || 'Off');
     }
 
+    function formatSettingsSourceLabel(source) {
+        const labels = {
+            server: 'server',
+            'static-fallback': 'local fallback (static file)',
+            'local-fallback': 'local fallback (browser storage)',
+            config: 'defaults (API unavailable)'
+        };
+        return labels[source] || source;
+    }
+
+    function setApiConnectionStatus(status) {
+        apiConnectionStatus = status === 'connected' ? 'connected' : 'disconnected';
+        const statusEl = document.getElementById('debug-api-status');
+        if (statusEl) {
+            statusEl.textContent = apiConnectionStatus;
+            statusEl.dataset.state = apiConnectionStatus;
+        }
+    }
+
     function updateVisibilitySettingsDebug(settings, source = lastLoadedSettingsSource) {
         lastLoadedSettingsSource = source;
         lastLoadedSettingsUpdatedAt = settings?.updatedAt || null;
@@ -497,34 +517,12 @@
             modeEl.textContent = String(Boolean(settings?.constructionMode));
         }
         if (sourceEl) {
-            sourceEl.textContent = source;
+            sourceEl.textContent = formatSettingsSourceLabel(source);
         }
         if (updatedEl) {
             updatedEl.textContent = settings?.updatedAt
                 ? new Date(settings.updatedAt).toLocaleString()
                 : '—';
-        }
-    }
-
-    async function updateVisibilityServerDebug() {
-        const serverEl = document.getElementById('debug-settings-server');
-        if (!serverEl) {
-            return;
-        }
-
-        try {
-            const response = await fetch('/api/health', { cache: 'no-store' });
-            if (!response.ok) {
-                serverEl.textContent = 'unavailable';
-                return;
-            }
-
-            const health = await response.json();
-            serverEl.textContent = health.status === 'ok'
-                ? `connected (${health.environment || 'unknown'})`
-                : 'unavailable';
-        } catch (error) {
-            serverEl.textContent = 'unavailable (tunnel may not point at Node server)';
         }
     }
 
@@ -538,13 +536,12 @@
         let source = 'config';
 
         try {
-            const apiAvailable = await checkAPIHealth();
-            if (apiAvailable) {
-                settings = normalizeSiteSettings(await getSiteSettings());
-                source = 'server';
-            }
+            settings = normalizeSiteSettings(await getSiteSettings());
+            source = 'server';
+            setApiConnectionStatus('connected');
         } catch (error) {
             console.warn('Failed to load site settings from API:', error.message || error);
+            setApiConnectionStatus('disconnected');
         }
 
         if (!settings) {
@@ -552,7 +549,7 @@
                 const response = await fetch(`files/site-settings.json?t=${Date.now()}`, { cache: 'no-store' });
                 if (response.ok) {
                     settings = normalizeSiteSettings(await response.json());
-                    source = 'static';
+                    source = 'static-fallback';
                 }
             } catch (error) {
                 console.warn('Failed to load static site settings:', error.message || error);
@@ -564,7 +561,7 @@
             if (stored) {
                 try {
                     settings = normalizeSiteSettings(JSON.parse(stored));
-                    source = 'local';
+                    source = 'local-fallback';
                 } catch (error) {
                     console.warn('Failed to parse stored site settings:', error.message || error);
                 }
@@ -578,9 +575,9 @@
 
         applySiteVisibilityForm(resolved);
         updateVisibilitySettingsDebug(resolved, source);
-        await updateVisibilityServerDebug();
 
         console.info('[Okami Admin Site Settings]', {
+            apiStatus: apiConnectionStatus,
             constructionMode: Boolean(resolved.constructionMode),
             settingsSource: source,
             updatedAt: resolved.updatedAt || null,
@@ -612,24 +609,26 @@
         setVisibilitySaveStatus('');
 
         try {
-            const apiAvailable = await checkAPIHealth();
-            if (apiAvailable) {
-                const result = await saveSiteSettings(settings);
-                const saved = normalizeSiteSettings(result?.settings || settings);
-                updateVisibilitySettingsDebug(saved, 'server');
-                await updateVisibilityServerDebug();
-                localStorage.setItem('okami-site-settings-updated', Date.now().toString());
-                setVisibilitySaveStatus('Settings saved to server.');
-                showToast('Site visibility settings saved.', 'success');
-                return;
-            }
-
-            setVisibilitySaveStatus('API unavailable. Settings were not saved — start the Node server so public visitors receive updates.', true);
-            showToast('Could not save. API server is unavailable.', 'info');
+            const result = await saveSiteSettings(settings);
+            const saved = normalizeSiteSettings(result?.settings || settings);
+            setApiConnectionStatus('connected');
+            updateVisibilitySettingsDebug(saved, 'server');
+            localStorage.setItem('okami-site-settings-updated', Date.now().toString());
+            setVisibilitySaveStatus('Settings saved to server.');
+            showToast('Site visibility settings saved.', 'success');
         } catch (error) {
             console.error('Site settings save failed:', error);
-            setVisibilitySaveStatus('Save failed. Verify the Cloudflare Tunnel targets the Node server running this site.', true);
-            showToast('Save failed. Check server connection.', 'info');
+            setApiConnectionStatus('disconnected');
+
+            let message = 'Settings could not be saved to the server.';
+            if (error.status === 401) {
+                message += ' Sign in again and retry.';
+            } else if (error.code === 'admin_auth_not_configured') {
+                message += ' Admin auth is not configured on the server.';
+            }
+
+            setVisibilitySaveStatus(message, true);
+            showToast('Settings could not be saved to the server.', 'info');
         } finally {
             if (saveButton) {
                 saveButton.disabled = false;
