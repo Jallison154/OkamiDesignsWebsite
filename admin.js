@@ -716,6 +716,9 @@
             setApiConnectionStatus('connected');
             updateVisibilitySettingsDebug(saved, 'server');
             localStorage.setItem('okami-site-settings-updated', Date.now().toString());
+            if (window.SiteVisibility?.refreshNavigationSettings) {
+                window.SiteVisibility.refreshNavigationSettings(true).catch(() => {});
+            }
             setVisibilitySaveStatus('Settings saved to server.');
             showToast('Site visibility settings saved.', 'success');
         } catch (error) {

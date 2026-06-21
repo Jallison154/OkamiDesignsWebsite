@@ -291,6 +291,12 @@ body::before {
     transform: translateY(0);
 }
 
+.nav-link.nav-item-hidden,
+.nav-mobile .nav-link.nav-item-hidden,
+a.contact-btn.nav-item-hidden {
+    display: none !important;
+}
+
 .nav-link::before {
     content: '';
     position: absolute;

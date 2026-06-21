@@ -46,8 +46,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Tools dropdown navigation
     initNavDropdown();
 
-    if (window.SiteVisibility && typeof window.SiteVisibility.fetchSiteSettings === 'function') {
-        window.SiteVisibility.fetchSiteSettings().then((settings) => {
+    if (window.SiteVisibility && typeof window.SiteVisibility.refreshNavigationSettings === 'function') {
+        window.SiteVisibility.refreshNavigationSettings(true);
+    } else if (window.SiteVisibility && typeof window.SiteVisibility.fetchSiteSettings === 'function') {
+        window.SiteVisibility.fetchSiteSettings(true).then((settings) => {
             window.SiteVisibility.applyNavigation(settings);
         });
     }
@@ -423,8 +425,10 @@ function reinitializeDynamicContent() {
 
     initNavDropdown();
 
-    if (window.SiteVisibility && typeof window.SiteVisibility.fetchSiteSettings === 'function') {
-        window.SiteVisibility.fetchSiteSettings().then((settings) => {
+    if (window.SiteVisibility && typeof window.SiteVisibility.refreshNavigationSettings === 'function') {
+        window.SiteVisibility.refreshNavigationSettings(true);
+    } else if (window.SiteVisibility && typeof window.SiteVisibility.fetchSiteSettings === 'function') {
+        window.SiteVisibility.fetchSiteSettings(true).then((settings) => {
             window.SiteVisibility.applyNavigation(settings);
         });
     }

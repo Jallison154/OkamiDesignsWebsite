@@ -604,9 +604,48 @@
             return;
         }
 
+        element.classList.toggle('nav-item-hidden', !visible);
         element.hidden = !visible;
         element.style.display = visible ? '' : 'none';
         element.setAttribute('aria-hidden', visible ? 'false' : 'true');
+    }
+
+    function getPageLinkSelectors(page) {
+        const selectors = new Set();
+
+        if (page.publicPath) {
+            selectors.add(`a.nav-link[href="${page.publicPath}"]`);
+            selectors.add(`a.contact-btn[href="${page.publicPath}"]`);
+        }
+
+        (page.filePaths || []).forEach((filePath) => {
+            selectors.add(`a.nav-link[href="/${filePath}"]`);
+            selectors.add(`a.nav-link[href="${filePath}"]`);
+            selectors.add(`a.nav-link[href="../${filePath}"]`);
+            selectors.add(`a.contact-btn[href="/${filePath}"]`);
+            selectors.add(`a.contact-btn[href="${filePath}"]`);
+            selectors.add(`a.contact-btn[href="../${filePath}"]`);
+        });
+
+        return [...selectors];
+    }
+
+    function ensureNavPageKeys() {
+        const pages = registryApi?.PUBLIC_PAGES;
+        if (!pages?.length) {
+            return;
+        }
+
+        pages.forEach((page) => {
+            getPageLinkSelectors(page).forEach((selector) => {
+                document.querySelectorAll(selector).forEach((link) => {
+                    if (link.classList.contains('nav-dropdown-item') || link.classList.contains('nav-sublink')) {
+                        return;
+                    }
+                    link.dataset.navPageKey = page.key;
+                });
+            });
+        });
     }
 
     function findNavLinksForPath(path) {
@@ -688,21 +727,34 @@
         const skipNavKeys = new Set(['tools', ...TOOL_PAGE_KEYS]);
 
         applyNavOrder(settings);
+        ensureNavPageKeys();
 
-        Object.entries(getNavigationPagePaths()).forEach(([pageKey, paths]) => {
-            if (skipNavKeys.has(pageKey)) {
-                return;
-            }
+        if (registryApi?.PUBLIC_PAGES?.length) {
+            registryApi.PUBLIC_PAGES.forEach((page) => {
+                if (skipNavKeys.has(page.key)) {
+                    return;
+                }
 
-            paths.forEach((path) => {
-                findNavLinksForPath(path).forEach((link) => {
-                    if (link.classList.contains('nav-dropdown-item') || link.classList.contains('nav-sublink')) {
-                        return;
-                    }
-                    setNavItemVisible(link, pages[pageKey] !== false);
+                document.querySelectorAll(`[data-nav-page-key="${page.key}"]`).forEach((link) => {
+                    setNavItemVisible(link, pages[page.key] !== false);
                 });
             });
-        });
+        } else {
+            Object.entries(getNavigationPagePaths()).forEach(([pageKey, paths]) => {
+                if (skipNavKeys.has(pageKey)) {
+                    return;
+                }
+
+                paths.forEach((path) => {
+                    findNavLinksForPath(path).forEach((link) => {
+                        if (link.classList.contains('nav-dropdown-item') || link.classList.contains('nav-sublink')) {
+                            return;
+                        }
+                        setNavItemVisible(link, pages[pageKey] !== false);
+                    });
+                });
+            });
+        }
 
         document.querySelectorAll('[data-tool-key]').forEach((link) => {
             const pageKey = link.dataset.toolKey;
@@ -775,6 +827,12 @@
         });
     }
 
+    async function refreshNavigationSettings(forceRefresh = false) {
+        const settings = await fetchSiteSettings(forceRefresh);
+        applyNavigation(settings);
+        return settings;
+    }
+
     async function initSiteVisibility() {
         if (initialRouteApplied) {
             return;
@@ -784,7 +842,7 @@
 
         try {
             await refreshAdminSession();
-            const settings = await fetchSiteSettings();
+            const settings = await fetchSiteSettings(true);
 
             if (settingsLoading) {
                 await settingsPromise;
@@ -831,6 +889,7 @@
         canAccessUrl,
         enforceUrlAccess,
         refreshSiteVisibility,
+        refreshNavigationSettings,
         refreshAdminSession,
         isAdminUser,
         getUserRole,
@@ -842,6 +901,18 @@
         logVisibilityDebug,
         resolveRouteDecision
     };
+
+    window.addEventListener('pageshow', (event) => {
+        if (!event.persisted) {
+            return;
+        }
+
+        refreshSiteVisibility();
+    });
+
+    window.addEventListener('focus', () => {
+        refreshNavigationSettings(true).catch(() => {});
+    });
 
     initSiteVisibility();
 })();

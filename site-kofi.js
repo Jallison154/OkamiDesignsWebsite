@@ -55,6 +55,10 @@
 
         injectHeaderSupportLinks();
         injectSiteFooter();
+
+        if (global.SiteVisibility?.refreshNavigationSettings) {
+            global.SiteVisibility.refreshNavigationSettings(true).catch(() => {});
+        }
     }
 
     if (document.readyState === 'loading') {
