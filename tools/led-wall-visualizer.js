@@ -1568,11 +1568,12 @@
     function renderTopViewCurvePanel(state) {
         const panel = document.getElementById('led-top-view-panel');
         const diagramEl = document.getElementById('led-top-view-diagram');
+        const measurementsEl = document.getElementById('led-curved-wall-measurements-list');
         if (!panel || !diagramEl) {
             return;
         }
 
-        const showPanel = state.curvedWallMode === true && !state.curvedWallAngleExceeded;
+        const showPanel = readCurvedWallMode() === true && !state.curvedWallAngleExceeded;
 
         const panelKey = showPanel
             ? [
@@ -1590,6 +1591,9 @@
         if (!showPanel) {
             if (lastTopViewPanelKey !== panelKey) {
                 diagramEl.innerHTML = '';
+                if (measurementsEl) {
+                    measurementsEl.innerHTML = '';
+                }
                 lastTopViewPanelKey = panelKey;
             }
             return;
@@ -1600,9 +1604,22 @@
         }
         lastTopViewPanelKey = panelKey;
 
+        const Summary = window.OkamiLedWallCalculator?.WallProjectSummary;
+        if (measurementsEl && Summary?.buildCurvedWallMeasurementRows) {
+            measurementsEl.innerHTML = Summary.buildCurvedWallMeasurementRows(state)
+                .map((row) => (
+                    `<div class="led-curved-wall-measurement">`
+                    + `<dt>${row.label}</dt>`
+                    + `<dd>${row.value}</dd>`
+                    + `</div>`
+                ))
+                .join('');
+        }
+
         const diagram = computeTopViewCurveDiagram(state);
-        const viewBox = computeTopViewCurveViewBox(diagram);
-        diagramEl.innerHTML = buildTopViewCurveSvg(diagram, viewBox);
+        const viewBox = computeTopViewCurveViewBox(diagram, 0.22);
+        const labels = Summary?.buildCurvedWallDiagramLabels?.(state) || null;
+        diagramEl.innerHTML = buildTopViewCurveSvg(diagram, viewBox, labels);
     }
 
     function renderPreview(state) {

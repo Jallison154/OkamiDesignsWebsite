@@ -227,6 +227,76 @@
         return Number.isInteger(rounded) ? `${rounded}°` : `${rounded.toFixed(1)}°`;
     }
 
+    function formatDualLengthDisplay(feet, mm) {
+        if (!hasValue(feet) && !hasValue(mm)) {
+            return '—';
+        }
+        const imperial = hasValue(feet) ? `${Number(feet).toFixed(2)} ft` : null;
+        const metric = hasValue(mm) ? `${(mm / 1000).toFixed(2)} m` : null;
+        if (imperial && metric) {
+            return `${imperial} / ${metric}`;
+        }
+        return imperial || metric || '—';
+    }
+
+    function buildCurvedWallMeasurementRows(state) {
+        const radiusLabel = state.radiusFeet != null
+            ? formatDualLengthDisplay(state.radiusFeet, state.radiusMM)
+            : 'N/A';
+
+        return [
+            {
+                label: 'Surface Width (Arc Length)',
+                value: formatDualLengthDisplay(state.surfaceWidthFeet, state.surfaceWidthMM)
+            },
+            {
+                label: 'Venue Width Required (Chord Width)',
+                value: formatDualLengthDisplay(state.chordWidthFeet, state.chordWidthMM)
+            },
+            {
+                label: 'Curve Radius',
+                value: radiusLabel
+            },
+            {
+                label: 'Curve Depth (Sagitta)',
+                value: formatDualLengthDisplay(state.curveDepthFeet, state.curveDepthMM)
+            },
+            {
+                label: 'Total Curve Angle',
+                value: formatDegreeLabel(state.totalCurveAngle)
+            }
+        ];
+    }
+
+    function buildCurvedWallDiagramLabels(state) {
+        const radiusLabel = state.radiusFeet != null
+            ? formatDualLengthDisplay(state.radiusFeet, state.radiusMM)
+            : 'N/A';
+
+        return {
+            arcLength: [
+                'Surface Width (Arc Length)',
+                formatDualLengthDisplay(state.surfaceWidthFeet, state.surfaceWidthMM)
+            ],
+            chordWidth: [
+                'Venue Width Required (Chord Width)',
+                formatDualLengthDisplay(state.chordWidthFeet, state.chordWidthMM)
+            ],
+            depth: [
+                'Depth',
+                formatDualLengthDisplay(state.curveDepthFeet, state.curveDepthMM)
+            ],
+            radius: [
+                'Radius',
+                radiusLabel
+            ],
+            angle: [
+                'Total Curve Angle',
+                formatDegreeLabel(state.totalCurveAngle)
+            ]
+        };
+    }
+
     function isCurvedWallModeEnabled(state, inputs = {}) {
         if (inputs?.curvedWallMode === true || inputs?.curvedWallMode === 'true') {
             return true;
@@ -420,6 +490,8 @@
         buildWallSummarySection,
         buildCurvedWallSummarySection,
         buildCurvedWallDetailRows,
+        buildCurvedWallMeasurementRows,
+        buildCurvedWallDiagramLabels,
         isCurvedWallModeEnabled,
         formatCabinetAngleDisplay,
         buildProjectSummary,

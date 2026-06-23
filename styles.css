@@ -5306,40 +5306,97 @@ html {
 }
 
 .led-top-view-panel {
-    flex: 0 0 min(240px, 34%);
+    flex: 0 0 auto;
+    width: 100%;
     min-width: 0;
-    padding: 12px 12px 10px;
-    border: 1px solid rgba(255, 106, 45, 0.22);
+    margin-top: 12px;
+    padding: 12px 14px;
+    border: 1px solid rgba(255, 106, 45, 0.28);
     border-radius: 10px;
-    background: rgba(0, 0, 0, 0.22);
+    background: rgba(0, 0, 0, 0.28);
 }
 
 .led-top-view-panel[hidden] {
     display: none !important;
 }
 
-.led-top-view-title {
-    margin: 0 0 4px;
-    font-size: 0.82rem;
-    font-weight: 700;
-    color: rgba(255, 255, 255, 0.92);
+.led-curved-wall-view {
+    display: grid;
+    grid-template-columns: minmax(220px, 0.95fr) minmax(0, 1.35fr);
+    gap: 14px;
+    align-items: stretch;
 }
 
-.led-top-view-note {
-    margin: 0 0 8px;
+.led-curved-wall-section-title {
+    margin: 0 0 10px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.85px;
+    text-transform: uppercase;
+    color: var(--accent-color);
+}
+
+.led-curved-wall-section-subtitle {
+    font-weight: 700;
+    letter-spacing: 0.45px;
+    color: rgba(255, 255, 255, 0.72);
+}
+
+.led-curved-wall-measurements-list {
+    margin: 0;
+    display: grid;
+    gap: 0;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.led-curved-wall-measurement {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+    gap: 10px;
+    align-items: center;
+    padding: 8px 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(0, 0, 0, 0.18);
+}
+
+.led-curved-wall-measurement:first-child {
+    border-top: 0;
+}
+
+.led-curved-wall-measurement dt {
+    margin: 0;
     font-size: 0.68rem;
     font-weight: 600;
-    letter-spacing: 0.3px;
-    text-transform: uppercase;
-    color: var(--secondary-text);
+    line-height: 1.35;
+    color: rgba(255, 255, 255, 0.72);
+}
+
+.led-curved-wall-measurement dd {
+    margin: 0;
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1.35;
+    color: rgba(255, 255, 255, 0.94);
+    text-align: right;
+}
+
+.led-curved-wall-diagram {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
 }
 
 .led-top-view-diagram {
+    flex: 1 1 auto;
     width: 100%;
-    aspect-ratio: 4 / 3;
-    min-height: 120px;
-    max-height: 180px;
-    margin-bottom: 10px;
+    min-height: 180px;
+    aspect-ratio: 5 / 3;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.22);
+    padding: 8px;
 }
 
 .led-top-view-svg {
@@ -5349,50 +5406,34 @@ html {
 }
 
 .led-top-view-svg .led-top-view-segment {
-    stroke: rgba(255, 255, 255, 0.82);
-    stroke-width: 0.14;
+    stroke: #ff6a2d;
+    stroke-width: 0.22;
     stroke-linecap: round;
 }
 
 .led-top-view-svg .led-top-view-chord {
-    stroke: var(--accent-color);
+    stroke: #ff6a2d;
     stroke-width: 0.12;
-    stroke-dasharray: 0.35 0.22;
+    stroke-dasharray: 0.4 0.25;
 }
 
-.led-top-view-svg .led-top-view-depth,
-.led-top-view-svg .led-top-view-radius {
+.led-top-view-svg .led-top-view-depth {
+    stroke: rgba(255, 255, 255, 0.55);
+    stroke-width: 0.1;
+    stroke-dasharray: 0.22 0.18;
+}
+
+.led-top-view-svg .led-top-view-radius,
+.led-top-view-svg .led-top-view-angle-arc {
     stroke: rgba(255, 255, 255, 0.35);
-    stroke-width: 0.08;
-    stroke-dasharray: 0.18 0.16;
+    stroke-width: 0.09;
+    stroke-dasharray: 0.2 0.16;
 }
 
-.led-top-view-metrics {
-    margin: 0;
-    display: grid;
-    gap: 6px;
-}
-
-.led-top-view-metric {
-    display: grid;
-    gap: 1px;
-}
-
-.led-top-view-metric dt {
-    margin: 0;
-    font-size: 0.62rem;
-    font-weight: 700;
-    letter-spacing: 0.35px;
-    text-transform: uppercase;
-    color: var(--secondary-text);
-}
-
-.led-top-view-metric dd {
-    margin: 0;
-    font-size: 0.76rem;
+.led-top-view-svg .led-top-view-label {
+    fill: rgba(255, 255, 255, 0.88);
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.9);
-    line-height: 1.35;
 }
 
 @media (max-width: 960px) {
@@ -5400,13 +5441,12 @@ html {
         flex-direction: column;
     }
 
-    .led-top-view-panel {
-        flex: 1 1 auto;
-        width: 100%;
+    .led-curved-wall-view {
+        grid-template-columns: 1fr;
     }
 
     .led-top-view-diagram {
-        max-height: 160px;
+        min-height: 160px;
     }
 }
 

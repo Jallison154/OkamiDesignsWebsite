@@ -20,7 +20,7 @@
     <meta name="twitter:description" content="Calculate LED video wall resolution, cabinet layouts, processor ports, aspect ratios, and content fit with the free Okami Designs LED Video Wall Calculator.">
     <meta name="twitter:image" content="https://okamidesigns.com/images/led-cabinet-square.png">
     <link rel="icon" href="../images/Okami_Designs_HeadWhite.png" type="image/png">
-    <link rel="stylesheet" href="../styles.css?v=20260724">
+    <link rel="stylesheet" href="../styles.css?v=20260725">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -565,12 +565,19 @@
                                     <div class="led-cabinet-tooltip" id="led-cabinet-tooltip" role="tooltip" hidden></div>
                                 </div>
                             </div>
-                            <aside class="led-top-view-panel" id="led-top-view-panel" hidden aria-labelledby="led-top-view-title">
-                                <h3 id="led-top-view-title" class="led-top-view-title">Top View Curve</h3>
-                                <p class="led-top-view-note">Stage front ↓ · venue fit reference</p>
-                                <div class="led-top-view-diagram" id="led-top-view-diagram"></div>
-                            </aside>
                         </div>
+                        <aside class="led-top-view-panel" id="led-top-view-panel" hidden aria-labelledby="led-top-view-title">
+                            <div class="led-curved-wall-view">
+                                <section class="led-curved-wall-measurements" aria-labelledby="led-curved-wall-measurements-title">
+                                    <h3 id="led-curved-wall-measurements-title" class="led-curved-wall-section-title">Curved Wall Measurements</h3>
+                                    <dl class="led-curved-wall-measurements-list" id="led-curved-wall-measurements-list"></dl>
+                                </section>
+                                <section class="led-curved-wall-diagram" aria-labelledby="led-top-view-title">
+                                    <h3 id="led-top-view-title" class="led-curved-wall-section-title">Top View Curve <span class="led-curved-wall-section-subtitle">(Stage Front)</span></h3>
+                                    <div class="led-top-view-diagram" id="led-top-view-diagram"></div>
+                                </section>
+                            </div>
+                        </aside>
                         <div class="led-overlay-debug" id="led-overlay-debug" hidden>
                             <p class="led-overlay-debug-title">Debug (<code>?debug</code>)</p>
                             <p>Wall Pixels: <span id="debug-wall-pixels">—</span></p>
@@ -626,13 +633,13 @@
     <script src="../client/commercial/license-panel.js"></script>
     <script src="../client/desktop/shell-bridge.js"></script>
     <script src="led-wall-calculator/constants.js?v=20260713"></script>
-    <script src="led-wall-calculator/calculations.js?v=20260716"></script>
+    <script src="led-wall-calculator/calculations.js?v=20260725"></script>
     <script src="led-wall-calculator/metrics.js?v=20260713"></script>
     <script src="led-wall-calculator/project-io.js?v=20260713"></script>
     <script src="led-wall-calculator/build-sheet-export.js?v=20260713"></script>
-    <script src="led-wall-calculator/wall-project-summary.js?v=20260723"></script>
+    <script src="led-wall-calculator/wall-project-summary.js?v=20260725"></script>
     <script src="vendor/jspdf.umd.min.js?v=20260713"></script>
-    <script src="led-wall-calculator/build-sheet-pdf.js?v=20260713"></script>
-    <script src="led-wall-visualizer.js?v=20260724"></script>
+    <script src="led-wall-calculator/build-sheet-pdf.js?v=20260725"></script>
+    <script src="led-wall-visualizer.js?v=20260725"></script>
 </body>
 </html>

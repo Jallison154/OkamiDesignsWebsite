@@ -260,8 +260,8 @@
         const mapX = (x) => x0 + ((x - viewBox.minX) / viewBox.width) * boxW;
         const mapY = (y) => y0 + ((ySvg(y) - viewBox.minY) / viewBox.height) * boxH;
 
-        setDrawColor(doc, COLORS.wallStroke);
-        doc.setLineWidth(0.55);
+        setDrawColor(doc, COLORS.orange);
+        doc.setLineWidth(0.7);
         diagram.arcSegments.forEach((seg) => {
             doc.line(mapX(seg.x1), mapY(seg.y1), mapX(seg.x2), mapY(seg.y2));
         });
@@ -279,6 +279,15 @@
             doc.setLineDashPattern([], 0);
         }
 
+        const radiusLines = diagram.radiusLines || (diagram.radiusLine ? [diagram.radiusLine] : []);
+        radiusLines.forEach((line) => {
+            setDrawColor(doc, COLORS.gridLine);
+            doc.setLineWidth(0.2);
+            doc.setLineDashPattern([1, 0.8], 0);
+            doc.line(mapX(line.x1), mapY(line.y1), mapX(line.x2), mapY(line.y2));
+            doc.setLineDashPattern([], 0);
+        });
+
         if (diagram.depthLine) {
             setDrawColor(doc, COLORS.muted);
             doc.setLineWidth(0.25);
@@ -287,17 +296,6 @@
                 mapY(diagram.depthLine.y1),
                 mapX(diagram.depthLine.x2),
                 mapY(diagram.depthLine.y2)
-            );
-        }
-
-        if (diagram.radiusLine) {
-            setDrawColor(doc, COLORS.gridLine);
-            doc.setLineWidth(0.2);
-            doc.line(
-                mapX(diagram.radiusLine.x1),
-                mapY(diagram.radiusLine.y1),
-                mapX(diagram.radiusLine.x2),
-                mapY(diagram.radiusLine.y2)
             );
         }
 
@@ -310,21 +308,35 @@
         }
 
         const bounds = getPrintableBounds(doc);
-        const { margin, contentWidth, centerX } = bounds;
-        const boxW = Math.min(contentWidth * 0.62, 92);
-        const boxH = Math.min(maxHeight * 0.55, 34);
-        const x0 = margin + (contentWidth - boxW) / 2;
+        const { margin, contentWidth } = bounds;
+        const sectionH = Math.min(maxHeight, 52);
+        const tableW = contentWidth * 0.42;
+        const diagramW = contentWidth - tableW - 6;
+        const tableX = margin;
+        const diagramX = margin + tableW + 6;
+        const bodyY = startY + 5;
 
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(8.5);
-        setTextColor(doc, COLORS.text);
-        doc.text('Top View Curve', centerX, startY, { align: 'center' });
+        doc.setFontSize(8);
+        setTextColor(doc, COLORS.orange);
+        doc.text('CURVED WALL MEASUREMENTS', tableX, startY);
+        doc.text('TOP VIEW CURVE (STAGE FRONT)', diagramX, startY);
 
-        setDrawColor(doc, COLORS.border);
-        doc.setLineWidth(0.2);
-        doc.line(margin, startY + 1.5, margin + contentWidth, startY + 1.5);
+        const rows = Summary()?.buildCurvedWallMeasurementRows?.(state) || [];
+        let rowY = bodyY;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7);
+        rows.forEach((row) => {
+            setTextColor(doc, COLORS.muted);
+            doc.text(row.label, tableX, rowY);
+            setTextColor(doc, COLORS.text);
+            doc.text(String(row.value), tableX + tableW - 2, rowY, { align: 'right' });
+            rowY += 3.6;
+        });
 
-        return drawTopViewCurveDiagram(doc, state, x0, startY + 5, boxW, boxH);
+        drawTopViewCurveDiagram(doc, state, diagramX, bodyY - 2, diagramW, sectionH - 4);
+
+        return startY + sectionH + 2;
     }
 
     /**

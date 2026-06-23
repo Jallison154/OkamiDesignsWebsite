@@ -581,11 +581,18 @@
             curveDepthFeet,
             radiusFeet,
             totalCurveAngle,
+            totalCurveAngleRadians: totalRad,
             arcSegments,
             chordLine: { x1: leftEnd.x, y1: 0, x2: rightEnd.x, y2: 0 },
-            depthLine: { x1: 0, y1: 0, x2: apex.x, y2: apex.y },
+            depthLine: { x1: rightEnd.x, y1: 0, x2: apex.x, y2: apex.y },
+            radiusLines: [
+                { x1: circleCenter.x, y1: circleCenter.y, x2: leftEnd.x, y2: leftEnd.y },
+                { x1: circleCenter.x, y1: circleCenter.y, x2: rightEnd.x, y2: rightEnd.y }
+            ],
             radiusLine: { x1: circleCenter.x, y1: circleCenter.y, x2: apex.x, y2: apex.y },
             circleCenter,
+            leftEnd,
+            rightEnd,
             apex
         };
     }
@@ -605,6 +612,12 @@
         if (diagram.circleCenter) {
             points.push(diagram.circleCenter);
         }
+        if (diagram.leftEnd) {
+            points.push(diagram.leftEnd);
+        }
+        if (diagram.rightEnd) {
+            points.push(diagram.rightEnd);
+        }
         if (diagram.apex) {
             points.push(diagram.apex);
         }
@@ -623,9 +636,9 @@
         const padX = (maxX - minX) * paddingRatio || 0.5;
         const padY = (maxY - minY) * paddingRatio || 0.5;
         minX -= padX;
-        maxX += padX;
+        maxX += padX * 1.35;
         minY -= padY * 1.4;
-        maxY += padY;
+        maxY += padY * 1.15;
 
         return {
             minX,
@@ -639,34 +652,95 @@
         return viewBox.minY * 2 + viewBox.height - y;
     }
 
+    function escapeSvgText(value) {
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
+    function svgText(x, y, lines, anchor = 'middle', size = 0.34) {
+        if (!lines || !lines.length) {
+            return '';
+        }
+        const tspans = lines.map((line, index) => (
+            `<tspan x="${x}" dy="${index === 0 ? 0 : size * 1.15}">${escapeSvgText(line)}</tspan>`
+        )).join('');
+        return `<text x="${x}" y="${y}" text-anchor="${anchor}" class="led-top-view-label" font-size="${size}">${tspans}</text>`;
+    }
+
     /**
      * SVG markup for top view curve diagram (shared by UI + PDF conversion path).
      */
-    function buildTopViewCurveSvg(diagram, viewBox) {
+    function buildTopViewCurveSvg(diagram, viewBox, labels = null) {
         if (!diagram || !viewBox) {
             return '';
         }
 
         const ySvg = (y) => topViewYToSvg(y, viewBox);
         const vb = `${viewBox.minX} ${viewBox.minY} ${viewBox.width} ${viewBox.height}`;
+        const annotated = labels && typeof labels === 'object';
 
-        const segments = diagram.arcSegments.map((seg, index) => (
-            `<line x1="${seg.x1}" y1="${ySvg(seg.y1)}" x2="${seg.x2}" y2="${ySvg(seg.y2)}" stroke="rgba(255,255,255,0.85)" stroke-width="0.16" stroke-linecap="round" vector-effect="non-scaling-stroke"/>`
+        const segments = diagram.arcSegments.map((seg) => (
+            `<line x1="${seg.x1}" y1="${ySvg(seg.y1)}" x2="${seg.x2}" y2="${ySvg(seg.y2)}" class="led-top-view-segment" vector-effect="non-scaling-stroke"/>`
         )).join('');
 
         const chord = diagram.chordLine
-            ? `<line x1="${diagram.chordLine.x1}" y1="${ySvg(diagram.chordLine.y1)}" x2="${diagram.chordLine.x2}" y2="${ySvg(diagram.chordLine.y2)}" stroke="#ff6a2d" stroke-width="0.12" stroke-dasharray="0.4 0.25" vector-effect="non-scaling-stroke"/>`
+            ? `<line x1="${diagram.chordLine.x1}" y1="${ySvg(diagram.chordLine.y1)}" x2="${diagram.chordLine.x2}" y2="${ySvg(diagram.chordLine.y2)}" class="led-top-view-chord" vector-effect="non-scaling-stroke"/>`
             : '';
+
+        const radiusLines = (diagram.radiusLines || (diagram.radiusLine ? [diagram.radiusLine] : []))
+            .map((line) => (
+                `<line x1="${line.x1}" y1="${ySvg(line.y1)}" x2="${line.x2}" y2="${ySvg(line.y2)}" class="led-top-view-radius" vector-effect="non-scaling-stroke"/>`
+            )).join('');
 
         const depth = diagram.depthLine
-            ? `<line x1="${diagram.depthLine.x1}" y1="${ySvg(diagram.depthLine.y1)}" x2="${diagram.depthLine.x2}" y2="${ySvg(diagram.depthLine.y2)}" stroke="rgba(255,255,255,0.4)" stroke-width="0.1" stroke-dasharray="0.2 0.18" vector-effect="non-scaling-stroke"/>`
+            ? `<line x1="${diagram.depthLine.x1}" y1="${ySvg(diagram.depthLine.y1)}" x2="${diagram.depthLine.x2}" y2="${ySvg(diagram.depthLine.y2)}" class="led-top-view-depth" vector-effect="non-scaling-stroke"/>`
             : '';
 
-        const radius = diagram.radiusLine
-            ? `<line x1="${diagram.radiusLine.x1}" y1="${ySvg(diagram.radiusLine.y1)}" x2="${diagram.radiusLine.x2}" y2="${ySvg(diagram.radiusLine.y2)}" stroke="rgba(255,255,255,0.28)" stroke-width="0.08" stroke-dasharray="0.18 0.16" vector-effect="non-scaling-stroke"/>`
-            : '';
+        let angleMarkup = '';
+        if (annotated && diagram.circleCenter && diagram.leftEnd && diagram.rightEnd && diagram.totalCurveAngleRadians) {
+            const center = diagram.circleCenter;
+            const arcR = Math.max(diagram.radiusFeet * 0.12, 0.35);
+            const startX = center.x + arcR * Math.sin(-diagram.totalCurveAngleRadians / 2);
+            const startY = center.y + arcR * Math.cos(-diagram.totalCurveAngleRadians / 2);
+            const endX = center.x + arcR * Math.sin(diagram.totalCurveAngleRadians / 2);
+            const endY = center.y + arcR * Math.cos(diagram.totalCurveAngleRadians / 2);
+            const largeArc = diagram.totalCurveAngleRadians > Math.PI ? 1 : 0;
+            angleMarkup = `<path d="M ${startX} ${ySvg(startY)} A ${arcR} ${arcR} 0 ${largeArc} 1 ${endX} ${ySvg(endY)}" class="led-top-view-angle-arc" vector-effect="non-scaling-stroke" fill="none"/>`;
+        }
 
-        return `<svg class="led-top-view-svg" viewBox="${vb}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Top view curve diagram">${segments}${chord}${depth}${radius}</svg>`;
+        let labelMarkup = '';
+        if (annotated && !diagram.flat) {
+            const span = Math.max(diagram.chordWidthFeet, diagram.surfaceWidthFeet, 1);
+            const labelOffset = span * 0.06;
+            const apex = diagram.apex || { x: 0, y: diagram.curveDepthFeet };
+            const chordMidX = diagram.chordLine ? (diagram.chordLine.x1 + diagram.chordLine.x2) / 2 : 0;
+            const depthMidX = diagram.depthLine
+                ? (diagram.depthLine.x1 + diagram.depthLine.x2) / 2
+                : apex.x;
+            const depthMidY = diagram.depthLine
+                ? (diagram.depthLine.y1 + diagram.depthLine.y2) / 2
+                : apex.y / 2;
+            const radiusLine = diagram.radiusLines?.[0] || diagram.radiusLine;
+            const radiusMidX = radiusLine
+                ? (radiusLine.x1 + radiusLine.x2) / 2
+                : 0;
+            const radiusMidY = radiusLine
+                ? (radiusLine.y1 + radiusLine.y2) / 2
+                : 0;
+            const center = diagram.circleCenter || { x: 0, y: 0 };
+
+            labelMarkup = [
+                svgText(apex.x, ySvg(apex.y + labelOffset * 1.8), labels.arcLength, 'middle'),
+                svgText(chordMidX, ySvg(-labelOffset * 1.2), labels.chordWidth, 'middle'),
+                svgText(depthMidX + labelOffset * 1.6, ySvg(depthMidY), labels.depth, 'start'),
+                svgText(radiusMidX - labelOffset * 0.4, ySvg(radiusMidY), labels.radius, 'middle'),
+                svgText(center.x, ySvg(center.y - labelOffset * 0.35), labels.angle, 'middle')
+            ].join('');
+        }
+
+        return `<svg class="led-top-view-svg" viewBox="${vb}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Top view curve diagram">${radiusLines}${angleMarkup}${segments}${chord}${depth}${labelMarkup}</svg>`;
     }
 
     /**
