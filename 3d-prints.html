@@ -5,14 +5,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>3D Prints | Okami Designs</title>
-    <meta name="description" content="Printable adapters, production utilities, and custom 3D design files from Okami Designs.">
+    <meta name="description" content="Functional, creative, and event-production-inspired 3D models from Okami Designs. Download STL files on Cults3D.">
+    <meta name="author" content="Jonathan Allison, Founder">
     <link rel="icon" href="images/Okami_Designs_HeadWhite.png" type="image/png">
-    <link rel="stylesheet" href="styles.css?v=20260621">
+    <link rel="stylesheet" href="styles.css?v=20260731">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
-<body>
+<body class="prints-page">
     <header class="header">
         <div class="container">
             <div class="nav-wrapper">
@@ -40,6 +41,7 @@
                             <a href="/tools/signal-lab" class="nav-dropdown-item" data-tool-key="okamiSignalLab" role="menuitem">Okami Signal Lab</a>
                         </div>
                     </div>
+                    <a href="/3d-prints" class="nav-link active">3D PRINTS</a>
                     <a href="/contact" class="nav-link contact-btn">CONTACT</a>
                 </nav>
                 <nav class="nav-mobile">
@@ -54,6 +56,7 @@
                             <a href="/tools/signal-lab" class="nav-link nav-sublink" data-tool-key="okamiSignalLab">Okami Signal Lab</a>
                         </div>
                     </div>
+                    <a href="/3d-prints" class="nav-link active">3D PRINTS</a>
                     <a href="/contact" class="nav-link contact-btn">CONTACT</a>
                 </nav>
             </div>
@@ -61,18 +64,61 @@
         <div class="header-divider"></div>
     </header>
 
-    <main class="main tools-hub-main">
-        <div class="container">
-            <header class="tools-hub-header">
-                <h1 class="tool-title">3D Prints</h1>
-                <p class="tool-subtitle">Printable adapters, production utilities, and custom fabrication files from real AV and event workflows.</p>
-            </header>
-            <div class="featured-tool-card featured-tool-card--prints" style="max-width: 640px;">
-                <span class="featured-tool-tag">Catalog</span>
-                <h2 class="featured-tool-name">Print library coming soon</h2>
-                <p class="featured-tool-desc">We are organizing downloadable models and production-ready prints. Need a custom adapter or bracket now?</p>
-                <a href="/contact" class="featured-tool-btn">Request a Custom Print</a>
+    <main class="main prints-main">
+        <div class="hero-visual">
+            <div class="floating-elements">
+                <div class="tech-element element-1">
+                    <div class="element-icon">🖨️</div>
+                    <div class="element-text">3D PRINT</div>
+                </div>
+                <div class="tech-element element-2">
+                    <div class="element-icon">📐</div>
+                    <div class="element-text">MODEL</div>
+                </div>
+                <div class="tech-element element-3">
+                    <div class="element-icon">⚙️</div>
+                    <div class="element-text">FABRICATE</div>
+                </div>
+                <div class="tech-element element-4">
+                    <div class="element-icon">🎭</div>
+                    <div class="element-text">STAGE</div>
+                </div>
             </div>
+        </div>
+
+        <div class="container">
+            <header class="prints-hero">
+                <span class="prints-hero-badge">Cults3D Catalog</span>
+                <h1 class="prints-hero-title">Okami Designs 3D Prints</h1>
+                <p class="prints-hero-subtitle">Functional, creative, and event-production-inspired 3D models.</p>
+                <div class="prints-hero-actions">
+                    <a class="prints-hero-btn" href="https://cults3d.com/en/users/OkamiDesigns/3d-models" target="_blank" rel="noopener noreferrer">View on Cults3D</a>
+                </div>
+            </header>
+
+            <section class="prints-models-section" aria-labelledby="prints-models-heading">
+                <div class="prints-models-section-header">
+                    <h2 id="prints-models-heading" class="prints-models-heading">Featured Models</h2>
+                    <p id="prints-models-source-note" class="prints-models-source-note" hidden></p>
+                </div>
+
+                <div id="prints-models-loading" class="prints-models-status" aria-live="polite">
+                    <span class="prints-models-spinner" aria-hidden="true"></span>
+                    <p>Loading models…</p>
+                </div>
+
+                <div id="prints-models-error" class="prints-models-status prints-models-status--error" hidden role="alert">
+                    <p>Models could not be loaded right now. View the full collection on Cults3D.</p>
+                    <a class="prints-hero-btn" data-cults-profile-link href="https://cults3d.com/en/users/OkamiDesigns/3d-models" target="_blank" rel="noopener noreferrer">View on Cults3D</a>
+                </div>
+
+                <div id="prints-models-empty" class="prints-models-status prints-models-status--empty" hidden>
+                    <p>No models are listed yet. Check back soon or browse the full Cults3D catalog.</p>
+                    <a class="prints-hero-btn" href="https://cults3d.com/en/users/OkamiDesigns/3d-models" target="_blank" rel="noopener noreferrer">View on Cults3D</a>
+                </div>
+
+                <div id="prints-models-grid" class="prints-models-grid" aria-live="polite"></div>
+            </section>
         </div>
     </main>
 
@@ -86,5 +132,6 @@
     <script src="site-layout.js"></script>
     <script src="site-kofi.js"></script>
     <script src="script.js"></script>
+    <script src="client/prints/prints-page.js?v=20260731"></script>
 </body>
 </html>

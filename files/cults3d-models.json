@@ -1,0 +1,21 @@
+{
+  "profileUrl": "https://cults3d.com/en/users/OkamiDesigns/3d-models",
+  "models": [
+    {
+      "title": "Bulkhead Panel Color Adapters",
+      "description": "Color-code bulkhead connectors for XLR, powerCON, Ethernet, and other panel-mounted connectors. Built for stage setups, live production, and rack-mounted gear.",
+      "image": "",
+      "priceLabel": "$2.30",
+      "free": false,
+      "url": "https://cults3d.com/en/3d-model/tool/bulkhead-panel-color-adapters"
+    },
+    {
+      "title": "Astera Titan/Ax1 Truss Adapter",
+      "description": "Secure mounting adapter for Astera AX1 pixel tubes on standard stage truss. Designed for quick rigging and reliable placement in live event and touring workflows.",
+      "image": "",
+      "priceLabel": "$4.58",
+      "free": false,
+      "url": "https://cults3d.com/en/3d-model/tool/astera-ax1-truss-adapter"
+    }
+  ]
+}

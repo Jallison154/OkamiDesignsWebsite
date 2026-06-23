@@ -266,6 +266,18 @@ async function run() {
         } else {
             fail('GET /api/files', `status ${filesPublic.status}`);
         }
+
+        const cultsModels = await request(baseUrl, '/api/cults3d/models');
+        if (
+            cultsModels.status === 200
+            && Array.isArray(cultsModels.body?.models)
+            && cultsModels.body.models.length >= 1
+            && cultsModels.body.profileUrl
+        ) {
+            pass('GET /api/cults3d/models', `${cultsModels.body.models.length} fallback models`);
+        } else {
+            fail('GET /api/cults3d/models', `status ${cultsModels.status}`);
+        }
     } finally {
         await close(server);
     }

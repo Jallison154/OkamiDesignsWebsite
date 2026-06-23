@@ -19,6 +19,7 @@ const { createCorsMiddleware } = require('./server/middleware/cors');
 const { isAdminRequest, requireAdmin, initAdminAuth, refreshAdminAuth, getAdminSession, getAdminAuthConfig } = require('./server/middleware/admin-auth');
 const adminAuthService = require('./server/admin/auth-service');
 const { createRateLimiter } = require('./server/middleware/rate-limit');
+const createCults3dRouter = require('./server/cults3d/routes');
 
 const appConfig = readAppConfig();
 const app = express();
@@ -981,6 +982,9 @@ app.post('/api/analytics/reset', requireAdmin, async (req, res) => {
         res.status(500).json({ error: 'Failed to reset analytics' });
     }
 });
+
+// Cults3D catalog — server-side GraphQL proxy with JSON fallback
+app.use('/api/cults3d', createCults3dRouter({ fallbackPath: path.join(FILES_DIR, 'cults3d-models.json') }));
 
 // Commercial API — licensing, accounts, entitlements, version checks (server-side only)
 app.use('/api/commercial', commercialRoutes);
