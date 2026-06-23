@@ -24,6 +24,16 @@ body::-webkit-scrollbar {
 
 :root {
     --okami-header-height: 0px;
+    --okami-header-padding-y: 6px;
+    --okami-header-container-max-width: 1400px;
+    --okami-nav-logo-max-height: 48px;
+    --okami-nav-logo-max-height-mobile: 40px;
+    --okami-nav-link-size: 11.5px;
+    --okami-nav-link-spacing: 0.06em;
+    --okami-nav-gap: 16px;
+    --okami-nav-contact-padding-y: 6px;
+    --okami-nav-contact-padding-x: 14px;
+    --okami-nav-contact-font-size: 11.5px;
     --primary-bg: #333333;
     --secondary-bg: #2a2a2a;
     --accent-bg: #1a1a1a;
@@ -126,9 +136,21 @@ body::before {
 
 
 .container {
-    max-width: 1400px;
+    max-width: var(--okami-header-container-max-width);
     margin: 0 auto;
     padding: 0 20px;
+}
+
+.header .container {
+    max-width: var(--okami-header-container-max-width);
+    width: 100%;
+    margin: 0 auto;
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
+.header-divider {
+    display: none;
 }
 
 /* Header Styles */
@@ -141,7 +163,7 @@ body::before {
     background: rgba(51, 51, 51, 0.95);
     backdrop-filter: blur(20px);
     border-bottom: 1px solid var(--glass-border);
-    padding: 10px 0;
+    padding: var(--okami-header-padding-y) 0;
     transition: transform 0.3s ease-in-out;
     box-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
     transform: translateY(0);
@@ -218,7 +240,8 @@ body::before {
 }
 
 .logo-img {
-    max-height: 72px;
+    max-height: var(--okami-nav-logo-max-height);
+    height: auto;
     width: auto;
     object-fit: contain;
     transition: opacity 0.2s ease, transform 0.2s ease;
@@ -228,7 +251,7 @@ body::before {
 
 .logo-img-full-mobile {
     display: none;
-    max-height: 68px;
+    max-height: var(--okami-nav-logo-max-height-mobile);
     width: auto;
     object-fit: contain;
     transition: opacity 0.2s ease, transform 0.2s ease;
@@ -274,15 +297,17 @@ body::before {
 .nav {
     display: flex;
     align-items: center;
-    gap: 28px;
+    gap: var(--okami-nav-gap);
+    flex-wrap: nowrap;
 }
 
 .nav-link {
     color: var(--secondary-text);
     text-decoration: none;
     font-weight: 600;
-    font-size: 14px;
-    letter-spacing: 1px;
+    font-size: var(--okami-nav-link-size);
+    letter-spacing: var(--okami-nav-link-spacing);
+    white-space: nowrap;
     position: relative;
     transition: all 0.3s ease, opacity 0.2s ease, transform 0.2s ease;
     font-family: 'Montserrat', sans-serif;
@@ -300,7 +325,7 @@ a.contact-btn.nav-item-hidden {
 .nav-link::before {
     content: '';
     position: absolute;
-    bottom: -5px;
+    bottom: -4px;
     left: 0;
     width: 0;
     height: 2px;
@@ -324,12 +349,14 @@ a.contact-btn.nav-item-hidden {
 
 .contact-btn {
     border: 1px solid var(--glass-border);
-    padding: 10px 20px;
+    padding: var(--okami-nav-contact-padding-y) var(--okami-nav-contact-padding-x);
     border-radius: 5px;
     background: transparent;
     transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
+    font-size: var(--okami-nav-contact-font-size);
+    letter-spacing: var(--okami-nav-link-spacing);
 }
 
 .contact-btn::before {
@@ -365,10 +392,10 @@ a.contact-btn.nav-item-hidden {
 }
 
 .nav-donate-link {
-    font-size: 12px;
+    font-size: var(--okami-nav-contact-font-size);
     font-weight: 600;
-    letter-spacing: 0.04em;
-    padding: 8px 14px;
+    letter-spacing: var(--okami-nav-link-spacing);
+    padding: var(--okami-nav-contact-padding-y) 12px;
     border: 1px solid rgba(255, 106, 45, 0.22);
     border-radius: 5px;
     color: var(--secondary-text);
@@ -1388,12 +1415,12 @@ a.contact-btn.nav-item-hidden {
 }
 
 .nav-mobile .nav-link {
-    padding: 15px 20px;
+    padding: 12px 16px;
     border: 1px solid var(--glass-border);
     border-radius: 5px;
     text-align: center;
     transition: all 0.3s ease;
-    font-size: 14px;
+    font-size: 12px;
 }
 
 .nav-mobile .nav-link:hover {
@@ -1532,11 +1559,11 @@ a.contact-btn.nav-item-hidden {
     }
     
     .header {
-        padding: 15px 0;
+        padding: var(--okami-header-padding-y) 0;
     }
     
     .logo-img {
-        max-height: 60px;
+        max-height: var(--okami-nav-logo-max-height-mobile);
     }
 }
 
@@ -1558,7 +1585,8 @@ a.contact-btn.nav-item-hidden {
     }
     
     .contact-btn {
-        padding: 8px 16px;
+        padding: 6px 12px;
+        font-size: 11px;
     }
     
     .hero-wolf-img {
@@ -1627,11 +1655,11 @@ a.contact-btn.nav-item-hidden {
     }
     
     .logo-img {
-        max-height: 50px;
+        max-height: var(--okami-nav-logo-max-height-mobile);
     }
     
     .logo-img-full-mobile {
-        max-height: 50px;
+        max-height: var(--okami-nav-logo-max-height-mobile);
     }
     
     .nav-mobile {
@@ -3302,10 +3330,10 @@ html {
 
 .nav-dropdown-item {
     display: block;
-    padding: 10px 14px;
+    padding: 8px 12px;
     color: var(--secondary-text);
     text-decoration: none;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     letter-spacing: 0.5px;
     border-radius: 5px;
@@ -3367,12 +3395,12 @@ html {
 }
 
 .led-calculator-page .header .container {
-    width: 95vw;
-    max-width: 2200px;
+    max-width: var(--okami-header-container-max-width);
+    width: 100%;
     margin-left: auto;
     margin-right: auto;
-    padding-left: clamp(8px, 1vw, 16px);
-    padding-right: clamp(8px, 1vw, 16px);
+    padding-left: 20px;
+    padding-right: 20px;
 }
 
 .led-calculator-page .calculator-page {
@@ -6038,7 +6066,6 @@ html {
         --calculator-sidebar-width: 400px;
     }
 
-    .led-calculator-page .header .container,
     .led-calculator-page .calculator-page {
         width: min(98vw, 3200px);
         max-width: min(98vw, 3200px);
