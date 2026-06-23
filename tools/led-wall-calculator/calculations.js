@@ -629,12 +629,18 @@
         let minY = Math.min(...ys);
         let maxY = Math.max(...ys);
 
+        let flatBand = 0;
         if (diagram.flat) {
-            minY -= Math.max(0.5, (maxX - minX) * 0.08);
+            const span = Math.max(maxX - minX, 1);
+            flatBand = span * 0.08;
+            minY = -flatBand;
+            maxY = flatBand;
         }
 
         const padX = (maxX - minX) * paddingRatio || 0.5;
-        const padY = (maxY - minY) * paddingRatio || 0.5;
+        const padY = diagram.flat
+            ? flatBand * 0.35
+            : (maxY - minY) * paddingRatio || 0.5;
         minX -= padX;
         maxX += padX * 1.35;
         minY -= padY * 1.4;
