@@ -1588,6 +1588,7 @@
             : 'hidden';
 
         panel.hidden = !showPanel;
+        document.querySelector('.led-preview-panel')?.classList.toggle('led-preview-panel--curved-open', showPanel);
         if (!showPanel) {
             if (lastTopViewPanelKey !== panelKey) {
                 diagramEl.innerHTML = '';
@@ -1617,7 +1618,7 @@
         }
 
         const diagram = computeTopViewCurveDiagram(state);
-        const viewBox = computeTopViewCurveViewBox(diagram, 0.22);
+        const viewBox = computeTopViewCurveViewBox(diagram, 0.14);
         const labels = Summary?.buildCurvedWallDiagramLabels?.(state) || null;
         diagramEl.innerHTML = buildTopViewCurveSvg(diagram, viewBox, labels);
     }

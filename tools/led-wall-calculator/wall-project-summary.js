@@ -274,26 +274,11 @@
             : 'N/A';
 
         return {
-            arcLength: [
-                'Surface Width (Arc Length)',
-                formatDualLengthDisplay(state.surfaceWidthFeet, state.surfaceWidthMM)
-            ],
-            chordWidth: [
-                'Venue Width Required (Chord Width)',
-                formatDualLengthDisplay(state.chordWidthFeet, state.chordWidthMM)
-            ],
-            depth: [
-                'Depth',
-                formatDualLengthDisplay(state.curveDepthFeet, state.curveDepthMM)
-            ],
-            radius: [
-                'Radius',
-                radiusLabel
-            ],
-            angle: [
-                'Total Curve Angle',
-                formatDegreeLabel(state.totalCurveAngle)
-            ]
+            arcLength: [formatDualLengthDisplay(state.surfaceWidthFeet, state.surfaceWidthMM)],
+            chordWidth: [formatDualLengthDisplay(state.chordWidthFeet, state.chordWidthMM)],
+            depth: [formatDualLengthDisplay(state.curveDepthFeet, state.curveDepthMM)],
+            radius: [radiusLabel],
+            angle: [formatDegreeLabel(state.totalCurveAngle)]
         };
     }
 

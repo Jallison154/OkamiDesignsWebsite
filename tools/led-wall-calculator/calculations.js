@@ -659,7 +659,7 @@
             .replace(/>/g, '&gt;');
     }
 
-    function svgText(x, y, lines, anchor = 'middle', size = 0.34) {
+    function svgText(x, y, lines, anchor = 'middle', size = 0.55) {
         if (!lines || !lines.length) {
             return '';
         }
@@ -713,7 +713,8 @@
         let labelMarkup = '';
         if (annotated && !diagram.flat) {
             const span = Math.max(diagram.chordWidthFeet, diagram.surfaceWidthFeet, 1);
-            const labelOffset = span * 0.06;
+            const labelOffset = span * 0.055;
+            const labelSize = Math.max(0.55, Math.min(viewBox.width * 0.028, 0.95));
             const apex = diagram.apex || { x: 0, y: diagram.curveDepthFeet };
             const chordMidX = diagram.chordLine ? (diagram.chordLine.x1 + diagram.chordLine.x2) / 2 : 0;
             const depthMidX = diagram.depthLine
@@ -732,11 +733,11 @@
             const center = diagram.circleCenter || { x: 0, y: 0 };
 
             labelMarkup = [
-                svgText(apex.x, ySvg(apex.y + labelOffset * 1.8), labels.arcLength, 'middle'),
-                svgText(chordMidX, ySvg(-labelOffset * 1.2), labels.chordWidth, 'middle'),
-                svgText(depthMidX + labelOffset * 1.6, ySvg(depthMidY), labels.depth, 'start'),
-                svgText(radiusMidX - labelOffset * 0.4, ySvg(radiusMidY), labels.radius, 'middle'),
-                svgText(center.x, ySvg(center.y - labelOffset * 0.35), labels.angle, 'middle')
+                svgText(apex.x, ySvg(apex.y + labelOffset * 1.5), labels.arcLength, 'middle', labelSize),
+                svgText(chordMidX, ySvg(-labelOffset), labels.chordWidth, 'middle', labelSize),
+                svgText(depthMidX + labelOffset * 1.2, ySvg(depthMidY), labels.depth, 'start', labelSize),
+                svgText(radiusMidX - labelOffset * 0.25, ySvg(radiusMidY), labels.radius, 'middle', labelSize),
+                svgText(center.x, ySvg(center.y - labelOffset * 0.2), labels.angle, 'middle', labelSize)
             ].join('');
         }
 
