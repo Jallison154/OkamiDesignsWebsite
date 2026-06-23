@@ -600,7 +600,7 @@
     /**
      * View box + padding for rendering top view diagram into SVG or PDF.
      */
-    function computeTopViewCurveViewBox(diagram, paddingRatio = 0.18) {
+    function computeTopViewCurveViewBox(diagram, paddingRatio = 0.1) {
         if (!diagram) {
             return null;
         }
@@ -609,9 +609,6 @@
         diagram.arcSegments.forEach((seg) => {
             points.push({ x: seg.x1, y: seg.y1 }, { x: seg.x2, y: seg.y2 });
         });
-        if (diagram.circleCenter) {
-            points.push(diagram.circleCenter);
-        }
         if (diagram.leftEnd) {
             points.push(diagram.leftEnd);
         }
@@ -620,6 +617,12 @@
         }
         if (diagram.apex) {
             points.push(diagram.apex);
+        }
+        if (diagram.depthLine) {
+            points.push(
+                { x: diagram.depthLine.x1, y: diagram.depthLine.y1 },
+                { x: diagram.depthLine.x2, y: diagram.depthLine.y2 }
+            );
         }
 
         const xs = points.map((p) => p.x);
@@ -632,19 +635,25 @@
         let flatBand = 0;
         if (diagram.flat) {
             const span = Math.max(maxX - minX, 1);
-            flatBand = span * 0.08;
+            flatBand = span * 0.12;
             minY = -flatBand;
             maxY = flatBand;
         }
 
-        const padX = (maxX - minX) * paddingRatio || 0.5;
-        const padY = diagram.flat
-            ? flatBand * 0.35
-            : (maxY - minY) * paddingRatio || 0.5;
+        const spanX = Math.max(maxX - minX, 1);
+        const spanY = Math.max(maxY - minY, flatBand * 2 || 1);
+        const padX = spanX * paddingRatio;
+        const padY = diagram.flat ? flatBand * 0.35 : spanY * paddingRatio;
+
         minX -= padX;
-        maxX += padX * 1.35;
-        minY -= padY * 1.4;
-        maxY += padY * 1.15;
+        maxX += padX * 1.1;
+        if (diagram.flat) {
+            minY -= padY;
+            maxY += padY;
+        } else {
+            minY -= padY * 0.65;
+            maxY += padY * 1.2;
+        }
 
         return {
             minX,
@@ -719,8 +728,8 @@
         let labelMarkup = '';
         if (annotated && !diagram.flat) {
             const span = Math.max(diagram.chordWidthFeet, diagram.surfaceWidthFeet, 1);
-            const labelOffset = span * 0.055;
-            const labelSize = Math.max(0.55, Math.min(viewBox.width * 0.028, 0.95));
+            const labelOffset = span * 0.045;
+            const labelSize = Math.max(0.7, Math.min(viewBox.width * 0.042, 1.05));
             const apex = diagram.apex || { x: 0, y: diagram.curveDepthFeet };
             const chordMidX = diagram.chordLine ? (diagram.chordLine.x1 + diagram.chordLine.x2) / 2 : 0;
             const depthMidX = diagram.depthLine
@@ -729,25 +738,21 @@
             const depthMidY = diagram.depthLine
                 ? (diagram.depthLine.y1 + diagram.depthLine.y2) / 2
                 : apex.y / 2;
-            const radiusLine = diagram.radiusLines?.[0] || diagram.radiusLine;
-            const radiusMidX = radiusLine
-                ? (radiusLine.x1 + radiusLine.x2) / 2
-                : 0;
-            const radiusMidY = radiusLine
-                ? (radiusLine.y1 + radiusLine.y2) / 2
-                : 0;
             const center = diagram.circleCenter || { x: 0, y: 0 };
+            const leftEnd = diagram.leftEnd || { x: 0, y: 0 };
+            const radiusLabelX = center.x + (leftEnd.x - center.x) * 0.72;
+            const radiusLabelY = center.y + (leftEnd.y - center.y) * 0.72;
 
             labelMarkup = [
-                svgText(apex.x, ySvg(apex.y + labelOffset * 1.5), labels.arcLength, 'middle', labelSize),
-                svgText(chordMidX, ySvg(-labelOffset), labels.chordWidth, 'middle', labelSize),
-                svgText(depthMidX + labelOffset * 1.2, ySvg(depthMidY), labels.depth, 'start', labelSize),
-                svgText(radiusMidX - labelOffset * 0.25, ySvg(radiusMidY), labels.radius, 'middle', labelSize),
-                svgText(center.x, ySvg(center.y - labelOffset * 0.2), labels.angle, 'middle', labelSize)
+                svgText(apex.x, ySvg(apex.y + labelOffset * 1.1), labels.arcLength, 'middle', labelSize),
+                svgText(chordMidX, ySvg(-labelOffset * 0.85), labels.chordWidth, 'middle', labelSize),
+                svgText(depthMidX + labelOffset, ySvg(depthMidY), labels.depth, 'start', labelSize),
+                svgText(radiusLabelX, ySvg(radiusLabelY), labels.radius, 'middle', labelSize),
+                svgText(chordMidX, ySvg(-labelOffset * 2.1), labels.angle, 'middle', labelSize)
             ].join('');
         }
 
-        return `<svg class="led-top-view-svg" viewBox="${vb}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Top view curve diagram">${radiusLines}${angleMarkup}${segments}${chord}${depth}${labelMarkup}</svg>`;
+        return `<svg class="led-top-view-svg" viewBox="${vb}" preserveAspectRatio="xMidYMid meet" overflow="hidden" role="img" aria-label="Top view curve diagram">${radiusLines}${angleMarkup}${segments}${chord}${depth}${labelMarkup}</svg>`;
     }
 
     /**

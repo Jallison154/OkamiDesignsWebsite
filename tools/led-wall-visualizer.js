@@ -57,10 +57,11 @@
     const PREVIEW_INTRINSIC_WIDTH = 480;
     const PREVIEW_MIN_SCALE = 0.2;
     const PREVIEW_MAX_SCALE = 8;
-    const PREVIEW_FILL_RATIO = 0.9;
+    const PREVIEW_FILL_RATIO = 0.93;
     const PREVIEW_AXIS_GUTTER_X = 28;
     const PREVIEW_AXIS_GUTTER_Y = 22;
     const PREVIEW_MEASURE_PADDING = 16;
+    const PREVIEW_OVERLAY_TOP_GUTTER = 12;
     const CABINET_ART = {
         square: { src: '../images/led-cabinet-square.png', status: 'loading' },
         tall: { src: '../images/led-cabinet-500x1000.png', status: 'loading' }
@@ -626,6 +627,15 @@
             contentHeight += PREVIEW_AXIS_GUTTER_Y;
         }
 
+        let overlayTopGutter = 0;
+        if (state?.overlay && state.overlay.topPercent < 2) {
+            overlayTopGutter = PREVIEW_OVERLAY_TOP_GUTTER;
+        }
+
+        if (overlayTopGutter) {
+            contentHeight += overlayTopGutter;
+        }
+
         return {
             wallWidth,
             wallHeight,
@@ -633,7 +643,8 @@
             contentHeight,
             showAxisLabels,
             tier,
-            cellWidth
+            cellWidth,
+            overlayTopGutter
         };
     }
 
@@ -689,6 +700,7 @@
         scaleWrap.style.height = `${visualHeight}px`;
         scaleLayer.style.width = `${layout.contentWidth}px`;
         scaleLayer.style.height = `${layout.contentHeight}px`;
+        scaleLayer.style.paddingTop = layout.overlayTopGutter ? `${layout.overlayTopGutter}px` : '0';
         scaleLayer.style.transform = `scale(${scale})`;
     }
 
@@ -1621,7 +1633,7 @@
         }
 
         const diagram = computeTopViewCurveDiagram(state);
-        const viewBox = computeTopViewCurveViewBox(diagram, 0.14);
+        const viewBox = computeTopViewCurveViewBox(diagram, 0.08);
         const labels = Summary?.buildCurvedWallDiagramLabels?.(state) || null;
         diagramEl.innerHTML = buildTopViewCurveSvg(diagram, viewBox, labels);
     }
