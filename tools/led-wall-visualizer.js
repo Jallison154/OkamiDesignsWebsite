@@ -1589,6 +1589,9 @@
 
         panel.hidden = !showPanel;
         document.querySelector('.led-preview-panel')?.classList.toggle('led-preview-panel--curved-open', showPanel);
+        requestAnimationFrame(() => {
+            applyPreviewScaleOnly(state);
+        });
         if (!showPanel) {
             if (lastTopViewPanelKey !== panelKey) {
                 diagramEl.innerHTML = '';
