@@ -15,6 +15,7 @@
     "test:signal-lab-paths": "node scripts/validate-signal-lab-paths.mjs",
     "test:gate": "node scripts/led-wall-golden-tests.mjs && node scripts/api-integration-tests.mjs && node scripts/license-upstream-tests.mjs && node scripts/project-io-tests.mjs && node scripts/phase-0-acceptance.mjs && node scripts/validate-signal-lab-paths.mjs",
     "generate:sitemap": "node scripts/generate-sitemap.mjs",
+    "sync:cults3d-thumbnails": "node scripts/sync-cults3d-thumbnails.cjs",
     "generate:admin-hash": "node scripts/generate-admin-password-hash.cjs"
   },
   "dependencies": {

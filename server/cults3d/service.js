@@ -3,23 +3,40 @@
 const fs = require('fs').promises;
 const path = require('path');
 const { readCults3dConfig, DEFAULT_PROFILE_URL } = require('./config');
+const {
+    enrichModelImages,
+    extractModelSlug
+} = require('./images');
 
 const CREATIONS_QUERY = `
 query OkamiCreations($nick: String!, $limit: Int!) {
   user(nick: $nick) {
     nick
     shortUrl
-    creations(limit: $limit, sort: BY_DOWNLOADS) {
+    creations(limit: $limit) {
       name(locale: EN)
       url(locale: EN)
       shortUrl
-      illustrationImageUrl
-      summary(locale: EN)
+      illustrationImageUrl(version: DEFAULT)
+      illustrations {
+        imageUrl(version: DEFAULT)
+      }
       description(locale: EN)
       price(currency: USD) {
         value
         currency
       }
+    }
+  }
+}
+`;
+
+const CREATION_THUMBNAIL_QUERY = `
+query CreationThumbnail($slug: String!) {
+  creation(slug: $slug) {
+    illustrationImageUrl(version: DEFAULT)
+    illustrations {
+      imageUrl(version: DEFAULT)
     }
   }
 }
@@ -71,6 +88,23 @@ function formatPrice(price) {
     }
 }
 
+function pickCreationImage(creation) {
+    const primary = (creation?.illustrationImageUrl || '').trim();
+    if (primary) {
+        return primary;
+    }
+
+    const illustrations = Array.isArray(creation?.illustrations) ? creation.illustrations : [];
+    for (const illustration of illustrations) {
+        const imageUrl = (illustration?.imageUrl || '').trim();
+        if (imageUrl) {
+            return imageUrl;
+        }
+    }
+
+    return '';
+}
+
 function normalizeCreation(creation) {
     if (!creation) {
         return null;
@@ -82,13 +116,17 @@ function normalizeCreation(creation) {
         return null;
     }
 
-    const description = truncateText(creation.summary || creation.description || '');
+    const description = truncateText(creation.description || '');
     const pricing = formatPrice(creation.price);
+    const slug = extractModelSlug(url);
+    const imageRemote = pickCreationImage(creation);
 
     return {
         title,
         description,
-        image: (creation.illustrationImageUrl || '').trim(),
+        slug,
+        image: imageRemote,
+        imageRemote: imageRemote || undefined,
         priceLabel: pricing.priceLabel,
         free: pricing.free,
         url
@@ -117,6 +155,37 @@ async function readFallbackModels(fallbackPath) {
             error: error.message || 'Failed to read fallback models'
         };
     }
+}
+
+async function fetchCreationThumbnail(config, slug) {
+    if (!config.configured || !slug) {
+        return '';
+    }
+
+    const auth = Buffer.from(`${config.username}:${config.apiKey}`).toString('base64');
+    const response = await fetch(config.graphqlUrl, {
+        method: 'POST',
+        headers: {
+            Authorization: `Basic ${auth}`,
+            'Content-Type': 'application/json',
+            Accept: 'application/json'
+        },
+        body: JSON.stringify({
+            query: CREATION_THUMBNAIL_QUERY,
+            variables: { slug }
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error(`Cults3D thumbnail lookup failed with ${response.status}`);
+    }
+
+    const payload = await response.json();
+    if (Array.isArray(payload?.errors) && payload.errors.length) {
+        throw new Error(payload.errors.map((entry) => entry.message).join('; '));
+    }
+
+    return pickCreationImage(payload?.data?.creation);
 }
 
 async function fetchCults3dCreations(config) {
@@ -167,6 +236,31 @@ async function fetchCults3dCreations(config) {
     };
 }
 
+async function finalizeListing(listing, options = {}) {
+    const fallbackPath = options.fallbackPath
+        || path.join(__dirname, '..', '..', 'files', 'cults3d-models.json');
+    let fallbackModels = [];
+
+    try {
+        const raw = await fs.readFile(fallbackPath, 'utf8');
+        const parsed = JSON.parse(raw);
+        fallbackModels = Array.isArray(parsed?.models) ? parsed.models : [];
+    } catch {
+        fallbackModels = [];
+    }
+
+    const models = await enrichModelImages(listing.models || [], {
+        publicModelsDir: options.publicModelsDir,
+        projectRoot: options.projectRoot,
+        fallbackModels
+    });
+
+    return {
+        ...listing,
+        models
+    };
+}
+
 async function getModelsListing(options = {}) {
     const fallbackPath = options.fallbackPath
         || path.join(__dirname, '..', '..', 'files', 'cults3d-models.json');
@@ -181,23 +275,28 @@ async function getModelsListing(options = {}) {
         return cache.payload;
     }
 
+    let listing;
+
     if (config.configured) {
         try {
             const live = await fetchCults3dCreations(config);
-            cache = { key: cacheKey, fetchedAt: Date.now(), payload: live };
-            return live;
+            listing = await finalizeListing(live, options);
+            cache = { key: cacheKey, fetchedAt: Date.now(), payload: listing };
+            return listing;
         } catch (error) {
             console.warn('Cults3D live fetch failed, using fallback models:', error.message);
             const fallback = await readFallbackModels(fallbackPath);
             fallback.liveError = error.message;
-            cache = { key: cacheKey, fetchedAt: Date.now(), payload: fallback };
-            return fallback;
+            listing = await finalizeListing(fallback, options);
+            cache = { key: cacheKey, fetchedAt: Date.now(), payload: listing };
+            return listing;
         }
     }
 
-    const fallback = await readFallbackModels(fallbackPath);
-    cache = { key: cacheKey, fetchedAt: Date.now(), payload: fallback };
-    return fallback;
+    listing = await readFallbackModels(fallbackPath);
+    listing = await finalizeListing(listing, options);
+    cache = { key: cacheKey, fetchedAt: Date.now(), payload: listing };
+    return listing;
 }
 
 function clearModelsCache() {
@@ -206,8 +305,10 @@ function clearModelsCache() {
 
 module.exports = {
     getModelsListing,
+    fetchCreationThumbnail,
     clearModelsCache,
     normalizeCreation,
+    pickCreationImage,
     stripHtml,
     truncateText,
     formatPrice

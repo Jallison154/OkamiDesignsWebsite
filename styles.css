@@ -6560,6 +6560,8 @@ html {
 .prints-model-card-image-wrap {
     position: relative;
     aspect-ratio: 4 / 3;
+    overflow: hidden;
+    border-radius: 14px 14px 0 0;
     background:
         linear-gradient(145deg, rgba(255, 106, 45, 0.12) 0%, rgba(255, 106, 45, 0.02) 100%),
         rgba(0, 0, 0, 0.35);
@@ -6575,6 +6577,7 @@ html {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: center;
     display: block;
 }
 

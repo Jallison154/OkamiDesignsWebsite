@@ -274,9 +274,20 @@ async function run() {
             && cultsModels.body.models.length >= 1
             && cultsModels.body.profileUrl
         ) {
-            pass('GET /api/cults3d/models', `${cultsModels.body.models.length} fallback models`);
+            const withImageRoute = cultsModels.body.models.every((model) => model.image || model.imageLocal);
+            pass(
+                'GET /api/cults3d/models',
+                `${cultsModels.body.models.length} models${withImageRoute ? ', image routes resolved' : ''}`
+            );
         } else {
             fail('GET /api/cults3d/models', `status ${cultsModels.status}`);
+        }
+
+        const missingThumb = await request(baseUrl, '/api/cults3d/thumbnail/unknown-model-slug');
+        if (missingThumb.status === 404) {
+            pass('GET /api/cults3d/thumbnail/:slug returns 404 when missing');
+        } else {
+            fail('GET /api/cults3d/thumbnail/:slug returns 404 when missing', `status ${missingThumb.status}`);
         }
     } finally {
         await close(server);

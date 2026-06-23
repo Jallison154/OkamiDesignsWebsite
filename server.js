@@ -984,7 +984,11 @@ app.post('/api/analytics/reset', requireAdmin, async (req, res) => {
 });
 
 // Cults3D catalog — server-side GraphQL proxy with JSON fallback
-app.use('/api/cults3d', createCults3dRouter({ fallbackPath: path.join(FILES_DIR, 'cults3d-models.json') }));
+app.use('/api/cults3d', createCults3dRouter({
+    fallbackPath: path.join(FILES_DIR, 'cults3d-models.json'),
+    publicModelsDir: path.join(__dirname, 'public', '3d-models'),
+    projectRoot: __dirname
+}));
 
 // Commercial API — licensing, accounts, entitlements, version checks (server-side only)
 app.use('/api/commercial', commercialRoutes);

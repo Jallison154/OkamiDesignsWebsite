@@ -14,6 +14,20 @@
             .replace(/'/g, '&#39;');
     }
 
+    function getModelImageSrc(model) {
+        return String(model?.image || model?.imageLocal || '').trim();
+    }
+
+    function showImagePlaceholder(imageWrap) {
+        imageWrap.classList.add('prints-model-card-image-wrap--placeholder');
+        imageWrap.replaceChildren();
+        const label = document.createElement('span');
+        label.className = 'prints-model-card-placeholder';
+        label.setAttribute('aria-hidden', 'true');
+        label.textContent = '3D';
+        imageWrap.appendChild(label);
+    }
+
     function createModelCard(model) {
         const card = document.createElement('article');
         card.className = 'prints-model-card';
@@ -21,22 +35,21 @@
         const imageWrap = document.createElement('div');
         imageWrap.className = 'prints-model-card-image-wrap';
 
-        if (model.image) {
+        const imageSrc = getModelImageSrc(model);
+        if (imageSrc) {
             const image = document.createElement('img');
             image.className = 'prints-model-card-image';
-            image.src = model.image;
+            image.src = imageSrc;
             image.alt = model.title || '3D model preview';
             image.loading = 'lazy';
             image.decoding = 'async';
+            image.referrerPolicy = 'no-referrer';
             image.addEventListener('error', () => {
-                image.remove();
-                imageWrap.classList.add('prints-model-card-image-wrap--placeholder');
-                imageWrap.innerHTML = '<span class="prints-model-card-placeholder" aria-hidden="true">3D</span>';
+                showImagePlaceholder(imageWrap);
             });
             imageWrap.appendChild(image);
         } else {
-            imageWrap.classList.add('prints-model-card-image-wrap--placeholder');
-            imageWrap.innerHTML = '<span class="prints-model-card-placeholder" aria-hidden="true">3D</span>';
+            showImagePlaceholder(imageWrap);
         }
 
         const body = document.createElement('div');
