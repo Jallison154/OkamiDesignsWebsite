@@ -56,10 +56,11 @@
     const CABINET_NUMBERS_SESSION_KEY = 'led-show-cabinet-numbers';
     const PREVIEW_INTRINSIC_WIDTH = 480;
     const PREVIEW_MIN_SCALE = 0.2;
-    const PREVIEW_MAX_SCALE = 1;
+    const PREVIEW_MAX_SCALE = 8;
+    const PREVIEW_FILL_RATIO = 0.9;
     const PREVIEW_AXIS_GUTTER_X = 28;
     const PREVIEW_AXIS_GUTTER_Y = 22;
-    const PREVIEW_MEASURE_PADDING = 24;
+    const PREVIEW_MEASURE_PADDING = 16;
     const CABINET_ART = {
         square: { src: '../images/led-cabinet-square.png', status: 'loading' },
         tall: { src: '../images/led-cabinet-500x1000.png', status: 'loading' }
@@ -639,10 +640,11 @@
     function computePreviewScaleFactor(contentWidth, contentHeight, measureWidth, measureHeight) {
         const availableWidth = Math.max(measureWidth - PREVIEW_MEASURE_PADDING, 80);
         const availableHeight = Math.max(measureHeight - PREVIEW_MEASURE_PADDING, 80);
-        const scale = Math.min(
+        const fitScale = Math.min(
             availableWidth / contentWidth,
             availableHeight / contentHeight
         );
+        const scale = fitScale * PREVIEW_FILL_RATIO;
         return Math.max(PREVIEW_MIN_SCALE, Math.min(PREVIEW_MAX_SCALE, scale));
     }
 
