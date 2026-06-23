@@ -1335,11 +1335,14 @@
             return;
         }
 
-        const summary = Summary.buildProjectSummary(state, inputs || gatherInputs());
+        const resolvedInputs = inputs || gatherInputs();
+        const summary = Summary.buildProjectSummary(state, resolvedInputs);
         applyProjectSummaryCard('wall', summary.wall);
 
         const curvedCard = document.getElementById('result-curved-wall-card');
-        if (summary.curvedWall?.visible) {
+        const showCurvedSummary = readCurvedWallMode() === true;
+
+        if (showCurvedSummary && summary.curvedWall) {
             if (curvedCard) {
                 curvedCard.hidden = false;
             }

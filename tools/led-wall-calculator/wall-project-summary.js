@@ -228,10 +228,13 @@
     }
 
     function isCurvedWallModeEnabled(state, inputs = {}) {
-        if (state?.curvedWallMode === true) {
+        if (inputs?.curvedWallMode === true || inputs?.curvedWallMode === 'true') {
             return true;
         }
-        return inputs?.curvedWallMode === true || inputs?.curvedWallMode === 'true';
+        if (inputs?.curvedWallMode === false || inputs?.curvedWallMode === 'false') {
+            return false;
+        }
+        return state?.curvedWallMode === true;
     }
 
     function formatCabinetAngleDisplay(state, inputs = {}) {
