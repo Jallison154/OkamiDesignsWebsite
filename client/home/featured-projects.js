@@ -3,7 +3,10 @@
 
     const API_URL = '/api/tools';
     const FALLBACK_URL = '/files/tools.json';
+    const SETTINGS_URL = '/api/site-settings';
+    const SETTINGS_FALLBACK_URL = '/files/site-settings.json';
     const catalogApi = window.OkamiShared?.ToolsCatalog;
+    const settingsApi = window.OkamiShared?.Settings;
 
     function escapeHtml(value) {
         return String(value ?? '')
@@ -12,6 +15,45 @@
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#39;');
+    }
+
+    function isPageVisible(settings, pageKey) {
+        if (!pageKey) {
+            return true;
+        }
+        if (settingsApi?.isPageVisible) {
+            return settingsApi.isPageVisible(settings, pageKey);
+        }
+        const entry = settings?.pages?.[pageKey];
+        if (entry == null) {
+            return true;
+        }
+        if (typeof entry === 'boolean') {
+            return entry;
+        }
+        return entry.visible !== false;
+    }
+
+    async function fetchSiteSettings() {
+        try {
+            const response = await fetch(SETTINGS_URL, { cache: 'no-store' });
+            if (response.ok) {
+                const data = await response.json();
+                return settingsApi?.mergeSettings ? settingsApi.mergeSettings(data) : data;
+            }
+        } catch (error) {
+            console.warn('[Featured Projects] site settings API unavailable', error);
+        }
+        try {
+            const fallback = await fetch(SETTINGS_FALLBACK_URL, { cache: 'no-store' });
+            if (fallback.ok) {
+                const data = await fallback.json();
+                return settingsApi?.mergeSettings ? settingsApi.mergeSettings(data) : data;
+            }
+        } catch (error) {
+            console.warn('[Featured Projects] site settings fallback unavailable', error);
+        }
+        return settingsApi?.DEFAULT_SITE_SETTINGS || { pages: {} };
     }
 
     function resolveImageUrl(tool) {
@@ -99,18 +141,33 @@
 
         grid.setAttribute('aria-busy', 'true');
         try {
-            const projects = await fetchProjects();
+            const [projects, settings] = await Promise.all([fetchProjects(), fetchSiteSettings()]);
+            const visibleProjects = projects.filter((project) => {
+                if (!project.pageKey) {
+                    return true;
+                }
+                return isPageVisible(settings, project.pageKey);
+            });
             grid.replaceChildren();
-            if (!projects.length) {
+            if (!visibleProjects.length) {
                 grid.innerHTML = '<p class="tools-hub-empty">Featured projects will appear here soon.</p>';
+                document.dispatchEvent(new CustomEvent('okami:featured-projects-rendered', {
+                    detail: { count: 0 }
+                }));
                 return;
             }
             const fragment = document.createDocumentFragment();
-            projects.forEach((project) => fragment.appendChild(createCard(project)));
+            visibleProjects.forEach((project) => fragment.appendChild(createCard(project)));
             grid.appendChild(fragment);
-            document.dispatchEvent(new CustomEvent('okami:featured-projects-rendered'));
+            console.info('[Featured Projects] rendered', {
+                count: visibleProjects.length,
+                ids: visibleProjects.map((project) => project.id)
+            });
+            document.dispatchEvent(new CustomEvent('okami:featured-projects-rendered', {
+                detail: { count: visibleProjects.length }
+            }));
         } catch (error) {
-            console.error(error);
+            console.error('[Featured Projects] render failed', error);
             grid.innerHTML = '<p class="tools-hub-empty">Featured projects are temporarily unavailable.</p>';
         } finally {
             grid.setAttribute('aria-busy', 'false');

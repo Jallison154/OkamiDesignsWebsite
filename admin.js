@@ -44,9 +44,53 @@
 
     const TOAST_DURATION = 5000;
     const SITE_SETTINGS_STORAGE_KEY = 'okami-site-settings';
+    const REQUIRED_VISIBLE_PAGE_KEYS = new Set(['home']);
     let lastLoadedSettingsSource = 'config';
     let lastLoadedSettingsUpdatedAt = null;
     let apiConnectionStatus = 'disconnected';
+    let pagesDirty = false;
+    let lastSavedPagesSnapshot = '';
+
+    function syncPagesUnsavedState() {
+        window.OkamiAdminState = window.OkamiAdminState || {};
+        window.OkamiAdminState.hasPagesUnsaved = () => pagesDirty;
+        window.OkamiAdminState.hasUnsavedChanges = () => (
+            pagesDirty || Boolean(window.OkamiAdminState.hasToolsUnsaved?.())
+        );
+    }
+
+    function setPagesDirty(isDirty) {
+        pagesDirty = Boolean(isDirty);
+        syncPagesUnsavedState();
+        document.querySelectorAll('[data-admin-tab="pages"], [data-admin-tab="settings"]').forEach((tab) => {
+            tab.classList.toggle('has-unsaved', pagesDirty);
+        });
+        const saveButton = document.getElementById('save-site-visibility');
+        if (saveButton && saveButton.dataset.saving !== 'true') {
+            saveButton.disabled = !pagesDirty;
+        }
+    }
+
+    function getPagesFormSnapshot() {
+        return JSON.stringify(readSiteVisibilityForm());
+    }
+
+    function refreshPagesDirtyFromForm() {
+        if (!lastSavedPagesSnapshot) {
+            setPagesDirty(false);
+            return;
+        }
+        const dirty = getPagesFormSnapshot() !== lastSavedPagesSnapshot;
+        setPagesDirty(dirty);
+        if (dirty) {
+            setVisibilitySaveStatus('Unsaved changes');
+        } else {
+            const status = document.getElementById('visibility-save-status');
+            if (status && /unsaved/i.test(status.textContent || '')) {
+                setVisibilitySaveStatus('No changes to save');
+            }
+        }
+    }
 
     function getSettingsApi() {
         return window.OkamiShared?.Settings || null;
@@ -92,9 +136,30 @@
             return true;
         }
         if (typeof entry === 'boolean') {
-            return entry !== false;
+            return entry;
         }
-        return entry.visible !== false;
+        if (typeof entry === 'string') {
+            const normalized = entry.trim().toLowerCase();
+            if (normalized === 'false' || normalized === '0' || normalized === 'off' || normalized === 'no') {
+                return false;
+            }
+            if (normalized === 'true' || normalized === '1' || normalized === 'on' || normalized === 'yes') {
+                return true;
+            }
+        }
+        if (entry && typeof entry === 'object') {
+            if (entry.visible == null) {
+                return true;
+            }
+            if (typeof entry.visible === 'string') {
+                const normalized = entry.visible.trim().toLowerCase();
+                if (normalized === 'false' || normalized === '0' || normalized === 'off' || normalized === 'no') {
+                    return false;
+                }
+            }
+            return Boolean(entry.visible);
+        }
+        return true;
     }
 
     function formatNavItemPath(item) {
@@ -131,11 +196,15 @@
 
     function buildVisibilityPageRow(item, settings, orderNumber) {
         const pathLabel = formatNavItemPath(item);
-        const isVisible = isPageVisible(settings, item.key);
-        const pathHint = item.external ? 'External link' : 'Site page';
+        const isRequired = REQUIRED_VISIBLE_PAGE_KEYS.has(item.key);
+        const isVisible = isRequired ? true : isPageVisible(settings, item.key);
+        const pathHint = [
+            item.external ? 'External link' : 'Site page',
+            isRequired ? 'Required for site' : ''
+        ].filter(Boolean).join(' · ');
 
         return `
-            <div class="visibility-page-row" data-page-key="${escapeHtml(item.key)}">
+            <div class="visibility-page-row${isRequired ? ' is-required' : ''}" data-page-key="${escapeHtml(item.key)}">
                 <div class="visibility-page-order" aria-label="Reorder page">
                     <span class="visibility-page-order-num" aria-label="Order">${orderNumber}</span>
                     <button type="button" class="visibility-order-btn visibility-order-up" data-page-key="${escapeHtml(item.key)}" aria-label="Move ${escapeHtml(item.title)} up">↑</button>
@@ -147,7 +216,7 @@
                     <span class="visibility-page-kind">${escapeHtml(pathHint)}</span>
                 </div>
                 <label class="visibility-switch">
-                    <input type="checkbox" class="visibility-page-toggle" data-page-key="${escapeHtml(item.key)}"${isVisible ? ' checked' : ''}>
+                    <input type="checkbox" class="visibility-page-toggle" data-page-key="${escapeHtml(item.key)}"${isVisible ? ' checked' : ''}${isRequired ? ' disabled' : ''}>
                     <span class="visibility-switch-slider" aria-hidden="true"></span>
                     <span class="visibility-switch-text">Visible</span>
                 </label>
@@ -198,6 +267,7 @@
         }
 
         updateVisibilityOrderButtonState(container);
+        refreshPagesDirtyFromForm();
     }
 
     function bindVisibilityOrderButtons(container) {
@@ -579,9 +649,10 @@
         return [...container.querySelectorAll('.visibility-page-row')].map((row) => {
             const pageKey = row.dataset.pageKey;
             const toggle = row.querySelector('.visibility-page-toggle');
+            const required = REQUIRED_VISIBLE_PAGE_KEYS.has(pageKey);
             return {
                 key: pageKey,
-                visible: Boolean(toggle?.checked)
+                visible: required ? true : Boolean(toggle?.checked)
             };
         }).filter((row) => row.key);
     }
@@ -603,6 +674,12 @@
             });
         }
 
+        REQUIRED_VISIBLE_PAGE_KEYS.forEach((key) => {
+            if (settings.pages[key]) {
+                settings.pages[key].visible = true;
+            }
+        });
+
         return settings;
     }
 
@@ -616,11 +693,11 @@
         applySiteVisibilityForm({
             ...current,
             pages: resetPages
-        });
-        setVisibilitySaveStatus('Navigation order reset to defaults. Save Settings to apply.');
+        }, { markDirty: true });
+        setVisibilitySaveStatus('Navigation order reset to defaults. Save Pages to apply.');
     }
 
-    function applySiteVisibilityForm(settings) {
+    function applySiteVisibilityForm(settings, options = {}) {
         renderVisibilityPageList(settings);
         const normalized = normalizeSiteSettings(settings);
         const constructionToggle = document.getElementById('construction-mode-toggle');
@@ -629,6 +706,14 @@
             constructionToggle.checked = normalized.constructionMode;
             updateConstructionToggleState(constructionToggle);
         }
+
+        if (options.markDirty) {
+            refreshPagesDirtyFromForm();
+            return;
+        }
+
+        lastSavedPagesSnapshot = getPagesFormSnapshot();
+        setPagesDirty(false);
     }
 
     function updateConstructionToggleState(toggle) {
@@ -758,49 +843,71 @@
 
     async function saveSiteVisibilitySettings() {
         const saveButton = document.getElementById('save-site-visibility');
+        if (!pagesDirty) {
+            setVisibilitySaveStatus('No changes to save');
+            return;
+        }
+
         const settings = readSiteVisibilityForm();
 
         if (saveButton) {
+            saveButton.dataset.saving = 'true';
             saveButton.disabled = true;
-            saveButton.textContent = 'Saving...';
+            saveButton.textContent = 'Saving…';
         }
 
-        setVisibilitySaveStatus('');
+        setVisibilitySaveStatus('Saving…');
+        console.info('[Okami Admin Pages] saving', {
+            constructionMode: settings.constructionMode,
+            pages: Object.keys(settings.pages || {}).map((key) => ({
+                key,
+                visible: settings.pages[key]?.visible,
+                navOrder: settings.pages[key]?.navOrder
+            }))
+        });
 
         try {
             const result = await saveSiteSettings(settings);
             const saved = normalizeSiteSettings(result?.settings || settings);
             setApiConnectionStatus('connected');
+            applySiteVisibilityForm(saved);
             updateVisibilitySettingsDebug(saved, 'server');
             localStorage.setItem('okami-site-settings-updated', Date.now().toString());
             if (window.SiteVisibility?.refreshNavigationSettings) {
                 window.SiteVisibility.refreshNavigationSettings(true).catch(() => {});
             }
-            setVisibilitySaveStatus('Settings saved to server.');
-            showToast('Site visibility settings saved.', 'success');
+            setVisibilitySaveStatus(`Saved successfully · ${new Date(saved.updatedAt || Date.now()).toLocaleString()}`);
+            showToast('Page settings saved.', 'success');
+            window.OkamiAdminTabs?.refreshOverview?.();
         } catch (error) {
-            console.error('Site settings save failed:', error);
+            console.error('[Okami Admin Pages] save failed', error);
             setApiConnectionStatus('disconnected');
 
-            let message = 'Settings could not be saved to the server.';
+            let message = 'Save failed. Your unsaved changes are still in the form.';
             if (error.status === 401) {
-                message += ' Sign in again and retry.';
+                message = 'Save failed: sign in again and retry. Unsaved changes were kept.';
             } else if (error.code === 'admin_auth_not_configured') {
-                message += ' Admin auth is not configured on the server.';
+                message = 'Save failed: admin auth is not configured on the server. Unsaved changes were kept.';
+            } else if (error.message) {
+                message = `Save failed: ${error.message}`;
             }
 
             setVisibilitySaveStatus(message, true);
-            showToast('Settings could not be saved to the server.', 'info');
+            showToast('Page settings could not be saved.', 'error');
+            setPagesDirty(true);
         } finally {
             if (saveButton) {
-                saveButton.disabled = false;
-                saveButton.textContent = 'Save Settings';
+                saveButton.dataset.saving = 'false';
+                saveButton.textContent = 'Save Pages';
+                saveButton.disabled = !pagesDirty;
             }
         }
     }
 
     function initSiteVisibilityAdmin() {
         renderVisibilityPageList(getDefaultSiteSettings());
+        syncPagesUnsavedState();
+        setPagesDirty(false);
 
         const saveButton = document.getElementById('save-site-visibility');
         const constructionToggle = document.getElementById('construction-mode-toggle');
@@ -811,7 +918,10 @@
         }
 
         if (constructionToggle && constructionToggle.dataset.bound !== 'true') {
-            constructionToggle.addEventListener('change', () => updateConstructionToggleState(constructionToggle));
+            constructionToggle.addEventListener('change', () => {
+                updateConstructionToggleState(constructionToggle);
+                refreshPagesDirtyFromForm();
+            });
             constructionToggle.dataset.bound = 'true';
         }
 
@@ -819,6 +929,22 @@
         if (resetButton && resetButton.dataset.bound !== 'true') {
             resetButton.addEventListener('click', resetNavigationOrder);
             resetButton.dataset.bound = 'true';
+        }
+
+        if (document.body.dataset.pagesDirtyBound !== 'true') {
+            document.addEventListener('change', (event) => {
+                const list = document.getElementById('visibility-page-list');
+                if (!list?.contains(event.target)) {
+                    return;
+                }
+                if (event.target.classList?.contains('visibility-page-toggle')) {
+                    if (REQUIRED_VISIBLE_PAGE_KEYS.has(event.target.dataset.pageKey)) {
+                        event.target.checked = true;
+                    }
+                    refreshPagesDirtyFromForm();
+                }
+            });
+            document.body.dataset.pagesDirtyBound = 'true';
         }
     }
 

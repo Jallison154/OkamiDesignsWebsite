@@ -854,6 +854,17 @@
                 console.warn('Site settings refresh failed:', error.message || error);
             });
         });
+
+        // Featured Projects cards are injected after initial nav apply; re-hide by page visibility.
+        if (document.body.dataset.featuredVisibilityBound !== 'true') {
+            document.addEventListener('okami:featured-projects-rendered', () => {
+                if (!settingsCache) {
+                    return;
+                }
+                applyNavigation(settingsCache);
+            });
+            document.body.dataset.featuredVisibilityBound = 'true';
+        }
     }
 
     async function refreshNavigationSettings(forceRefresh = false) {

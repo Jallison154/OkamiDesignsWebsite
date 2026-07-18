@@ -29,19 +29,41 @@
         return JSON.parse(JSON.stringify(DEFAULT_PAGE_CONFIG));
     }
 
+    function asBoolean(value, fallback = false) {
+        if (typeof value === 'boolean') {
+            return value;
+        }
+        if (value == null) {
+            return fallback;
+        }
+        if (typeof value === 'string') {
+            const normalized = value.trim().toLowerCase();
+            if (normalized === 'true' || normalized === '1' || normalized === 'yes' || normalized === 'on') {
+                return true;
+            }
+            if (normalized === 'false' || normalized === '0' || normalized === 'no' || normalized === 'off' || normalized === '') {
+                return false;
+            }
+        }
+        if (typeof value === 'number') {
+            return value !== 0;
+        }
+        return Boolean(value);
+    }
+
     function normalizePageEntry(raw, fallback) {
         if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
             return {
-                visible: raw.visible !== false,
+                visible: raw.visible == null ? fallback.visible : asBoolean(raw.visible, fallback.visible),
                 navOrder: Number.isFinite(Number(raw.navOrder))
                     ? Number(raw.navOrder)
                     : fallback.navOrder
             };
         }
 
-        if (typeof raw === 'boolean') {
+        if (typeof raw === 'boolean' || typeof raw === 'string' || typeof raw === 'number') {
             return {
-                visible: raw,
+                visible: asBoolean(raw, fallback.visible),
                 navOrder: fallback.navOrder
             };
         }
@@ -91,10 +113,13 @@
         if (entry == null) {
             return true;
         }
-        if (typeof entry === 'boolean') {
-            return entry !== false;
+        if (typeof entry === 'boolean' || typeof entry === 'string' || typeof entry === 'number') {
+            return asBoolean(entry, true);
         }
-        return entry.visible !== false;
+        if (entry.visible == null) {
+            return true;
+        }
+        return asBoolean(entry.visible, true);
     }
 
     function getPageNavOrder(settings, key) {
@@ -151,7 +176,7 @@
         const pages = normalizePages(raw?.pages, legacyPageOrder);
 
         const merged = {
-            constructionMode: Boolean(raw?.constructionMode),
+            constructionMode: asBoolean(raw?.constructionMode, false),
             pages,
             updatedAt: raw?.updatedAt || null
         };

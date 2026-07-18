@@ -102,7 +102,16 @@
             const pageEntries = Object.values(pages);
             const enabledPages = pageEntries.filter((entry) => {
                 if (typeof entry === 'boolean') return entry;
-                return entry?.visible !== false;
+                if (typeof entry === 'string') {
+                    const normalized = entry.trim().toLowerCase();
+                    return !(normalized === 'false' || normalized === '0' || normalized === 'off' || normalized === 'no' || normalized === '');
+                }
+                if (entry?.visible == null) return true;
+                if (typeof entry.visible === 'string') {
+                    const normalized = entry.visible.trim().toLowerCase();
+                    return !(normalized === 'false' || normalized === '0' || normalized === 'off' || normalized === 'no' || normalized === '');
+                }
+                return Boolean(entry.visible);
             }).length;
 
             const tools = Array.isArray(toolsData.tools) ? toolsData.tools : [];

@@ -9,7 +9,7 @@
     <title>Admin - Okami Designs</title>
     <meta name="description" content="Okami Designs Admin Panel">
     <link rel="icon" href="images/Okami_Designs_HeadWhite.png" type="image/png">
-    <link rel="stylesheet" href="styles.css?v=20260718d">
+    <link rel="stylesheet" href="styles.css?v=20260718f">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -62,8 +62,10 @@
         <main class="main">
             <div class="container">
                 <div class="admin-dashboard">
-                    <h1 class="admin-title">Admin Dashboard</h1>
-                    <p class="admin-subtitle">Manage pages, tools, featured projects, documentation, and site settings.</p>
+                    <header class="admin-header">
+                        <h1 class="admin-title">Admin Dashboard</h1>
+                        <p class="admin-subtitle">Manage website content and settings.</p>
+                    </header>
 
                     <div class="admin-tab-bar-wrap">
                         <label class="admin-tab-select-label" for="admin-tab-select">Section</label>
@@ -132,17 +134,27 @@
 
                     <section class="admin-tab-panel" id="panel-tools" role="tabpanel" aria-labelledby="tab-tools" data-admin-panel="tools" hidden>
                         <section class="visibility-section tools-admin-section" id="tools-admin-section">
-                            <h2 class="section-title">Tools Catalog</h2>
-                            <p class="visibility-section-desc">Create and organize Tools shown on the public Tools page. Use Show on Homepage separately from Published.</p>
-
-                            <div class="visibility-actions tools-admin-top-actions admin-sticky-actions">
-                                <button type="button" id="add-tool-btn" class="upload-submit-button">Add Tool</button>
-                                <button type="button" id="reload-tools-catalog" class="upload-submit-button visibility-secondary-button">Reload</button>
-                                <button type="button" id="save-tools-catalog" class="upload-submit-button">Save Tools</button>
-                                <p id="tools-save-status" class="visibility-save-status" hidden></p>
+                            <div class="tools-admin-toolbar">
+                                <div class="tools-admin-toolbar-primary">
+                                    <div class="tools-admin-heading">
+                                        <h2 class="tools-admin-title" id="tools-admin-heading">Tools</h2>
+                                        <p class="tools-admin-desc">Manage Tools for the public Tools page. Homepage controls Featured Projects separately.</p>
+                                    </div>
+                                    <button type="button" id="add-tool-btn" class="tools-admin-btn tools-admin-btn--primary">Add Tool</button>
+                                </div>
+                                <div class="tools-admin-toolbar-secondary">
+                                    <div class="tools-admin-status-wrap">
+                                        <p id="tools-save-status" class="tools-admin-status" role="status">All changes saved</p>
+                                        <p id="tools-save-meta" class="tools-admin-meta" hidden></p>
+                                    </div>
+                                    <div class="tools-admin-toolbar-actions">
+                                        <button type="button" id="reload-tools-catalog" class="tools-admin-btn tools-admin-btn--ghost">Reload Saved Data</button>
+                                        <button type="button" id="save-tools-catalog" class="tools-admin-btn tools-admin-btn--save" disabled>Save Changes</button>
+                                    </div>
+                                </div>
                             </div>
 
-                            <div class="visibility-page-list" id="tools-admin-list" aria-live="polite"></div>
+                            <div id="tools-admin-list" class="tools-admin-list" aria-live="polite" aria-labelledby="tools-admin-heading"></div>
                         </section>
                     </section>
 
@@ -265,6 +277,21 @@
         </div>
     </div>
 
+    <div id="tools-editor-drawer" class="tools-drawer" aria-hidden="true">
+        <div class="tools-drawer-backdrop" data-tools-drawer-close></div>
+        <aside class="tools-drawer-panel" role="dialog" aria-modal="true" aria-labelledby="tools-drawer-title" tabindex="-1">
+            <div class="tools-drawer-header">
+                <h3 id="tools-drawer-title">Edit Tool</h3>
+                <button type="button" class="tools-drawer-close" data-tools-drawer-close aria-label="Close editor">&times;</button>
+            </div>
+            <div id="tools-drawer-body" class="tools-drawer-body"></div>
+            <div class="tools-drawer-footer">
+                <button type="button" class="tools-admin-btn tools-admin-btn--ghost" data-tools-drawer-close>Cancel</button>
+                <button type="button" id="tools-drawer-save" class="tools-admin-btn tools-admin-btn--primary">Save Tool</button>
+            </div>
+        </aside>
+    </div>
+
     <div id="toast-container" class="toast-container"></div>
 
     <script src="shared/settings/site-settings.js"></script>
@@ -272,9 +299,9 @@
     <script src="shared/visibility/access-policy.js"></script>
     <script src="shared/tools/catalog.js"></script>
     <script src="page-registry.js"></script>
-    <script src="admin-api.js?v=20260718d"></script>
-    <script src="admin.js?v=20260718d"></script>
-    <script src="admin-tools.js?v=20260718d"></script>
-    <script src="admin-tabs.js?v=20260718d"></script>
+    <script src="admin-api.js?v=20260718f"></script>
+    <script src="admin.js?v=20260718f"></script>
+    <script src="admin-tools.js?v=20260718f"></script>
+    <script src="admin-tabs.js?v=20260718f"></script>
 </body>
 </html>

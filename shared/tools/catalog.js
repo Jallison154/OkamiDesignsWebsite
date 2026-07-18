@@ -170,6 +170,18 @@
         if (value == null) {
             return fallback;
         }
+        if (typeof value === 'string') {
+            const normalized = value.trim().toLowerCase();
+            if (normalized === 'true' || normalized === '1' || normalized === 'yes' || normalized === 'on') {
+                return true;
+            }
+            if (normalized === 'false' || normalized === '0' || normalized === 'no' || normalized === 'off' || normalized === '') {
+                return false;
+            }
+        }
+        if (typeof value === 'number') {
+            return value !== 0;
+        }
         return Boolean(value);
     }
 
@@ -249,9 +261,10 @@
             ? Number(raw.displayOrder)
             : index + 1;
         const featured = asBoolean(raw?.featured ?? raw?.showOnHomepage, false);
-        const homepageOrder = Number.isFinite(Number(raw?.homepageOrder))
-            ? Number(raw.homepageOrder)
-            : (featured ? displayOrder : 999);
+        const rawHomepageOrder = raw?.homepageOrder;
+        const homepageOrder = (rawHomepageOrder === null || rawHomepageOrder === undefined || rawHomepageOrder === '')
+            ? (featured ? displayOrder : 999)
+            : (Number.isFinite(Number(rawHomepageOrder)) ? Number(rawHomepageOrder) : (featured ? displayOrder : 999));
         const listOnToolsPage = raw?.listOnToolsPage == null
             ? contentType !== 'prints' && contentType !== 'page'
             : asBoolean(raw.listOnToolsPage, true);
@@ -369,11 +382,11 @@
         };
     }
 
-    function ensureKnownProjects(tools, nowIso) {
+    function ensureKnownProjects(tools, nowIso, options = {}) {
         const byId = new Map(tools.map((tool) => [tool.id, tool]));
         const next = [...tools];
 
-        // Soft migration: keep PACK homepage + website logo defaults when present.
+        // Soft migration helpers for PACK only — never resurrect deleted entries.
         if (byId.has('pack')) {
             const pack = byId.get('pack');
             pack.imageSource = pack.imageSource || 'website';
@@ -381,21 +394,18 @@
             pack.url = pack.url || 'https://pack.okamidesigns.com';
             pack.buttonLabel = pack.buttonLabel || 'Open PACK';
             pack.contentType = pack.contentType || 'app';
-            pack.listOnToolsPage = pack.listOnToolsPage !== false;
-            // Only force featured when the field was never explicitly false in legacy data
-            // that still used featured:false before homepage toggle existed — leave as stored.
+            if (pack.listOnToolsPage == null) {
+                pack.listOnToolsPage = true;
+            }
         }
 
-        DEFAULT_SEED_TOOLS.forEach((seed) => {
-            if (byId.has(seed.id)) {
-                return;
+        // One-time companion seed only when explicitly requested (empty catalog recovery).
+        if (options.seedMissingPrints && !byId.has('3d-prints')) {
+            const seed = DEFAULT_SEED_TOOLS.find((item) => item.id === '3d-prints');
+            if (seed) {
+                next.push(normalizeTool(seed, next.length, nowIso));
             }
-            // Only auto-add missing prints project (homepage companion), not every seed.
-            if (seed.id !== '3d-prints') {
-                return;
-            }
-            next.push(normalizeTool(seed, next.length, nowIso));
-        });
+        }
 
         return next;
     }
@@ -425,7 +435,7 @@
             return tool;
         });
 
-        tools = ensureKnownProjects(tools, nowIso);
+        tools = ensureKnownProjects(tools, nowIso, { seedMissingPrints: false });
         tools = reindexDisplayOrder(tools);
         tools = reindexHomepageOrder(tools);
 
@@ -437,18 +447,18 @@
     }
 
     function getPublicTools(catalog) {
-        return sortTools((catalog?.tools || []).filter((tool) => tool.enabled !== false));
+        return sortTools((catalog?.tools || []).filter((tool) => asBoolean(tool.enabled, true)));
     }
 
     function getToolsPageTools(catalog) {
         return sortTools((catalog?.tools || []).filter((tool) => (
-            tool.enabled !== false && tool.listOnToolsPage !== false
+            asBoolean(tool.enabled, true) && asBoolean(tool.listOnToolsPage, true)
         )));
     }
 
     function getHomepageProjects(catalog) {
         return [...(catalog?.tools || [])]
-            .filter((tool) => tool.enabled !== false && tool.featured === true)
+            .filter((tool) => asBoolean(tool.enabled, true) && asBoolean(tool.featured, false))
             .sort((left, right) => {
                 const orderDiff = (left.homepageOrder || 999) - (right.homepageOrder || 999);
                 if (orderDiff !== 0) return orderDiff;
@@ -458,7 +468,7 @@
 
     function reindexHomepageOrder(tools) {
         const featured = tools
-            .filter((tool) => tool.featured)
+            .filter((tool) => asBoolean(tool.featured, false))
             .sort((a, b) => (a.homepageOrder || 999) - (b.homepageOrder || 999));
         const orderMap = new Map(featured.map((tool, index) => [tool.id, index + 1]));
         return tools.map((tool) => ({
