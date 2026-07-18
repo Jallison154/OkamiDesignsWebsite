@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="PACK">
+  <!-- Temporary PACK icon placeholder — replace this file with the final logo asset. -->
+  <rect width="64" height="64" rx="14" fill="#1a1a1a"/>
+  <rect x="1.5" y="1.5" width="61" height="61" rx="12.5" fill="none" stroke="#ff6a2d" stroke-opacity="0.4" stroke-width="3"/>
+  <path d="M16 24.5 32 15l16 9.5v19L32 53 16 43.5v-19z" fill="none" stroke="#ff6a2d" stroke-width="2.75" stroke-linejoin="round"/>
+  <path d="M16 24.5 32 34l16-9.5M32 34v19" fill="none" stroke="#ff6a2d" stroke-width="2.75" stroke-linejoin="round"/>
+  <path d="M24 20 40 29.5" fill="none" stroke="#ff6a2d" stroke-opacity="0.55" stroke-width="2" stroke-linecap="round"/>
+</svg>
