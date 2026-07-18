@@ -47,9 +47,24 @@
         status.classList.toggle('is-error', Boolean(isError));
     }
 
+    function setFeaturedStatus(message, isError = false) {
+        const status = document.getElementById('featured-save-status');
+        if (!status) return;
+        if (!message) {
+            status.hidden = true;
+            status.textContent = '';
+            return;
+        }
+        status.hidden = false;
+        status.textContent = message;
+        status.classList.toggle('is-error', Boolean(isError));
+    }
+
     function markDirty() {
         toolsDirty = true;
         setToolsStatus('Unsaved changes. Click Save Tools to publish.');
+        setFeaturedStatus('Unsaved featured changes. Click Save Featured Order.');
+        window.OkamiAdminTabs?.refreshOverview?.();
     }
 
     function sortState() {
@@ -59,7 +74,14 @@
             : toolsState
                 .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0))
                 .map((tool, index) => ({ ...tool, displayOrder: index + 1 }));
+        if (api?.reindexHomepageOrder) {
+            toolsState = api.reindexHomepageOrder(toolsState);
+        }
     }
+
+    window.OkamiAdminState = {
+        hasUnsavedChanges: () => toolsDirty
+    };
 
     function resolvePreviewImageUrl(tool) {
         if (catalogApi()?.resolveToolImageUrl) {
@@ -93,6 +115,10 @@
 
     function buildToolRow(tool, orderNumber) {
         const href = catalogApi()?.resolveToolHref?.(tool) || tool.url || '#';
+        const imageUrl = resolvePreviewImageUrl(tool);
+        const thumb = imageUrl
+            ? `<img class="tools-admin-row-thumb" src="${escapeHtml(imageUrl)}" alt="" width="40" height="40">`
+            : `<span class="tools-admin-row-thumb tools-admin-row-thumb--fallback" aria-hidden="true">${escapeHtml((tool.title || 'T').charAt(0).toUpperCase())}</span>`;
         return `
             <div class="visibility-page-row tools-admin-row" data-tool-id="${escapeHtml(tool.id)}">
                 <div class="visibility-page-order" aria-label="Reorder tool">
@@ -100,23 +126,101 @@
                     <button type="button" class="visibility-order-btn tools-order-up" data-tool-id="${escapeHtml(tool.id)}" aria-label="Move ${escapeHtml(tool.title)} up">↑</button>
                     <button type="button" class="visibility-order-btn tools-order-down" data-tool-id="${escapeHtml(tool.id)}" aria-label="Move ${escapeHtml(tool.title)} down">↓</button>
                 </div>
+                ${thumb}
                 <div class="visibility-page-info">
                     <span class="visibility-page-name">${escapeHtml(tool.title)}</span>
-                    <span class="visibility-page-path">${escapeHtml(tool.category || 'Tool')} · ${escapeHtml(href)}</span>
-                    <span class="visibility-page-kind">${tool.featured ? 'Featured · ' : ''}${escapeHtml(tool.linkType || 'internal')} · Image: ${escapeHtml(tool.imageSource || 'upload')}${tool.detailPageEnabled ? ' · Detail page' : ''}${tool.websiteLogoKind ? ` · Logo: ${escapeHtml(tool.websiteLogoKind)}` : ''}</span>
+                    <span class="visibility-page-path">${escapeHtml(tool.category || 'Tool')} · ${escapeHtml(tool.contentType || 'tool')} · ${escapeHtml(href)}</span>
+                    <span class="visibility-page-kind">${tool.listOnToolsPage === false ? 'Hidden from Tools page · ' : ''}${tool.featured ? 'On homepage · ' : ''}${escapeHtml(tool.linkType || 'internal')} · Image: ${escapeHtml(tool.imageSource || 'upload')}</span>
                 </div>
                 <label class="visibility-switch">
                     <input type="checkbox" class="tools-enabled-toggle" data-tool-id="${escapeHtml(tool.id)}"${tool.enabled ? ' checked' : ''}>
                     <span class="visibility-switch-slider" aria-hidden="true"></span>
                     <span class="visibility-switch-text">Published</span>
                 </label>
+                <label class="visibility-switch">
+                    <input type="checkbox" class="tools-homepage-toggle" data-tool-id="${escapeHtml(tool.id)}"${tool.featured ? ' checked' : ''}${tool.enabled ? '' : ' disabled'}>
+                    <span class="visibility-switch-slider" aria-hidden="true"></span>
+                    <span class="visibility-switch-text">Show on Homepage</span>
+                </label>
                 <div class="tools-admin-row-actions">
                     <button type="button" class="visibility-secondary-button tools-preview-btn" data-tool-id="${escapeHtml(tool.id)}">Preview</button>
                     <button type="button" class="visibility-secondary-button tools-edit-btn" data-tool-id="${escapeHtml(tool.id)}">Edit</button>
+                    <button type="button" class="visibility-secondary-button tools-duplicate-btn" data-tool-id="${escapeHtml(tool.id)}">Duplicate</button>
                     ${tool.imageSource === 'website' ? `<button type="button" class="visibility-secondary-button tools-refresh-logo-btn" data-tool-id="${escapeHtml(tool.id)}">Refresh Logo</button>` : ''}
-                    <button type="button" class="visibility-secondary-button tools-delete-btn" data-tool-id="${escapeHtml(tool.id)}">Delete</button>
+                    <button type="button" class="visibility-secondary-button tools-delete-btn tools-delete-btn--danger" data-tool-id="${escapeHtml(tool.id)}">Delete</button>
                 </div>
             </div>
+        `;
+    }
+
+    function buildFeaturedRow(tool, orderNumber) {
+        const imageUrl = resolvePreviewImageUrl(tool);
+        const thumb = imageUrl
+            ? `<img class="tools-admin-row-thumb" src="${escapeHtml(imageUrl)}" alt="" width="40" height="40">`
+            : `<span class="tools-admin-row-thumb tools-admin-row-thumb--fallback" aria-hidden="true">${escapeHtml((tool.title || 'T').charAt(0).toUpperCase())}</span>`;
+        return `
+            <div class="visibility-page-row tools-admin-row" data-tool-id="${escapeHtml(tool.id)}">
+                <div class="visibility-page-order" aria-label="Reorder homepage item">
+                    <span class="visibility-page-order-num">${orderNumber}</span>
+                    <button type="button" class="visibility-order-btn featured-order-up" data-tool-id="${escapeHtml(tool.id)}" aria-label="Move ${escapeHtml(tool.title)} up on homepage">↑</button>
+                    <button type="button" class="visibility-order-btn featured-order-down" data-tool-id="${escapeHtml(tool.id)}" aria-label="Move ${escapeHtml(tool.title)} down on homepage">↓</button>
+                </div>
+                ${thumb}
+                <div class="visibility-page-info">
+                    <span class="visibility-page-name">${escapeHtml(tool.title)}</span>
+                    <span class="visibility-page-path">${escapeHtml(tool.contentType || 'tool')} · ${escapeHtml(tool.category || '')}</span>
+                    <span class="visibility-page-kind">${tool.enabled ? 'Published' : 'Disabled'} · Homepage order ${orderNumber}</span>
+                </div>
+                <label class="visibility-switch">
+                    <input type="checkbox" class="tools-homepage-toggle" data-tool-id="${escapeHtml(tool.id)}"${tool.featured ? ' checked' : ''}${tool.enabled ? '' : ' disabled'}>
+                    <span class="visibility-switch-slider" aria-hidden="true"></span>
+                    <span class="visibility-switch-text">Show on Homepage</span>
+                </label>
+                <div class="tools-admin-row-actions">
+                    <button type="button" class="visibility-secondary-button tools-edit-btn" data-tool-id="${escapeHtml(tool.id)}">Edit source</button>
+                    <button type="button" class="visibility-secondary-button tools-preview-btn" data-tool-id="${escapeHtml(tool.id)}">Preview</button>
+                </div>
+            </div>
+        `;
+    }
+
+    function renderFeaturedAdminList() {
+        const container = document.getElementById('featured-admin-list');
+        if (!container) return;
+        sortState();
+        const items = catalogApi()?.getHomepageProjects?.({ tools: toolsState })
+            || toolsState.filter((tool) => tool.enabled !== false && tool.featured);
+        const eligible = toolsState.filter((tool) => tool.enabled !== false);
+        if (!eligible.length) {
+            container.innerHTML = '<p class="visibility-page-list-error">No published tools/projects yet. Add and publish items in the Tools tab first.</p>';
+            return;
+        }
+        const featuredHtml = items.length
+            ? items.map((tool, index) => buildFeaturedRow(tool, index + 1)).join('')
+            : '<p class="tools-hub-empty">No homepage featured items. Toggle Show on Homepage on a published Tool.</p>';
+        const otherHtml = eligible
+            .filter((tool) => !tool.featured)
+            .map((tool) => `
+                <div class="visibility-page-row tools-admin-row" data-tool-id="${escapeHtml(tool.id)}">
+                    <div class="visibility-page-info">
+                        <span class="visibility-page-name">${escapeHtml(tool.title)}</span>
+                        <span class="visibility-page-path">${escapeHtml(tool.contentType || 'tool')} · not on homepage</span>
+                    </div>
+                    <label class="visibility-switch">
+                        <input type="checkbox" class="tools-homepage-toggle" data-tool-id="${escapeHtml(tool.id)}">
+                        <span class="visibility-switch-slider" aria-hidden="true"></span>
+                        <span class="visibility-switch-text">Show on Homepage</span>
+                    </label>
+                    <div class="tools-admin-row-actions">
+                        <button type="button" class="visibility-secondary-button tools-edit-btn" data-tool-id="${escapeHtml(tool.id)}">Edit source</button>
+                    </div>
+                </div>
+            `).join('');
+        container.innerHTML = `
+            <h3 class="admin-subheading">On homepage</h3>
+            ${featuredHtml}
+            <h3 class="admin-subheading">Eligible but not featured</h3>
+            ${otherHtml || '<p class="tools-hub-empty">All published items are featured.</p>'}
         `;
     }
 
@@ -154,6 +258,7 @@
         }
         container.innerHTML = toolsState.map((tool, index) => buildToolRow(tool, index + 1)).join('');
         updateOrderButtons();
+        renderFeaturedAdminList();
     }
 
     function moveTool(toolId, direction) {
@@ -217,10 +322,19 @@
                     <option value="external"${tool.linkType === 'external' ? ' selected' : ''}>External</option>
                 </select>
             </div>
+            <div class="modal-field">
+                <label for="tool-field-content-type">Content type</label>
+                <select id="tool-field-content-type">
+                    ${['tool', 'app', 'calculator', 'prints', 'download', 'page', 'project'].map((type) => (
+                        `<option value="${type}"${(tool.contentType || 'tool') === type ? ' selected' : ''}>${type}</option>`
+                    )).join('')}
+                </select>
+            </div>
             <div class="modal-field modal-field--inline">
                 <label><input type="checkbox" id="tool-field-new-tab"${tool.openInNewTab ? ' checked' : ''}> Open in new tab</label>
                 <label><input type="checkbox" id="tool-field-enabled"${tool.enabled !== false ? ' checked' : ''}> Published / enabled</label>
-                <label><input type="checkbox" id="tool-field-featured"${tool.featured ? ' checked' : ''}> Featured</label>
+                <label><input type="checkbox" id="tool-field-featured"${tool.featured ? ' checked' : ''}> Show on Homepage</label>
+                <label><input type="checkbox" id="tool-field-list-tools"${tool.listOnToolsPage !== false ? ' checked' : ''}> List on Tools page</label>
             </div>
             <div class="modal-field">
                 <label for="tool-field-slug">Slug (for detail page)</label>
@@ -307,10 +421,13 @@
             openInNewTab: form.querySelector('#tool-field-new-tab').checked,
             enabled: form.querySelector('#tool-field-enabled').checked,
             featured: form.querySelector('#tool-field-featured').checked,
+            listOnToolsPage: form.querySelector('#tool-field-list-tools').checked,
+            contentType: form.querySelector('#tool-field-content-type').value,
             slug: slugify(form.querySelector('#tool-field-slug').value || title),
             detailPageEnabled: form.querySelector('#tool-field-detail').checked,
             accent: form.querySelector('#tool-field-accent').value,
             imageSource: form.querySelector('#tool-field-image-source').value,
+            homepageOrder: existing?.homepageOrder || 999,
             iconUrl: form.querySelector('#tool-field-icon-url').value.trim(),
             websiteLogoUrl: existing?.websiteLogoUrl || '',
             websiteLogoRemoteUrl: existing?.websiteLogoRemoteUrl || '',
@@ -359,12 +476,16 @@
             detailPageEnabled: false,
             accent: 'default',
             imageSource: 'website',
+            contentType: 'tool',
             iconUrl: '',
             websiteLogoUrl: '',
             websiteLogoRemoteUrl: '',
             websiteLogoKind: '',
             websiteLogoFetchedAt: '',
             websiteLogoError: '',
+            featured: false,
+            listOnToolsPage: true,
+            homepageOrder: 999,
             heroImageUrl: '',
             features: [],
             screenshots: [],
@@ -536,7 +657,7 @@
             return;
         }
         const confirmed = await ui().showConfirmModal?.(
-            `Delete "${tool.title}"? This removes it from the Tools page after you save.`,
+            `Delete "${tool.title}"? This removes it from Tools and Featured Projects after you save.`,
             { title: 'Delete Tool', confirmText: 'Delete', confirmVariant: 'primary' }
         );
         if (!confirmed) {
@@ -544,6 +665,46 @@
         }
         toolsState = toolsState.filter((item) => item.id !== toolId);
         sortState();
+        markDirty();
+        renderToolsList();
+    }
+
+    function duplicateTool(toolId) {
+        const tool = findTool(toolId);
+        if (!tool) return;
+        const copy = {
+            ...tool,
+            id: catalogApi()?.createId?.(tool.title) || `${tool.id}-copy`,
+            title: `${tool.title} Copy`,
+            slug: slugify(`${tool.slug || tool.title}-copy`),
+            featured: false,
+            homepageOrder: 999,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            displayOrder: toolsState.length + 1
+        };
+        toolsState.push(copy);
+        sortState();
+        markDirty();
+        renderToolsList();
+        ui().showToast?.('Tool duplicated. Save Tools to publish.', 'success');
+        openToolEditor(copy);
+    }
+
+    function moveFeatured(toolId, direction) {
+        const featured = toolsState
+            .filter((tool) => tool.featured)
+            .sort((a, b) => (a.homepageOrder || 999) - (b.homepageOrder || 999));
+        const index = featured.findIndex((tool) => tool.id === toolId);
+        const target = index + direction;
+        if (index < 0 || target < 0 || target >= featured.length) return;
+        const reordered = [...featured];
+        const [item] = reordered.splice(index, 1);
+        reordered.splice(target, 0, item);
+        const orderMap = new Map(reordered.map((tool, i) => [tool.id, i + 1]));
+        toolsState = toolsState.map((tool) => (
+            orderMap.has(tool.id) ? { ...tool, homepageOrder: orderMap.get(tool.id) } : tool
+        ));
         markDirty();
         renderToolsList();
     }
@@ -577,10 +738,13 @@
             toolsDirty = false;
             renderToolsList();
             setToolsStatus(`Saved ${new Date(result.updatedAt || Date.now()).toLocaleString()}`);
+            setFeaturedStatus(`Saved ${new Date(result.updatedAt || Date.now()).toLocaleString()}`);
             ui().showToast?.('Tools catalog saved.', 'success');
+            window.OkamiAdminTabs?.refreshOverview?.();
         } catch (error) {
             console.error(error);
             setToolsStatus(error.message || 'Failed to save tools', true);
+            setFeaturedStatus(error.message || 'Failed to save featured order', true);
             ui().showToast?.(error.message || 'Failed to save tools', 'error');
         }
     }
@@ -594,10 +758,14 @@
         document.getElementById('add-tool-btn')?.addEventListener('click', () => openToolEditor(null));
         document.getElementById('save-tools-catalog')?.addEventListener('click', saveToolsCatalog);
         document.getElementById('reload-tools-catalog')?.addEventListener('click', loadToolsCatalog);
+        document.getElementById('save-featured-catalog')?.addEventListener('click', saveToolsCatalog);
 
         document.addEventListener('click', (event) => {
-            const list = document.getElementById('tools-admin-list');
-            if (!list || !list.contains(event.target)) {
+            const toolsList = document.getElementById('tools-admin-list');
+            const featuredList = document.getElementById('featured-admin-list');
+            const inTools = toolsList?.contains(event.target);
+            const inFeatured = featuredList?.contains(event.target);
+            if (!inTools && !inFeatured) {
                 return;
             }
 
@@ -611,14 +779,32 @@
                 moveTool(down.dataset.toolId, 1);
                 return;
             }
+            const featuredUp = event.target.closest('.featured-order-up');
+            if (featuredUp?.dataset.toolId) {
+                moveFeatured(featuredUp.dataset.toolId, -1);
+                return;
+            }
+            const featuredDown = event.target.closest('.featured-order-down');
+            if (featuredDown?.dataset.toolId) {
+                moveFeatured(featuredDown.dataset.toolId, 1);
+                return;
+            }
             const edit = event.target.closest('.tools-edit-btn');
             if (edit?.dataset.toolId) {
+                if (typeof window.OkamiAdminTabs?.activateTab === 'function') {
+                    window.OkamiAdminTabs.activateTab('tools');
+                }
                 openToolEditor(findTool(edit.dataset.toolId));
                 return;
             }
             const preview = event.target.closest('.tools-preview-btn');
             if (preview?.dataset.toolId) {
                 previewTool(preview.dataset.toolId);
+                return;
+            }
+            const dup = event.target.closest('.tools-duplicate-btn');
+            if (dup?.dataset.toolId) {
+                duplicateTool(dup.dataset.toolId);
                 return;
             }
             const del = event.target.closest('.tools-delete-btn');
@@ -658,19 +844,36 @@
         }
 
         document.addEventListener('change', (event) => {
-            const toggle = event.target.closest?.('.tools-enabled-toggle');
-            if (!toggle?.dataset.toolId) {
+            const enabledToggle = event.target.closest?.('.tools-enabled-toggle');
+            if (enabledToggle?.dataset.toolId) {
+                const tool = findTool(enabledToggle.dataset.toolId);
+                if (!tool) return;
+                tool.enabled = Boolean(enabledToggle.checked);
+                if (!tool.enabled) {
+                    tool.featured = false;
+                }
+                tool.updatedAt = new Date().toISOString();
+                markDirty();
+                renderToolsList();
                 return;
             }
-            const tool = findTool(toggle.dataset.toolId);
-            if (!tool) {
-                return;
+
+            const homepageToggle = event.target.closest?.('.tools-homepage-toggle');
+            if (homepageToggle?.dataset.toolId) {
+                const tool = findTool(homepageToggle.dataset.toolId);
+                if (!tool || !tool.enabled) return;
+                tool.featured = Boolean(homepageToggle.checked);
+                tool.homepageOrder = tool.featured
+                    ? (tool.homepageOrder && tool.homepageOrder < 999 ? tool.homepageOrder : toolsState.filter((t) => t.featured).length)
+                    : 999;
+                tool.updatedAt = new Date().toISOString();
+                markDirty();
+                renderToolsList();
             }
-            tool.enabled = Boolean(toggle.checked);
-            tool.updatedAt = new Date().toISOString();
-            markDirty();
         });
     }
+
+    window.renderFeaturedAdminList = renderFeaturedAdminList;
 
     window.initToolsAdmin = function initToolsAdmin() {
         bindToolsAdmin();

@@ -199,7 +199,10 @@
         container.setAttribute('aria-busy', 'true');
         try {
             const [tools, settings] = await Promise.all([fetchTools(), loadSiteSettings()]);
-            const visibleTools = tools.filter((tool) => isPageVisible(settings, tool.pageKey));
+            const toolsPageTools = catalogApi?.getToolsPageTools
+                ? catalogApi.getToolsPageTools({ tools })
+                : tools.filter((tool) => tool.enabled !== false && tool.listOnToolsPage !== false);
+            const visibleTools = toolsPageTools.filter((tool) => isPageVisible(settings, tool.pageKey));
             const sorted = catalogApi?.sortTools
                 ? catalogApi.sortTools(visibleTools)
                 : visibleTools.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));

@@ -18,13 +18,16 @@
             websiteLogoKind: '',
             websiteLogoFetchedAt: '',
             websiteLogoError: '',
+            contentType: 'calculator',
             buttonLabel: 'Open tool →',
             url: '/tools/led-video-wall-calculator',
             linkType: 'internal',
             openInNewTab: false,
             enabled: true,
             featured: true,
+            listOnToolsPage: true,
             displayOrder: 1,
+            homepageOrder: 1,
             slug: 'led-video-wall-calculator',
             detailPageEnabled: false,
             pageKey: 'ledVideoWallCalculator',
@@ -47,13 +50,16 @@
             websiteLogoKind: '',
             websiteLogoFetchedAt: '',
             websiteLogoError: '',
+            contentType: 'tool',
             buttonLabel: 'Open tool →',
             url: '/tools/signal-lab',
             linkType: 'internal',
             openInNewTab: false,
             enabled: true,
             featured: true,
+            listOnToolsPage: true,
             displayOrder: 2,
+            homepageOrder: 2,
             slug: 'signal-lab',
             detailPageEnabled: false,
             pageKey: 'okamiSignalLab',
@@ -76,16 +82,51 @@
             websiteLogoKind: '',
             websiteLogoFetchedAt: '',
             websiteLogoError: '',
+            contentType: 'app',
             buttonLabel: 'Open PACK',
             url: 'https://pack.okamidesigns.com',
             linkType: 'external',
             openInNewTab: false,
             enabled: true,
-            featured: false,
+            featured: true,
+            listOnToolsPage: true,
             displayOrder: 3,
+            homepageOrder: 3,
             slug: 'pack',
             detailPageEnabled: false,
             pageKey: null,
+            accent: 'default',
+            features: [],
+            screenshots: [],
+            supportUrl: '',
+            heroImageUrl: ''
+        },
+        {
+            id: '3d-prints',
+            title: '3D Prints',
+            category: 'Fabrication',
+            shortDescription: 'Browse printable adapters, production utilities, and custom design files from Okami Designs.',
+            longDescription: '',
+            imageSource: 'placeholder',
+            iconUrl: '',
+            websiteLogoUrl: '',
+            websiteLogoRemoteUrl: '',
+            websiteLogoKind: '',
+            websiteLogoFetchedAt: '',
+            websiteLogoError: '',
+            contentType: 'prints',
+            buttonLabel: 'View Prints',
+            url: '/3d-prints',
+            linkType: 'internal',
+            openInNewTab: false,
+            enabled: true,
+            featured: true,
+            listOnToolsPage: false,
+            displayOrder: 4,
+            homepageOrder: 4,
+            slug: '3d-prints',
+            detailPageEnabled: false,
+            pageKey: 'prints',
             accent: 'default',
             features: [],
             screenshots: [],
@@ -182,6 +223,18 @@
         return 'placeholder';
     }
 
+    function normalizeContentType(raw, id) {
+        const value = asString(raw?.contentType).toLowerCase();
+        const allowed = new Set(['tool', 'app', 'calculator', 'prints', 'download', 'page', 'project']);
+        if (allowed.has(value)) {
+            return value;
+        }
+        if (id === 'pack') return 'app';
+        if (id === 'led-video-wall-calculator') return 'calculator';
+        if (id === '3d-prints' || id === 'prints') return 'prints';
+        return 'tool';
+    }
+
     function normalizeTool(raw, index = 0, nowIso = new Date().toISOString()) {
         const title = asString(raw?.title).trim() || `Tool ${index + 1}`;
         const id = asString(raw?.id).trim() || createId(title);
@@ -191,6 +244,17 @@
         const createdAt = asString(raw?.createdAt).trim() || nowIso;
         const updatedAt = asString(raw?.updatedAt).trim() || createdAt;
         const imageSource = normalizeImageSource(raw, linkType, url);
+        const contentType = normalizeContentType(raw, id);
+        const displayOrder = Number.isFinite(Number(raw?.displayOrder))
+            ? Number(raw.displayOrder)
+            : index + 1;
+        const featured = asBoolean(raw?.featured ?? raw?.showOnHomepage, false);
+        const homepageOrder = Number.isFinite(Number(raw?.homepageOrder))
+            ? Number(raw.homepageOrder)
+            : (featured ? displayOrder : 999);
+        const listOnToolsPage = raw?.listOnToolsPage == null
+            ? contentType !== 'prints' && contentType !== 'page'
+            : asBoolean(raw.listOnToolsPage, true);
 
         return {
             id,
@@ -205,15 +269,17 @@
             websiteLogoKind: asString(raw?.websiteLogoKind).trim(),
             websiteLogoFetchedAt: asString(raw?.websiteLogoFetchedAt).trim(),
             websiteLogoError: asString(raw?.websiteLogoError).trim(),
+            contentType,
             buttonLabel: asString(raw?.buttonLabel).trim() || 'Open tool →',
             url,
             linkType,
             openInNewTab: asBoolean(raw?.openInNewTab, false),
             enabled: asBoolean(raw?.enabled, true),
-            featured: asBoolean(raw?.featured, false),
-            displayOrder: Number.isFinite(Number(raw?.displayOrder))
-                ? Number(raw.displayOrder)
-                : index + 1,
+            // UI label: "Show on Homepage" — stored as featured (no schema rename)
+            featured,
+            listOnToolsPage,
+            displayOrder,
+            homepageOrder,
             slug,
             detailPageEnabled: asBoolean(raw?.detailPageEnabled, false),
             pageKey: asString(raw?.pageKey).trim() || null,
@@ -303,6 +369,37 @@
         };
     }
 
+    function ensureKnownProjects(tools, nowIso) {
+        const byId = new Map(tools.map((tool) => [tool.id, tool]));
+        const next = [...tools];
+
+        // Soft migration: keep PACK homepage + website logo defaults when present.
+        if (byId.has('pack')) {
+            const pack = byId.get('pack');
+            pack.imageSource = pack.imageSource || 'website';
+            pack.category = pack.category || 'Personal Connections';
+            pack.url = pack.url || 'https://pack.okamidesigns.com';
+            pack.buttonLabel = pack.buttonLabel || 'Open PACK';
+            pack.contentType = pack.contentType || 'app';
+            pack.listOnToolsPage = pack.listOnToolsPage !== false;
+            // Only force featured when the field was never explicitly false in legacy data
+            // that still used featured:false before homepage toggle existed — leave as stored.
+        }
+
+        DEFAULT_SEED_TOOLS.forEach((seed) => {
+            if (byId.has(seed.id)) {
+                return;
+            }
+            // Only auto-add missing prints project (homepage companion), not every seed.
+            if (seed.id !== '3d-prints') {
+                return;
+            }
+            next.push(normalizeTool(seed, next.length, nowIso));
+        });
+
+        return next;
+    }
+
     function normalizeCatalog(raw, options = {}) {
         const nowIso = options.nowIso || new Date().toISOString();
         const allowEmpty = options.allowEmpty === true || raw?.allowEmpty === true;
@@ -317,7 +414,7 @@
         }
 
         const seenIds = new Set();
-        const tools = raw.tools.map((item, index) => {
+        let tools = raw.tools.map((item, index) => {
             const tool = normalizeTool(item, index, nowIso);
             let uniqueId = tool.id;
             while (seenIds.has(uniqueId)) {
@@ -328,15 +425,46 @@
             return tool;
         });
 
+        tools = ensureKnownProjects(tools, nowIso);
+        tools = reindexDisplayOrder(tools);
+        tools = reindexHomepageOrder(tools);
+
         return {
             version: CATALOG_VERSION,
             updatedAt: asString(raw.updatedAt).trim() || nowIso,
-            tools: reindexDisplayOrder(tools)
+            tools
         };
     }
 
     function getPublicTools(catalog) {
         return sortTools((catalog?.tools || []).filter((tool) => tool.enabled !== false));
+    }
+
+    function getToolsPageTools(catalog) {
+        return sortTools((catalog?.tools || []).filter((tool) => (
+            tool.enabled !== false && tool.listOnToolsPage !== false
+        )));
+    }
+
+    function getHomepageProjects(catalog) {
+        return [...(catalog?.tools || [])]
+            .filter((tool) => tool.enabled !== false && tool.featured === true)
+            .sort((left, right) => {
+                const orderDiff = (left.homepageOrder || 999) - (right.homepageOrder || 999);
+                if (orderDiff !== 0) return orderDiff;
+                return left.title.localeCompare(right.title);
+            });
+    }
+
+    function reindexHomepageOrder(tools) {
+        const featured = tools
+            .filter((tool) => tool.featured)
+            .sort((a, b) => (a.homepageOrder || 999) - (b.homepageOrder || 999));
+        const orderMap = new Map(featured.map((tool, index) => [tool.id, index + 1]));
+        return tools.map((tool) => ({
+            ...tool,
+            homepageOrder: tool.featured ? (orderMap.get(tool.id) || 999) : 999
+        }));
     }
 
     function getToolBySlug(catalog, slug) {
@@ -405,6 +533,9 @@
         sortTools,
         reindexDisplayOrder,
         getPublicTools,
+        getToolsPageTools,
+        getHomepageProjects,
+        reindexHomepageOrder,
         getToolBySlug,
         getToolById,
         resolveToolHref,

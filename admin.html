@@ -9,33 +9,32 @@
     <title>Admin - Okami Designs</title>
     <meta name="description" content="Okami Designs Admin Panel">
     <link rel="icon" href="images/Okami_Designs_HeadWhite.png" type="image/png">
-    <link rel="stylesheet" href="styles.css?v=20260718c">
+    <link rel="stylesheet" href="styles.css?v=20260718d">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- Login Screen -->
     <div id="login-screen" class="login-screen">
         <div class="login-box">
             <div class="login-icon">🔒</div>
             <h2 class="login-title">Admin Access</h2>
             <p class="login-subtitle">Enter password to access admin panel</p>
             <form id="login-form">
-                <input type="password" id="admin-password" class="login-input" placeholder="Password" required>
+                <label class="visually-hidden" for="admin-password">Password</label>
+                <input type="password" id="admin-password" class="login-input" placeholder="Password" required autocomplete="current-password">
                 <button type="submit" class="login-button">LOGIN</button>
                 <p id="login-error" class="login-error"></p>
             </form>
         </div>
     </div>
 
-    <!-- Admin Panel -->
     <div id="admin-panel" class="admin-panel" style="display: none;">
         <header class="header">
             <div class="container">
                 <div class="nav-wrapper">
                     <div class="logo">
-                        <a href="home.html">
+                        <a href="/">
                             <img src="GFX/Full/Okami_Designs_FullW.png" alt="Okami Designs" class="logo-img">
                         </a>
                     </div>
@@ -45,15 +44,15 @@
                         <span></span>
                     </button>
                     <nav class="nav">
-                        <a href="home.html" class="nav-link">HOME</a>
+                        <a href="/" class="nav-link">HOME</a>
                         <a href="admin-analytics.html" class="nav-link">ANALYTICS</a>
-                        <a href="support.html" class="nav-link">SUPPORT</a>
+                        <a href="/support" class="nav-link">SUPPORT</a>
                         <button type="button" id="logout-btn" class="nav-link contact-btn">LOGOUT</button>
                     </nav>
                     <nav class="nav-mobile">
-                        <a href="home.html" class="nav-link">HOME</a>
+                        <a href="/" class="nav-link">HOME</a>
                         <a href="admin-analytics.html" class="nav-link">ANALYTICS</a>
-                        <a href="support.html" class="nav-link">SUPPORT</a>
+                        <a href="/support" class="nav-link">SUPPORT</a>
                         <button type="button" id="logout-btn-mobile" class="nav-link contact-btn">LOGOUT</button>
                     </nav>
                 </div>
@@ -64,26 +63,160 @@
             <div class="container">
                 <div class="admin-dashboard">
                     <h1 class="admin-title">Admin Dashboard</h1>
-                    <p class="admin-subtitle">Manage project documentation, site visibility, and analytics.</p>
+                    <p class="admin-subtitle">Manage pages, tools, featured projects, documentation, and site settings.</p>
 
-                    <div class="admin-quick-links">
-                        <a href="admin-analytics.html" class="admin-quick-link">View Analytics</a>
+                    <div class="admin-tab-bar-wrap">
+                        <label class="admin-tab-select-label" for="admin-tab-select">Section</label>
+                        <select id="admin-tab-select" class="admin-tab-select" aria-label="Admin section">
+                            <option value="overview">Overview</option>
+                            <option value="pages">Pages</option>
+                            <option value="tools">Tools</option>
+                            <option value="featured">Featured Content</option>
+                            <option value="files">Documentation</option>
+                            <option value="analytics">Analytics</option>
+                            <option value="settings">Site Settings</option>
+                        </select>
+
+                        <div class="admin-tabs" role="tablist" aria-label="Admin sections">
+                            <button type="button" class="admin-tab" role="tab" id="tab-overview" data-admin-tab="overview" aria-controls="panel-overview" aria-selected="true">Overview</button>
+                            <button type="button" class="admin-tab" role="tab" id="tab-pages" data-admin-tab="pages" aria-controls="panel-pages" aria-selected="false">Pages</button>
+                            <button type="button" class="admin-tab" role="tab" id="tab-tools" data-admin-tab="tools" aria-controls="panel-tools" aria-selected="false">Tools</button>
+                            <button type="button" class="admin-tab" role="tab" id="tab-featured" data-admin-tab="featured" aria-controls="panel-featured" aria-selected="false">Featured Content</button>
+                            <button type="button" class="admin-tab" role="tab" id="tab-files" data-admin-tab="files" aria-controls="panel-files" aria-selected="false">Documentation</button>
+                            <button type="button" class="admin-tab" role="tab" id="tab-analytics" data-admin-tab="analytics" aria-controls="panel-analytics" aria-selected="false">Analytics</button>
+                            <button type="button" class="admin-tab" role="tab" id="tab-settings" data-admin-tab="settings" aria-controls="panel-settings" aria-selected="false">Site Settings</button>
+                        </div>
                     </div>
 
-                    <section class="visibility-section" id="site-visibility-section">
-                        <h2 class="section-title">Site Visibility</h2>
-                        <p class="visibility-section-desc">Control which pages and nav items are public, set navigation order with the arrows, and choose whether visitors see the construction splash page first.</p>
+                    <section class="admin-tab-panel" id="panel-overview" role="tabpanel" aria-labelledby="tab-overview" data-admin-panel="overview">
+                        <h2 class="section-title">Overview</h2>
+                        <p class="visibility-section-desc">Quick snapshot of site content and shortcuts to common tasks.</p>
+                        <div class="admin-overview-grid" id="admin-overview-stats" aria-live="polite">
+                            <p class="tools-hub-empty">Loading overview…</p>
+                        </div>
+                        <div class="admin-quick-links" id="admin-overview-links">
+                            <button type="button" class="admin-quick-link" data-goto-tab="tools">Manage Tools</button>
+                            <button type="button" class="admin-quick-link" data-goto-tab="featured">Featured Projects</button>
+                            <button type="button" class="admin-quick-link" data-goto-tab="pages">Page Visibility</button>
+                            <a href="admin-analytics.html" class="admin-quick-link">Open Analytics</a>
+                            <a href="/tools" class="admin-quick-link" target="_blank" rel="noopener noreferrer">View Tools Page</a>
+                            <a href="/" class="admin-quick-link" target="_blank" rel="noopener noreferrer">View Homepage</a>
+                        </div>
+                    </section>
 
-                        <label class="visibility-toggle" for="construction-mode-toggle">
-                            <input type="checkbox" id="construction-mode-toggle">
-                            <span class="visibility-toggle-card">
-                                <span class="visibility-toggle-copy">
-                                    <span class="visibility-toggle-label">Enable Construction Splash Page</span>
-                                    <span class="visibility-toggle-hint">When enabled, public visitors see the splash page instead of the main site. Admin access is not affected.</span>
+                    <section class="admin-tab-panel" id="panel-pages" role="tabpanel" aria-labelledby="tab-pages" data-admin-panel="pages" hidden>
+                        <div class="visibility-section" id="site-visibility-section">
+                            <h2 class="section-title">Pages &amp; Navigation</h2>
+                            <p class="visibility-section-desc">Enable or disable public pages, set navigation order, and control construction mode.</p>
+
+                            <label class="visibility-toggle" for="construction-mode-toggle">
+                                <input type="checkbox" id="construction-mode-toggle">
+                                <span class="visibility-toggle-card">
+                                    <span class="visibility-toggle-copy">
+                                        <span class="visibility-toggle-label">Enable Construction Splash Page</span>
+                                        <span class="visibility-toggle-hint">When enabled, public visitors see the splash page instead of the main site. Admin access is not affected.</span>
+                                    </span>
+                                    <span class="visibility-toggle-state" data-off="Off" data-on="On">Off</span>
                                 </span>
-                                <span class="visibility-toggle-state" data-off="Off" data-on="On">Off</span>
-                            </span>
-                        </label>
+                            </label>
+
+                            <div class="visibility-page-list" id="visibility-page-list" aria-live="polite"></div>
+
+                            <div class="visibility-actions admin-sticky-actions">
+                                <button type="button" id="reset-nav-order" class="upload-submit-button visibility-secondary-button">Reset Navigation Order</button>
+                                <button type="button" id="save-site-visibility" class="upload-submit-button">Save Pages</button>
+                                <p id="visibility-save-status" class="visibility-save-status" hidden></p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="admin-tab-panel" id="panel-tools" role="tabpanel" aria-labelledby="tab-tools" data-admin-panel="tools" hidden>
+                        <section class="visibility-section tools-admin-section" id="tools-admin-section">
+                            <h2 class="section-title">Tools Catalog</h2>
+                            <p class="visibility-section-desc">Create and organize Tools shown on the public Tools page. Use Show on Homepage separately from Published.</p>
+
+                            <div class="visibility-actions tools-admin-top-actions admin-sticky-actions">
+                                <button type="button" id="add-tool-btn" class="upload-submit-button">Add Tool</button>
+                                <button type="button" id="reload-tools-catalog" class="upload-submit-button visibility-secondary-button">Reload</button>
+                                <button type="button" id="save-tools-catalog" class="upload-submit-button">Save Tools</button>
+                                <p id="tools-save-status" class="visibility-save-status" hidden></p>
+                            </div>
+
+                            <div class="visibility-page-list" id="tools-admin-list" aria-live="polite"></div>
+                        </section>
+                    </section>
+
+                    <section class="admin-tab-panel" id="panel-featured" role="tabpanel" aria-labelledby="tab-featured" data-admin-panel="featured" hidden>
+                        <section class="visibility-section" id="featured-admin-section">
+                            <h2 class="section-title">Featured Projects</h2>
+                            <p class="visibility-section-desc">Choose which enabled items appear in the homepage Featured Projects section and set their homepage order. This edits the same Tools catalog — no duplicate records.</p>
+
+                            <div class="visibility-actions admin-sticky-actions">
+                                <button type="button" id="save-featured-catalog" class="upload-submit-button">Save Featured Order</button>
+                                <a class="upload-submit-button visibility-secondary-button" href="/" target="_blank" rel="noopener noreferrer">Preview Homepage</a>
+                                <p id="featured-save-status" class="visibility-save-status" hidden></p>
+                            </div>
+
+                            <div class="visibility-page-list" id="featured-admin-list" aria-live="polite"></div>
+                        </section>
+                    </section>
+
+                    <section class="admin-tab-panel" id="panel-files" role="tabpanel" aria-labelledby="tab-files" data-admin-panel="files" hidden>
+                        <div class="upload-section">
+                            <h2 class="section-title">Upload Documentation</h2>
+                            <div class="upload-form">
+                                <div class="upload-box">
+                                    <div class="upload-icon">🖼️</div>
+                                    <h3 class="upload-title">Project Logo (Optional)</h3>
+                                    <p class="upload-subtitle">Choose an image for this project</p>
+                                    <input type="file" id="logo-upload" class="file-input" accept=".jpg,.jpeg,.png,.gif,.webp">
+                                    <label for="logo-upload" class="upload-button">Choose Logo</label>
+                                    <div id="logo-preview" class="logo-preview"></div>
+                                </div>
+
+                                <div class="upload-box">
+                                    <div class="upload-icon">📄</div>
+                                    <h3 class="upload-title">Documentation File</h3>
+                                    <p class="upload-subtitle">PDF, DOC, or other file</p>
+                                    <input type="file" id="file-upload" class="file-input" accept=".pdf,.doc,.docx,.txt">
+                                    <label for="file-upload" class="upload-button">Choose File</label>
+                                    <div id="file-preview" class="file-preview"></div>
+                                </div>
+
+                                <div class="upload-details">
+                                    <div class="upload-field">
+                                        <label for="manual-name" class="upload-field-label">Manual Display Name</label>
+                                        <input type="text" id="manual-name" class="upload-text-input" placeholder="e.g. WRB User Manual" maxlength="120">
+                                        <p class="upload-hint">Shown on the card and in download prompts.</p>
+                                    </div>
+                                    <div class="upload-field">
+                                        <label for="manual-link" class="upload-field-label">Manual Link Name</label>
+                                        <input type="text" id="manual-link" class="upload-text-input" placeholder="e.g. wrb-user-manual" maxlength="120">
+                                        <p class="upload-hint">Used for the file URL. Only letters, numbers, and dashes.</p>
+                                    </div>
+                                </div>
+
+                                <button id="upload-combined" class="upload-submit-button" disabled>Upload Documentation</button>
+                            </div>
+                        </div>
+
+                        <div class="files-section">
+                            <h2 class="section-title" style="margin-bottom: 30px;">Current Files</h2>
+                            <div class="files-grid" id="files-grid"></div>
+                        </div>
+                    </section>
+
+                    <section class="admin-tab-panel" id="panel-analytics" role="tabpanel" aria-labelledby="tab-analytics" data-admin-panel="analytics" hidden>
+                        <h2 class="section-title">Analytics</h2>
+                        <p class="visibility-section-desc">Traffic and page-view analytics live on a dedicated dashboard.</p>
+                        <div class="admin-quick-links">
+                            <a href="admin-analytics.html" class="admin-quick-link">Open Analytics Dashboard</a>
+                        </div>
+                    </section>
+
+                    <section class="admin-tab-panel" id="panel-settings" role="tabpanel" aria-labelledby="tab-settings" data-admin-panel="settings" hidden>
+                        <h2 class="section-title">Site Settings</h2>
+                        <p class="visibility-section-desc">Diagnostics and connection status for site settings. Construction mode is managed under Pages.</p>
 
                         <div class="visibility-settings-debug" id="visibility-settings-debug" aria-live="polite">
                             <p class="visibility-settings-debug-title">Settings Debug</p>
@@ -111,73 +244,10 @@
                             </dl>
                         </div>
 
-                        <div class="visibility-page-list" id="visibility-page-list" aria-live="polite"></div>
-
-                        <div class="visibility-actions">
-                            <button type="button" id="reset-nav-order" class="upload-submit-button visibility-secondary-button">Reset Navigation Order</button>
-                            <button type="button" id="save-site-visibility" class="upload-submit-button">Save Settings</button>
-                            <p id="visibility-save-status" class="visibility-save-status" hidden></p>
+                        <div class="admin-quick-links">
+                            <button type="button" class="admin-quick-link" data-goto-tab="pages">Edit Pages &amp; Construction Mode</button>
                         </div>
                     </section>
-
-                    <section class="visibility-section tools-admin-section" id="tools-admin-section">
-                        <h2 class="section-title">Tools Catalog</h2>
-                        <p class="visibility-section-desc">Create and organize Tools cards shown on the public Tools page. Published entries appear in display order. Detail pages are optional and use /tools/your-slug.</p>
-
-                        <div class="visibility-actions tools-admin-top-actions">
-                            <button type="button" id="add-tool-btn" class="upload-submit-button">Add Tool</button>
-                            <button type="button" id="reload-tools-catalog" class="upload-submit-button visibility-secondary-button">Reload</button>
-                            <button type="button" id="save-tools-catalog" class="upload-submit-button">Save Tools</button>
-                            <p id="tools-save-status" class="visibility-save-status" hidden></p>
-                        </div>
-
-                        <div class="visibility-page-list" id="tools-admin-list" aria-live="polite"></div>
-                    </section>
-                    
-                    <div class="upload-section">
-                        <h2 class="section-title">Upload New Documentation</h2>
-                        <div class="upload-form">
-                            <div class="upload-box">
-                                <div class="upload-icon">🖼️</div>
-                                <h3 class="upload-title">Project Logo (Optional)</h3>
-                                <p class="upload-subtitle">Choose an image for this project</p>
-                                <input type="file" id="logo-upload" class="file-input" accept=".jpg,.jpeg,.png,.gif,.webp">
-                                <label for="logo-upload" class="upload-button">Choose Logo</label>
-                                <div id="logo-preview" class="logo-preview"></div>
-                            </div>
-                            
-                            <div class="upload-box">
-                                <div class="upload-icon">📄</div>
-                                <h3 class="upload-title">Documentation File</h3>
-                                <p class="upload-subtitle">PDF, DOC, or other file</p>
-                                <input type="file" id="file-upload" class="file-input" accept=".pdf,.doc,.docx,.txt">
-                                <label for="file-upload" class="upload-button">Choose File</label>
-                                <div id="file-preview" class="file-preview"></div>
-                            </div>
-
-                            <div class="upload-details">
-                                <div class="upload-field">
-                                    <label for="manual-name" class="upload-field-label">Manual Display Name</label>
-                                    <input type="text" id="manual-name" class="upload-text-input" placeholder="e.g. WRB User Manual" maxlength="120">
-                                    <p class="upload-hint">Shown on the card and in download prompts.</p>
-                                </div>
-                                <div class="upload-field">
-                                    <label for="manual-link" class="upload-field-label">Manual Link Name</label>
-                                    <input type="text" id="manual-link" class="upload-text-input" placeholder="e.g. wrb-user-manual" maxlength="120">
-                                    <p class="upload-hint">Used for the file URL. Only letters, numbers, and dashes.</p>
-                                </div>
-                            </div>
-
-                            <button id="upload-combined" class="upload-submit-button" disabled>Upload Documentation</button>
-                        </div>
-                    </div>
-
-                    <div class="files-section">
-                        <h2 class="section-title" style="margin-bottom: 30px;">Current Files</h2>
-                        <div class="files-grid" id="files-grid">
-                            <!-- Files will be dynamically loaded here -->
-                        </div>
-                    </div>
                 </div>
             </div>
         </main>
@@ -202,8 +272,9 @@
     <script src="shared/visibility/access-policy.js"></script>
     <script src="shared/tools/catalog.js"></script>
     <script src="page-registry.js"></script>
-    <script src="admin-api.js?v=20260718c"></script>
-    <script src="admin.js?v=20260718c"></script>
-    <script src="admin-tools.js?v=20260718c"></script>
+    <script src="admin-api.js?v=20260718d"></script>
+    <script src="admin.js?v=20260718d"></script>
+    <script src="admin-tools.js?v=20260718d"></script>
+    <script src="admin-tabs.js?v=20260718d"></script>
 </body>
 </html>

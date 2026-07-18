@@ -567,6 +567,7 @@
         if (typeof window.initToolsAdmin === 'function') {
             window.initToolsAdmin();
         }
+        document.dispatchEvent(new CustomEvent('okami:admin-ready'));
     }
 
     function readVisibilityRowsFromList() {

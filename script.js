@@ -444,6 +444,10 @@ function reinitializeDynamicContent() {
         window.initToolDetail();
     }
 
+    if (typeof window.initFeaturedProjects === 'function' && document.getElementById('featured-projects-grid')) {
+        window.initFeaturedProjects();
+    }
+
     if (window.SiteVisibility && typeof window.SiteVisibility.refreshNavigationSettings === 'function') {
         window.SiteVisibility.refreshNavigationSettings(true).then(() => {
             initNavDropdown();
