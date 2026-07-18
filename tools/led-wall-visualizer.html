@@ -20,7 +20,7 @@
     <meta name="twitter:description" content="Calculate LED video wall resolution, cabinet layouts, processor ports, aspect ratios, and content fit with the free Okami Designs LED Video Wall Calculator.">
     <meta name="twitter:image" content="https://okamidesigns.com/images/led-cabinet-square.png">
     <link rel="icon" href="../images/Okami_Designs_HeadWhite.png" type="image/png">
-    <link rel="stylesheet" href="../styles.css?v=20260718g">
+    <link rel="stylesheet" href="../styles.css?v=20260718h">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -477,14 +477,17 @@
                                 <button type="button" class="led-btn led-btn-secondary" id="led-reset">Reset Calculator</button>
                                 <button type="button" class="led-btn led-btn-secondary" id="led-advanced-open">Advanced Settings</button>
                             </div>
-                            <div class="led-config-footer-actions">
-                                <div class="led-license-host" aria-label="License"></div>
-                                <button type="button" class="led-btn led-btn-secondary" id="led-save-project">Save Project</button>
-                                <button type="button" class="led-btn led-btn-secondary" id="led-load-project">Load Project</button>
-                                <input type="file" id="led-load-project-input" accept="application/json,.json" hidden>
-                                <button type="button" class="led-btn led-btn-secondary" id="led-download-build-sheet-pdf">Download PDF Build Sheet</button>
-                                <button type="button" class="led-btn led-btn-secondary" id="led-export-report">Export Report</button>
-                            </div>
+                            <details class="led-config-more-actions" id="led-config-more-actions">
+                                <summary class="led-config-more-actions-summary">Project &amp; Export</summary>
+                                <div class="led-config-footer-actions">
+                                    <div class="led-license-host" aria-label="License"></div>
+                                    <button type="button" class="led-btn led-btn-secondary" id="led-save-project">Save Project</button>
+                                    <button type="button" class="led-btn led-btn-secondary" id="led-load-project">Load Project</button>
+                                    <input type="file" id="led-load-project-input" accept="application/json,.json" hidden>
+                                    <button type="button" class="led-btn led-btn-secondary" id="led-download-build-sheet-pdf">Download PDF Build Sheet</button>
+                                    <button type="button" class="led-btn led-btn-secondary" id="led-export-report">Export Report</button>
+                                </div>
+                            </details>
                         </div>
                     </section>
                 </aside>
