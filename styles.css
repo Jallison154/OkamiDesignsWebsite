@@ -3208,7 +3208,9 @@ html {
     color: var(--secondary-text);
 }
 
-.modal-field input {
+.modal-field input,
+.modal-field select,
+.modal-field textarea {
     padding: 12px 14px;
     border-radius: 8px;
     border: 1px solid var(--glass-border);
@@ -3217,10 +3219,156 @@ html {
     font-family: 'Montserrat', sans-serif;
 }
 
-.modal-field input:focus {
+.modal-field textarea {
+    resize: vertical;
+    min-height: 84px;
+}
+
+.modal-field select {
+    cursor: pointer;
+}
+
+.modal-field input:focus,
+.modal-field select:focus,
+.modal-field textarea:focus {
     outline: none;
     border-color: var(--accent-color);
     box-shadow: 0 0 0 2px rgba(255, 106, 45, 0.2);
+}
+
+.modal-field--inline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 18px;
+}
+
+.modal-field--inline label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-transform: none;
+    font-weight: 500;
+    letter-spacing: 0;
+    color: var(--primary-text);
+    cursor: pointer;
+}
+
+.tools-admin-section {
+    margin-top: 8px;
+}
+
+.tools-admin-top-actions {
+    margin-bottom: 18px;
+}
+
+.tools-admin-row {
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.tools-admin-row-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.tools-admin-row-actions .visibility-secondary-button {
+    min-height: 36px;
+    padding: 8px 12px;
+    font-size: 12px;
+}
+
+.tools-admin-live-preview,
+.tools-admin-preview-card {
+    pointer-events: none;
+}
+
+.tools-admin-live-preview {
+    margin-top: 8px;
+}
+
+.tools-admin-preview-card {
+    max-width: 360px;
+}
+
+.tool-detail-hero {
+    max-width: 760px;
+    margin-bottom: 28px;
+}
+
+.tool-detail-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 16px;
+    align-items: center;
+    margin-top: 18px;
+}
+
+.tool-detail-back,
+.tool-detail-support {
+    color: var(--secondary-text);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.tool-detail-back:hover,
+.tool-detail-support:hover,
+.tool-detail-back:focus-visible,
+.tool-detail-support:focus-visible {
+    color: var(--accent-color);
+    outline: none;
+}
+
+.tool-detail-media {
+    margin: 0 0 28px;
+}
+
+.tool-detail-hero-image {
+    width: min(100%, 720px);
+    max-height: 360px;
+    object-fit: contain;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(22, 22, 22, 0.72);
+}
+
+.tool-detail-long {
+    max-width: 720px;
+    margin-bottom: 24px;
+    color: var(--secondary-text);
+    line-height: 1.65;
+}
+
+.tool-detail-features {
+    max-width: 720px;
+    margin: 0 0 28px;
+    padding-left: 1.2rem;
+    color: var(--primary-text);
+    line-height: 1.7;
+}
+
+.tool-detail-screenshots {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+}
+
+.tool-detail-screenshots img {
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(22, 22, 22, 0.72);
+}
+
+.tool-detail-empty {
+    max-width: 560px;
+}
+
+.visibility-save-status.is-error {
+    color: #ff8f8f;
 }
 
 .modal-hint {
@@ -6436,12 +6584,61 @@ html {
     border-color: rgba(255, 106, 45, 0.45);
 }
 
-.tools-hub-card-icon {
+.tools-hub-card-thumb {
     width: 48px;
     height: 48px;
-    object-fit: contain;
     border-radius: 10px;
     flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.tools-hub-card-icon {
+    width: 100%;
+    height: 100%;
+    max-width: 48px;
+    max-height: 48px;
+    object-fit: contain;
+    object-position: center;
+    display: block;
+}
+
+.tools-hub-card-thumb .tools-hub-card-icon--fallback,
+.tools-hub-card-icon--fallback {
+    width: 100%;
+    height: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 106, 45, 0.12);
+    border: 0;
+    border-radius: 0;
+    color: var(--accent-color);
+    font-size: 1.1rem;
+    font-weight: 800;
+}
+
+.tools-hub-card--featured {
+    border-color: rgba(255, 106, 45, 0.28);
+}
+
+.tools-hub-card--accent {
+    background: rgba(255, 106, 45, 0.1);
+    border-color: rgba(255, 106, 45, 0.4);
+}
+
+.tools-hub-card--muted {
+    opacity: 0.92;
+}
+
+.tools-hub-empty {
+    margin: 0;
+    color: var(--secondary-text);
+    font-size: 0.95rem;
 }
 
 .tools-hub-card-tag {

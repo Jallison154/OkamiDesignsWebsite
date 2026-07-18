@@ -16,7 +16,8 @@ if [ -d ".git" ]; then
     echo "📥 Pulling latest changes from Git..."
 
     # Server data files may differ from the repo; don't let them block deploy.
-    for data_file in files/manifest.json files/site-settings.json files/analytics.json; do
+    # Runtime data / generated caches should not block deploy pulls.
+    for data_file in files/manifest.json files/site-settings.json files/analytics.json files/tools.json; do
         if [ -f "$data_file" ]; then
             git update-index --skip-worktree "$data_file" 2>/dev/null || true
         fi

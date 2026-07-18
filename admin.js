@@ -564,6 +564,9 @@
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('admin-panel').style.display = 'block';
         loadSiteVisibilitySettings();
+        if (typeof window.initToolsAdmin === 'function') {
+            window.initToolsAdmin();
+        }
     }
 
     function readVisibilityRowsFromList() {
@@ -1403,4 +1406,14 @@
     window.deleteFile = deleteFile;
     window.downloadFileAdmin = downloadFileAdmin;
     window.replaceFile = replaceFile;
+
+    window.OkamiAdminUi = {
+        openModal,
+        closeModal,
+        showToast,
+        showAlert,
+        showConfirmModal,
+        escapeHtml,
+        slugify
+    };
 })();

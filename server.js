@@ -20,6 +20,9 @@ const { isAdminRequest, requireAdmin, initAdminAuth, refreshAdminAuth, getAdminS
 const adminAuthService = require('./server/admin/auth-service');
 const { createRateLimiter } = require('./server/middleware/rate-limit');
 const createCults3dRouter = require('./server/cults3d/routes');
+const { createToolsRouter } = require('./server/tools/routes');
+const toolsCatalogService = require('./server/tools/catalog-service');
+const toolsCatalog = require('./shared/tools/catalog');
 
 const appConfig = readAppConfig();
 const app = express();
@@ -29,6 +32,7 @@ const FILES_DIR = path.join(__dirname, 'files');
 const MANIFEST_PATH = path.join(FILES_DIR, 'manifest.json');
 const SITE_SETTINGS_PATH = path.join(FILES_DIR, 'site-settings.json');
 const ANALYTICS_PATH = path.join(FILES_DIR, 'analytics.json');
+const TOOL_DETAIL_HTML = path.join(__dirname, 'tools', 'detail.html');
 
 async function readSiteSettings() {
     try {
@@ -134,6 +138,8 @@ app.get('/api/site-settings', async (req, res) => {
 
 app.post('/api/site-settings', requireAdmin, handleSaveSiteSettings);
 app.put('/api/site-settings', requireAdmin, handleSaveSiteSettings);
+
+app.use('/api/tools', createToolsRouter({ requireAdmin, setNoCacheHeaders }));
 
 const { normalizeVisibilityPath, getAccessDecision, buildVisibilityRedirect: sharedBuildVisibilityRedirect, resolvePublicLandingPage } = accessPolicy;
 
@@ -313,6 +319,27 @@ pageRegistry.getPublicServeRoutes().forEach(({ publicPath, filePath }) => {
     });
 });
 
+app.get('/tools/:slug', async (req, res, next) => {
+    try {
+        const slug = String(req.params.slug || '').toLowerCase();
+        if (!slug || toolsCatalog.isReservedAppSlug(slug)) {
+            return next();
+        }
+
+        const catalog = await toolsCatalogService.readToolsCatalog();
+        const tool = toolsCatalog.getToolBySlug(catalog, slug);
+        if (!tool || tool.enabled === false || !tool.detailPageEnabled) {
+            return next();
+        }
+
+        setNoCacheHeaders(res);
+        return res.sendFile(TOOL_DETAIL_HTML);
+    } catch (error) {
+        console.error('Tool detail route error:', error);
+        return next();
+    }
+});
+
 // Chrome DevTools probes this automatically; avoid 404 + strict CSP console noise.
 app.get('/.well-known/appspecific/com.chrome.devtools.json', (_req, res) => {
     res.type('application/json').send('{}');
@@ -356,6 +383,7 @@ async function ensureFilesDir() {
         } catch {
             await fs.writeFile(MANIFEST_PATH, JSON.stringify({ version: '1.0', files: [] }, null, 2));
         }
+        await toolsCatalogService.ensureToolsFile();
     } catch (error) {
         console.error('Error creating files directory:', error);
     }
@@ -1057,6 +1085,15 @@ async function prepareServer() {
     logAdminAuthStartup();
     logCommercialValidation(validateCommercialConfig(readCommercialConfig()));
     await logStartupSiteRouting();
+    // Warm website logo cache (PACK and other website-source tools).
+    try {
+        const { refreshStaleWebsiteLogos } = require('./server/tools/logo-service');
+        refreshStaleWebsiteLogos({ force: false, limit: 5 }).catch((error) => {
+            console.warn('Startup website logo refresh skipped:', error.message || error);
+        });
+    } catch (error) {
+        console.warn('Website logo service unavailable at startup:', error.message || error);
+    }
 }
 
 function startServer() {

@@ -164,6 +164,76 @@ async function saveSiteSettings(settings) {
     return await response.json();
 }
 
+async function getManagedTools() {
+    const response = await fetchWithTimeout(`${API_BASE}/tools/manage`, {
+        credentials: 'same-origin',
+        cache: 'no-store'
+    });
+    if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || `Failed to fetch tools (${response.status})`);
+    }
+    return await response.json();
+}
+
+async function saveManagedTools(catalog) {
+    const response = await fetchWithTimeout(`${API_BASE}/tools`, {
+        method: 'PUT',
+        credentials: 'same-origin',
+        cache: 'no-store',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(catalog)
+    });
+
+    if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        const message = Array.isArray(body.messages) && body.messages.length
+            ? body.messages.join(' ')
+            : (body.error || `Failed to save tools (${response.status})`);
+        throw new Error(message);
+    }
+
+    return await response.json();
+}
+
+async function uploadToolIcon(file) {
+    const formData = new FormData();
+    formData.append('icon', file);
+
+    const response = await fetch(`${API_BASE}/tools/upload-icon`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        body: formData
+    });
+
+    if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || `Icon upload failed (${response.status})`);
+    }
+
+    return await response.json();
+}
+
+async function refreshToolWebsiteLogo(toolId) {
+    const response = await fetchWithTimeout(`${API_BASE}/tools/${encodeURIComponent(toolId)}/refresh-logo`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        cache: 'no-store'
+    }, 20000);
+
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        const error = new Error(body.message || body.error || `Logo refresh failed (${response.status})`);
+        error.status = response.status;
+        error.tool = body.tool || null;
+        error.tools = body.tools || null;
+        throw error;
+    }
+    return body;
+}
+
 async function getAnalyticsReport() {
     try {
         const response = await fetch(`${API_BASE}/analytics`, {

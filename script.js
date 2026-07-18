@@ -436,6 +436,14 @@ function reinitializeDynamicContent() {
         window.initSignalLab();
     }
 
+    if (typeof window.initToolsHub === 'function' && document.getElementById('tools-hub-grid')) {
+        window.initToolsHub();
+    }
+
+    if (typeof window.initToolDetail === 'function' && document.getElementById('tool-detail-root')) {
+        window.initToolDetail();
+    }
+
     if (window.SiteVisibility && typeof window.SiteVisibility.refreshNavigationSettings === 'function') {
         window.SiteVisibility.refreshNavigationSettings(true).then(() => {
             initNavDropdown();
