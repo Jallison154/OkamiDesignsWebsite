@@ -9,11 +9,12 @@
     <meta name="author" content="Jonathan Allison, Founder">
     <link rel="icon" href="images/Okami_Designs_HeadWhite.png" type="image/png">
     <link rel="stylesheet" href="styles.css?v=20261117a">
+    <link rel="stylesheet" href="theme-studio.css?v=20261117c">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;family=Montserrat:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
 </head>
-<body>
+<body class="theme-studio">
     <header class="header">
         <div class="container">
             <div class="nav-wrapper">
@@ -63,65 +64,38 @@
     </header>
 
     <main class="main">
-        <!-- Floating Elements Background -->
-        <div class="hero-visual">
-            <div class="floating-elements">
-                <div class="tech-element element-1">
-                    <div class="element-icon">🔧</div>
-                    <div class="element-text">BUILD</div>
-                </div>
-                <div class="tech-element element-2">
-                    <div class="element-icon">💡</div>
-                    <div class="element-text">CREATE</div>
-                </div>
-                <div class="tech-element element-3">
-                    <div class="element-icon">🎯</div>
-                    <div class="element-text">SOLVE</div>
-                </div>
-                <div class="tech-element element-4">
-                    <div class="element-icon">⚙️</div>
-                    <div class="element-text">DESIGN</div>
-                </div>
-                <div class="tech-element element-5">
-                    <div class="element-icon">🚀</div>
-                    <div class="element-text">INNOVATE</div>
-                </div>
-                <div class="tech-element element-6">
-                    <div class="element-icon">⚡</div>
-                    <div class="element-text">ENGINEER</div>
-                </div>
-                <div class="tech-element element-7">
-                    <div class="element-icon">📦</div>
-                    <div class="element-text">PRODUCE</div>
-                </div>
-                <div class="tech-element element-8">
-                    <div class="element-icon">🖨️</div>
-                    <div class="element-text">3D PRINT</div>
-                </div>
-            </div>
-        </div>
-        
         <div class="container">
-            <div class="contact-page">
-                <h1 class="contact-title">Get in Touch</h1>
-                <p class="contact-subtitle">Let's discuss your next custom project</p>
-                
-                <div class="contact-details-section">
-                    <div class="contact-item">
-                        <h3 class="contact-heading">Email</h3>
-                        <a href="mailto:contact@okamidesigns.com" class="contact-info-link">contact@okamidesigns.com</a>
-                    </div>
-                    
-                    <div class="contact-item">
-                        <h3 class="contact-heading">Founder</h3>
-                        <p class="contact-info">Jonathan Allison, Founder</p>
-                    </div>
+            <section class="ts-hero ts-page-head" aria-labelledby="contact-heading">
+                <span class="ts-eyebrow" data-reveal>Contact</span>
+                <h1 id="contact-heading" class="ts-title" data-reveal>Get in Touch</h1>
+                <p class="ts-lead" data-reveal>Let's discuss your next custom project.</p>
+            </section>
+
+            <section class="ts-section ts-section--tight" aria-label="Contact details">
+                <div class="ts-features ts-features--two">
+                    <article class="ts-feature" data-reveal>
+                        <span class="ts-icon-tile" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></span>
+                        <h3>Email</h3>
+                        <p><a href="mailto:contact@okamidesigns.com" class="ts-link">contact@okamidesigns.com</a></p>
+                        <span class="ts-feature-meta">Projects · Support · Questions</span>
+                    </article>
+                    <article class="ts-feature" data-reveal>
+                        <span class="ts-icon-tile" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span>
+                        <h3>Founder</h3>
+                        <p>Jonathan Allison, Founder</p>
+                        <span class="ts-feature-meta">AV · Automation · Fabrication</span>
+                    </article>
                 </div>
-                
-                <div class="contact-cta">
-                    <a href="mailto:contact@okamidesigns.com" class="cta-button-large">EMAIL US</a>
+            </section>
+
+            <section class="ts-cta ts-panel" aria-labelledby="contact-cta-heading" data-reveal>
+                <h2 id="contact-cta-heading" class="ts-title">Have an idea? Let's build it.</h2>
+                <p class="ts-lead">Send a quick note about your show, venue, or build and we'll get back to you.</p>
+                <div class="ts-btn-row">
+                    <a href="mailto:contact@okamidesigns.com" class="ts-btn ts-btn--primary">Email Us <span class="ts-btn-icon" aria-hidden="true">→</span></a>
+                    <a href="/services" class="ts-btn">View Services <span class="ts-btn-icon" aria-hidden="true">↗</span></a>
                 </div>
-            </div>
+            </section>
         </div>
     </main>
 
@@ -137,5 +111,6 @@
     <script src="site-layout.js"></script>
     <script src="site-kofi.js"></script>
     <script src="script.js"></script>
+    <script src="/client/theme/reveal.js?v=20261117c"></script>
 </body>
 </html>

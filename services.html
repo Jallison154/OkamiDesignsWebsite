@@ -9,11 +9,12 @@
     <meta name="author" content="Jonathan Allison, Founder">
     <link rel="icon" href="images/Okami_Designs_HeadWhite.png" type="image/png">
     <link rel="stylesheet" href="styles.css?v=20261117a">
+    <link rel="stylesheet" href="theme-studio.css?v=20261117c">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;family=Montserrat:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
 </head>
-<body>
+<body class="theme-studio">
     <header class="header">
         <div class="container">
             <div class="nav-wrapper">
@@ -63,123 +64,83 @@
     </header>
 
     <main class="main">
-        <!-- Floating Elements Background -->
-        <div class="hero-visual">
-            <div class="floating-elements">
-                <div class="tech-element element-1">
-                    <div class="element-icon">🔧</div>
-                    <div class="element-text">BUILD</div>
-                </div>
-                <div class="tech-element element-2">
-                    <div class="element-icon">💡</div>
-                    <div class="element-text">CREATE</div>
-                </div>
-                <div class="tech-element element-3">
-                    <div class="element-icon">🖨️</div>
-                    <div class="element-text">3D PRINT</div>
-                </div>
-                <div class="tech-element element-4">
-                    <div class="element-icon">⚙️</div>
-                    <div class="element-text">DESIGN</div>
-                </div>
-                <div class="tech-element element-5">
-                    <div class="element-icon">🔬</div>
-                    <div class="element-text">PROTOTYPE</div>
-                </div>
-                <div class="tech-element element-6">
-                    <div class="element-icon">⚡</div>
-                    <div class="element-text">ENGINEER</div>
-                </div>
-                <div class="tech-element element-7">
-                    <div class="element-icon">🎨</div>
-                    <div class="element-text">FABRICATE</div>
-                </div>
-                <div class="tech-element element-8">
-                    <div class="element-icon">📐</div>
-                    <div class="element-text">MODEL</div>
-                </div>
-            </div>
-        </div>
-        
         <div class="container">
-            <div class="services-page">
-                <h1 class="services-title">Our Services</h1>
-                <p class="services-subtitle">Engineering creativity into custom solutions</p>
-                
-                <div class="services-grid">
-                    <!-- Service 1 -->
-                    <div class="service-card">
-                        <h2 class="service-number">01</h2>
-                        <h3 class="service-name">Custom Engineering & Fabrication</h3>
-                        <p class="service-description">Solving unique challenges with one-of-a-kind builds. We design and build custom solutions for projects that don't fit the mold — from prototype development to functional hardware.</p>
-                        <ul class="service-features">
+            <section class="ts-hero ts-page-head" aria-labelledby="services-heading">
+                <span class="ts-eyebrow" data-reveal>Services · Custom work</span>
+                <h1 id="services-heading" class="ts-title" data-reveal>Our Services</h1>
+                <p class="ts-lead" data-reveal>Engineering creativity into custom solutions — from one-off builds to show-ready systems.</p>
+            </section>
+
+            <section class="ts-section ts-section--tight" aria-label="Services">
+                <div class="ts-features ts-features--services">
+                    <article class="ts-feature ts-service" data-reveal>
+                        <span class="ts-service-num">01</span>
+                        <h2>Custom Engineering &amp; Fabrication</h2>
+                        <p>Solving unique challenges with one-of-a-kind builds. We design and build custom solutions for projects that don't fit the mold — from prototype development to functional hardware.</p>
+                        <ul class="ts-checklist">
                             <li>Custom electronic and mechanical builds</li>
                             <li>Enclosure and device fabrication</li>
                             <li>ESP32, Raspberry Pi, and Arduino integration</li>
                             <li>3D modeling and 3D printing (PETG/PLA+)</li>
                             <li>Precision problem-solving for creative and technical systems</li>
                         </ul>
-                    </div>
-
-                    <!-- Service 2 -->
-                    <div class="service-card">
-                        <h2 class="service-number">02</h2>
-                        <h3 class="service-name">Event Systems & Production Support</h3>
-                        <p class="service-description">Engineering meets the stage — from concept to control. Born from the event production world, we understand the demands of live environments.</p>
-                        <ul class="service-features">
+                    </article>
+                    <article class="ts-feature ts-service" data-reveal>
+                        <span class="ts-service-num">02</span>
+                        <h2>Event Systems &amp; Production Support</h2>
+                        <p>Engineering meets the stage — from concept to control. Born from the event production world, we understand the demands of live environments.</p>
+                        <ul class="ts-checklist">
                             <li>Custom audio, lighting, and video system design</li>
                             <li>LED wall setup, control, and automation</li>
                             <li>Stage tech solutions and signal routing</li>
                             <li>Show-ready prep, testing, and optimization</li>
                             <li>Technical consulting for venues and tours</li>
                         </ul>
-                    </div>
-
-                    <!-- Service 3 -->
-                    <div class="service-card">
-                        <h2 class="service-number">03</h2>
-                        <h3 class="service-name">Design & Branding Fabrication</h3>
-                        <p class="service-description">Turning creative ideas into physical and digital realities. We create unique designs and physical pieces that help brands and creators stand out.</p>
-                        <ul class="service-features">
+                    </article>
+                    <article class="ts-feature ts-service" data-reveal>
+                        <span class="ts-service-num">03</span>
+                        <h2>Design &amp; Branding Fabrication</h2>
+                        <p>Turning creative ideas into physical and digital realities. We create unique designs and physical pieces that help brands and creators stand out.</p>
+                        <ul class="ts-checklist">
                             <li>3D modeling and digital design for visual concepts</li>
                             <li>Custom signage, logos, and printed installations</li>
                             <li>3D-printed decor and display builds</li>
                             <li>Collaboration with artists, designers, and businesses</li>
                         </ul>
-                    </div>
-
-                    <!-- Service 4 -->
-                    <div class="service-card">
-                        <h2 class="service-number">04</h2>
-                        <h3 class="service-name">Smart Systems & Automation</h3>
-                        <p class="service-description">Adding intelligence to custom builds. From behind-the-scenes automation to fully interactive setups, we bring smart control to hardware and production environments.</p>
-                        <ul class="service-features">
+                    </article>
+                    <article class="ts-feature ts-service" data-reveal>
+                        <span class="ts-service-num">04</span>
+                        <h2>Smart Systems &amp; Automation</h2>
+                        <p>Adding intelligence to custom builds. From behind-the-scenes automation to fully interactive setups, we bring smart control to hardware and production environments.</p>
+                        <ul class="ts-checklist">
                             <li>Python, Node-RED, or ESPHome automation</li>
                             <li>IoT device design and integration</li>
                             <li>LED brightness controllers and environmental sensors</li>
                             <li>Custom control dashboards and remote-management systems</li>
                         </ul>
-                    </div>
-
-                    <!-- Service 5 -->
-                    <div class="service-card">
-                        <h2 class="service-number">05</h2>
-                        <h3 class="service-name">Consulting & Concept Development</h3>
-                        <p class="service-description">From idea to prototype — let's build it together. Not sure how to make your idea a reality? We help bridge imagination and execution.</p>
-                        <ul class="service-features">
+                    </article>
+                    <article class="ts-feature ts-service" data-reveal>
+                        <span class="ts-service-num">05</span>
+                        <h2>Consulting &amp; Concept Development</h2>
+                        <p>From idea to prototype — let's build it together. Not sure how to make your idea a reality? We help bridge imagination and execution.</p>
+                        <ul class="ts-checklist">
                             <li>Concept brainstorming and design consultation</li>
                             <li>System and component planning</li>
                             <li>Hardware and material recommendations</li>
                             <li>Rapid prototyping and testing guidance</li>
                         </ul>
-                    </div>
+                    </article>
                 </div>
-                
-                <div class="services-cta">
-                    <h2 class="cta-title">Ready to Start Your Project?</h2>
-                    <a href="/contact" class="cta-button-large">GET IN TOUCH</a>
+            </section>
+
+            <section class="ts-cta ts-panel" aria-labelledby="services-cta-heading" data-reveal>
+                <h2 id="services-cta-heading" class="ts-title">Ready to start your project?</h2>
+                <p class="ts-lead">Tell us what you're building. We'll help plan it, prototype it, and get it show-ready.</p>
+                <div class="ts-btn-row">
+                    <a href="/contact" class="ts-btn ts-btn--primary">Get in Touch <span class="ts-btn-icon" aria-hidden="true">→</span></a>
+                    <a href="/tools" class="ts-btn">Browse Tools <span class="ts-btn-icon" aria-hidden="true">↗</span></a>
                 </div>
-            </div>
+            </section>
         </div>
     </main>
 
@@ -195,5 +156,6 @@
     <script src="site-layout.js"></script>
     <script src="site-kofi.js"></script>
     <script src="script.js"></script>
+    <script src="/client/theme/reveal.js?v=20261117c"></script>
 </body>
 </html>

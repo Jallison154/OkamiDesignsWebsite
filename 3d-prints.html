@@ -9,11 +9,12 @@
     <meta name="author" content="Jonathan Allison, Founder">
     <link rel="icon" href="images/Okami_Designs_HeadWhite.png" type="image/png">
     <link rel="stylesheet" href="styles.css?v=20261117a">
+    <link rel="stylesheet" href="theme-studio.css?v=20261117c">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;family=Montserrat:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
 </head>
-<body class="prints-page">
+<body class="prints-page theme-studio">
     <header class="header">
         <div class="container">
             <div class="nav-wrapper">
@@ -65,38 +66,18 @@
     </header>
 
     <main class="main prints-main">
-        <div class="hero-visual">
-            <div class="floating-elements">
-                <div class="tech-element element-1">
-                    <div class="element-icon">🖨️</div>
-                    <div class="element-text">3D PRINT</div>
-                </div>
-                <div class="tech-element element-2">
-                    <div class="element-icon">📐</div>
-                    <div class="element-text">MODEL</div>
-                </div>
-                <div class="tech-element element-3">
-                    <div class="element-icon">⚙️</div>
-                    <div class="element-text">FABRICATE</div>
-                </div>
-                <div class="tech-element element-4">
-                    <div class="element-icon">🎭</div>
-                    <div class="element-text">STAGE</div>
-                </div>
-            </div>
-        </div>
 
         <div class="container">
-            <header class="prints-hero">
-                <span class="prints-hero-badge">Cults3D Catalog</span>
-                <h1 class="prints-hero-title">Okami Designs 3D Prints</h1>
-                <p class="prints-hero-subtitle">Functional, creative, and event-production-inspired 3D models.</p>
-                <div class="prints-hero-actions">
-                    <a class="prints-hero-btn" href="https://cults3d.com/en/users/OkamiDesigns/3d-models" target="_blank" rel="noopener noreferrer">View on Cults3D</a>
+            <section class="ts-hero ts-page-head" aria-labelledby="prints-heading">
+                <span class="ts-eyebrow" data-reveal>Cults3D catalog</span>
+                <h1 id="prints-heading" class="ts-title" data-reveal>Okami Designs 3D Prints</h1>
+                <p class="ts-lead" data-reveal>Functional, creative, and event-production-inspired 3D models.</p>
+                <div class="ts-btn-row" data-reveal>
+                    <a class="ts-btn ts-btn--primary" data-cults-profile-link href="https://cults3d.com/en/users/OkamiDesigns/3d-models" target="_blank" rel="noopener noreferrer">View on Cults3D <span class="ts-btn-icon" aria-hidden="true">↗</span></a>
                 </div>
-            </header>
+            </section>
 
-            <section class="prints-models-section" aria-labelledby="prints-models-heading">
+            <section class="prints-models-section ts-section ts-section--tight" aria-labelledby="prints-models-heading">
                 <div class="prints-models-section-header">
                     <h2 id="prints-models-heading" class="prints-models-heading">Featured Models</h2>
                     <p id="prints-models-source-note" class="prints-models-source-note" hidden></p>
@@ -133,5 +114,6 @@
     <script src="site-kofi.js"></script>
     <script src="script.js"></script>
     <script src="client/prints/prints-page.js?v=20260801"></script>
+    <script src="/client/theme/reveal.js?v=20261117c"></script>
 </body>
 </html>

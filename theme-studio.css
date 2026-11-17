@@ -1,7 +1,7 @@
 /*
  * Okami "studio" theme — near-black canvas, faint grid, orange glow, floating pill nav,
  * monospace tech chips. Opt-in per page with <body class="theme-studio">, loaded after
- * styles.css. Tool apps (LED calculator, Signal Lab) don't use it yet.
+ * styles.css. Tool apps use <body class="ts-chrome"> to get only the nav bar.
  */
 
 body.theme-studio {
@@ -63,8 +63,21 @@ body.theme-studio h3 {
     font-family: var(--ts-font);
 }
 
+/* Tool apps (LED calculator, Signal Lab) only take the nav bar and fonts, so their
+   own tool screens are untouched. */
+body.ts-chrome {
+    --ts-border: rgba(255, 255, 255, 0.08);
+    --ts-border-strong: rgba(255, 255, 255, 0.14);
+    --ts-text: #f3f3f2;
+    --ts-muted: #9a9fa6;
+    --ts-accent: #ff6a2d;
+    --ts-accent-2: #ff9a4a;
+    --ts-font: 'Plus Jakarta Sans', 'Montserrat', system-ui, sans-serif;
+}
+
 /* ---------- Floating pill navigation ---------- */
-body.theme-studio .header {
+body.theme-studio .header,
+body.ts-chrome .header {
     background: transparent;
     border: 0;
     box-shadow: none;
@@ -73,11 +86,13 @@ body.theme-studio .header {
     padding: 14px 0 6px;
 }
 
-body.theme-studio .header::after {
+body.theme-studio .header::after,
+body.ts-chrome .header::after {
     display: none;
 }
 
-body.theme-studio .header .container {
+body.theme-studio .header .container,
+body.ts-chrome .header .container {
     max-width: 1120px;
     width: calc(100% - 32px);
     padding: 8px 10px 8px 18px;
@@ -90,15 +105,19 @@ body.theme-studio .header .container {
 }
 
 body.theme-studio .logo-img,
-body.theme-studio .logo-img-full-mobile {
+body.ts-chrome .logo-img,
+body.theme-studio .logo-img-full-mobile,
+body.ts-chrome .logo-img-full-mobile {
     max-height: 34px;
 }
 
-body.theme-studio .nav {
+body.theme-studio .nav,
+body.ts-chrome .nav {
     gap: 4px;
 }
 
-body.theme-studio .nav-link {
+body.theme-studio .nav-link,
+body.ts-chrome .nav-link {
     font-family: var(--ts-font);
     font-size: 13px;
     font-weight: 600;
@@ -109,36 +128,46 @@ body.theme-studio .nav-link {
     border-radius: 999px;
 }
 
-body.theme-studio .nav-link::after {
+body.theme-studio .nav-link::after,
+body.ts-chrome .nav-link::after {
     display: none;
 }
 
 body.theme-studio .nav-link:hover,
+body.ts-chrome .nav-link:hover,
 body.theme-studio .nav-link:focus-visible,
-body.theme-studio .nav-link.active {
+body.ts-chrome .nav-link:focus-visible,
+body.theme-studio .nav-link.active,
+body.ts-chrome .nav-link.active {
     color: var(--ts-text);
     background: rgba(255, 255, 255, 0.06);
 }
 
-body.theme-studio .contact-btn {
+body.theme-studio .contact-btn,
+body.ts-chrome .contact-btn {
     color: #160a04;
     background: linear-gradient(135deg, var(--ts-accent), var(--ts-accent-2));
     border: 0;
     box-shadow: 0 0 22px rgba(255, 106, 45, 0.35);
 }
 
-body.theme-studio .contact-btn::before {
+body.theme-studio .contact-btn::before,
+body.ts-chrome .contact-btn::before {
     display: none;
 }
 
 body.theme-studio .contact-btn:hover,
+body.ts-chrome .contact-btn:hover,
 body.theme-studio .contact-btn:focus-visible,
-body.theme-studio .contact-btn.active {
+body.ts-chrome .contact-btn:focus-visible,
+body.theme-studio .contact-btn.active,
+body.ts-chrome .contact-btn.active {
     color: #160a04;
     background: linear-gradient(135deg, var(--ts-accent-2), var(--ts-accent));
 }
 
-body.theme-studio .nav-dropdown-menu {
+body.theme-studio .nav-dropdown-menu,
+body.ts-chrome .nav-dropdown-menu {
     background: rgba(13, 15, 18, 0.96);
     border: 1px solid var(--ts-border-strong);
     border-radius: 16px;
@@ -146,19 +175,23 @@ body.theme-studio .nav-dropdown-menu {
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
 }
 
-body.theme-studio .nav-dropdown-item {
+body.theme-studio .nav-dropdown-item,
+body.ts-chrome .nav-dropdown-item {
     font-family: var(--ts-font);
     border-radius: 10px;
     color: var(--ts-muted);
 }
 
 body.theme-studio .nav-dropdown-item:hover,
-body.theme-studio .nav-dropdown-item:focus-visible {
+body.ts-chrome .nav-dropdown-item:hover,
+body.theme-studio .nav-dropdown-item:focus-visible,
+body.ts-chrome .nav-dropdown-item:focus-visible {
     color: var(--ts-text);
     background: rgba(255, 106, 45, 0.1);
 }
 
-body.theme-studio .nav-mobile {
+body.theme-studio .nav-mobile,
+body.ts-chrome .nav-mobile {
     top: calc(100% + 10px);
     left: 16px;
     right: 16px;
@@ -168,12 +201,15 @@ body.theme-studio .nav-mobile {
 }
 
 @media (max-width: 768px) {
-    body.theme-studio .header .container {
+    body.theme-studio .header .container,
+    body.ts-chrome .header .container {
         padding: 6px 8px 6px 14px;
     }
 
     body.theme-studio .logo-img,
-    body.theme-studio .logo-img-full-mobile {
+    body.ts-chrome .logo-img,
+    body.theme-studio .logo-img-full-mobile,
+    body.ts-chrome .logo-img-full-mobile {
         max-height: 30px;
     }
 }
@@ -1013,4 +1049,265 @@ body.theme-studio .project-body code {
 body.theme-studio .site-footer,
 body.theme-studio footer {
     font-family: var(--ts-font);
+}
+
+/* ---------- Inner pages (Services, Contact, Support, 3D Prints, legal, errors) ---------- */
+body.theme-studio .main {
+    padding-bottom: 40px;
+}
+
+.ts-page-head .ts-title {
+    font-size: clamp(2.4rem, 6vw, 4.4rem);
+}
+
+.ts-section--tight {
+    padding-top: clamp(40px, 6vw, 72px);
+}
+
+.ts-features--two {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: 860px;
+    margin: 0 auto;
+}
+
+.ts-features--services {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+}
+
+.ts-feature h2 {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--ts-text);
+}
+
+.ts-service {
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ts-service:hover {
+    transform: translateY(-3px);
+    border-color: rgba(255, 106, 45, 0.35);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45), 0 0 40px rgba(255, 106, 45, 0.08);
+}
+
+.ts-service-num {
+    font-family: var(--ts-mono);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    color: var(--ts-accent);
+}
+
+.ts-checklist {
+    display: grid;
+    gap: 9px;
+    margin: 6px 0 0;
+    padding: 18px 0 0;
+    list-style: none;
+    border-top: 1px solid var(--ts-border);
+}
+
+.ts-checklist li {
+    position: relative;
+    padding-left: 22px;
+    color: var(--ts-muted);
+    font-size: 0.94rem;
+    line-height: 1.5;
+}
+
+.ts-checklist li::before {
+    content: '';
+    position: absolute;
+    left: 2px;
+    top: 0.5em;
+    width: 7px;
+    height: 7px;
+    border-radius: 2px;
+    background: var(--ts-accent);
+    box-shadow: 0 0 8px rgba(255, 106, 45, 0.6);
+}
+
+.ts-link {
+    color: var(--ts-accent-2);
+    font-weight: 600;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(255, 154, 74, 0.35);
+    overflow-wrap: anywhere;
+}
+
+.ts-link:hover,
+.ts-link:focus-visible {
+    color: var(--ts-text);
+    border-bottom-color: var(--ts-accent);
+}
+
+.ts-note {
+    max-width: 760px;
+    margin: clamp(32px, 5vw, 48px) auto 0;
+    padding: 22px 28px;
+    border-radius: 20px;
+    text-align: center;
+    color: var(--ts-muted);
+}
+
+.ts-note p {
+    margin: 0;
+}
+
+.ts-error {
+    min-height: calc(100vh - 220px);
+    justify-content: center;
+    padding-bottom: 40px;
+}
+
+.ts-legal {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 22px;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: clamp(56px, 9vw, 110px) 24px 60px;
+}
+
+.ts-legal .ts-title {
+    font-size: clamp(2.2rem, 5vw, 3.4rem);
+}
+
+@media (max-width: 700px) {
+    .ts-features--two {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Support docs cards */
+body.theme-studio .docs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+    gap: 20px;
+}
+
+body.theme-studio .manual-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 24px;
+    border-radius: 24px;
+    border: 1px solid var(--ts-border);
+    background: linear-gradient(180deg, rgba(20, 23, 28, 0.85), rgba(12, 14, 17, 0.85));
+    backdrop-filter: none;
+    text-align: left;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+body.theme-studio .manual-card::before {
+    display: none;
+}
+
+body.theme-studio .manual-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(255, 106, 45, 0.35);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+}
+
+body.theme-studio .manual-preview {
+    height: 160px;
+    margin-bottom: 6px;
+    border-radius: 16px;
+    border: 1px solid var(--ts-border);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+body.theme-studio .manual-icon {
+    margin: 0;
+    font-size: 36px;
+}
+
+body.theme-studio .manual-name {
+    margin: 0;
+    font-family: var(--ts-font);
+    color: var(--ts-text);
+}
+
+body.theme-studio .manual-description {
+    margin: 0 0 6px;
+    font-family: var(--ts-mono);
+    font-size: 12px;
+    color: var(--ts-muted);
+}
+
+body.theme-studio .manual-download-link {
+    margin-top: auto;
+    padding: 10px 20px;
+    border-radius: 999px;
+    font-family: var(--ts-font);
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: none;
+    color: #170a03;
+    background: linear-gradient(135deg, var(--ts-accent), var(--ts-accent-2));
+    box-shadow: 0 0 22px rgba(255, 106, 45, 0.3);
+}
+
+/* 3D Prints catalog */
+body.theme-studio .prints-models-heading {
+    font-family: var(--ts-mono);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ts-accent);
+}
+
+body.theme-studio .prints-models-source-note {
+    color: var(--ts-faint);
+    font-family: var(--ts-mono);
+    font-size: 12px;
+}
+
+body.theme-studio .prints-model-card {
+    border-radius: 24px;
+    border-color: var(--ts-border);
+    background: linear-gradient(180deg, rgba(20, 23, 28, 0.85), rgba(12, 14, 17, 0.85));
+}
+
+body.theme-studio .prints-model-card:hover {
+    border-color: rgba(255, 106, 45, 0.35);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+}
+
+body.theme-studio .prints-model-card-image-wrap {
+    border-radius: 23px 23px 0 0;
+}
+
+body.theme-studio .prints-model-card-title {
+    font-family: var(--ts-font);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+body.theme-studio .prints-model-price {
+    font-family: var(--ts-mono);
+    font-weight: 600;
+}
+
+body.theme-studio .prints-model-card-btn {
+    font-family: var(--ts-font);
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: none;
+}
+
+body.theme-studio .prints-models-status {
+    border-radius: 20px;
+    border-color: var(--ts-border);
+    background: rgba(13, 15, 18, 0.8);
+}
+
+body.theme-studio .docs-grid > p {
+    grid-column: 1 / -1;
+    text-align: center;
 }

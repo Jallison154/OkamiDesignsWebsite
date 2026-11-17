@@ -9,11 +9,12 @@
     <meta name="author" content="Jonathan Allison, Founder">
     <link rel="icon" href="images/Okami_Designs_HeadWhite.png" type="image/png">
     <link rel="stylesheet" href="styles.css?v=20261117a">
+    <link rel="stylesheet" href="theme-studio.css?v=20261117c">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;family=Montserrat:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
 </head>
-<body>
+<body class="theme-studio">
     <header class="header">
         <div class="container">
             <div class="nav-wrapper">
@@ -63,57 +64,22 @@
     </header>
 
     <main class="main">
-        <!-- Floating Elements Background -->
-        <div class="hero-visual">
-            <div class="floating-elements">
-                <div class="tech-element element-1">
-                    <div class="element-icon">🔧</div>
-                    <div class="element-text">BUILD</div>
-                </div>
-                <div class="tech-element element-2">
-                    <div class="element-icon">💡</div>
-                    <div class="element-text">CREATE</div>
-                </div>
-                <div class="tech-element element-3">
-                    <div class="element-icon">🖨️</div>
-                    <div class="element-text">3D PRINT</div>
-                </div>
-                <div class="tech-element element-4">
-                    <div class="element-icon">⚙️</div>
-                    <div class="element-text">DESIGN</div>
-                </div>
-                <div class="tech-element element-5">
-                    <div class="element-icon">🔬</div>
-                    <div class="element-text">PROTOTYPE</div>
-                </div>
-                <div class="tech-element element-6">
-                    <div class="element-icon">⚡</div>
-                    <div class="element-text">ENGINEER</div>
-                </div>
-                <div class="tech-element element-7">
-                    <div class="element-icon">🎨</div>
-                    <div class="element-text">FABRICATE</div>
-                </div>
-                <div class="tech-element element-8">
-                    <div class="element-icon">📐</div>
-                    <div class="element-text">MODEL</div>
-                </div>
-            </div>
-        </div>
-        
         <div class="container">
-            <div class="support-page">
-                <h1 class="support-title">Support & Docs</h1>
-                <p class="support-subtitle">Access documentation, manuals, and guides for Okami Designs projects</p>
-                
+            <section class="ts-hero ts-page-head" aria-labelledby="support-heading">
+                <span class="ts-eyebrow" data-reveal>Support · Docs</span>
+                <h1 id="support-heading" class="ts-title" data-reveal>Support &amp; Docs</h1>
+                <p class="ts-lead" data-reveal>Documentation, manuals, and guides for Okami Designs projects.</p>
+            </section>
+
+            <section class="ts-section ts-section--tight support-page" aria-label="Documentation">
                 <div class="docs-grid" id="docs-grid">
                     <!-- Documentation will be dynamically loaded here -->
                 </div>
 
-                <div class="support-info">
-                    <p>Need additional help? <a href="/contact">Contact us</a> for technical support.</p>
+                <div class="ts-panel ts-note" data-reveal>
+                    <p>Need additional help? <a href="/contact" class="ts-link">Contact us</a> for technical support.</p>
                 </div>
-            </div>
+            </section>
         </div>
     </main>
 
@@ -130,6 +96,7 @@
     <script src="site-kofi.js"></script>
     <script src="script.js"></script>
     <script src="support.js"></script>
+    <script src="/client/theme/reveal.js?v=20261117c"></script>
 </body>
 </html>
 
