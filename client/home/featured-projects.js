@@ -70,6 +70,24 @@
         return tool.url || '#';
     }
 
+    const STATUS_LABELS = { beta: 'Beta', alpha: 'Alpha', 'coming-soon': 'Coming soon', archived: 'Archived' };
+    const RUNTIME_LABELS = { online: 'Online', degraded: 'Degraded', offline: 'Offline' };
+
+    // Same status / live-state / version chips as the /tools cards.
+    function projectChips(tool) {
+        const chips = [];
+        if (STATUS_LABELS[tool.status]) {
+            chips.push(`<span class="project-badge project-badge--${escapeHtml(tool.status)}">${STATUS_LABELS[tool.status]}</span>`);
+        }
+        if (RUNTIME_LABELS[tool.runtimeStatus]) {
+            chips.push(`<span class="project-runtime project-runtime--${escapeHtml(tool.runtimeStatus)}">${RUNTIME_LABELS[tool.runtimeStatus]}</span>`);
+        }
+        if (tool.version) {
+            chips.push(`<span class="project-version">${escapeHtml(/^\d/.test(tool.version) ? `v${tool.version}` : tool.version)}</span>`);
+        }
+        return chips.join('');
+    }
+
     function createCard(tool) {
         const article = document.createElement('article');
         article.className = 'featured-tool-card';
@@ -91,7 +109,7 @@
 
         article.innerHTML = `
             ${thumbHtml}
-            <span class="featured-tool-tag">${escapeHtml(tool.category || tool.contentType || 'Project')}</span>
+            <span class="tools-hub-card-meta"><span class="featured-tool-tag">${escapeHtml(tool.category || tool.contentType || 'Project')}</span>${projectChips(tool)}</span>
             <h3 class="featured-tool-name">${escapeHtml(tool.title || 'Untitled')}</h3>
             <p class="featured-tool-desc">${escapeHtml(tool.shortDescription || '')}</p>
             <a href="${escapeHtml(href)}" class="featured-tool-btn"${target}>${escapeHtml(tool.buttonLabel || 'Open')}</a>

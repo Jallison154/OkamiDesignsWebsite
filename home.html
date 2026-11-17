@@ -9,12 +9,13 @@
     <meta name="author" content="Jonathan Allison, Founder">
     <link rel="icon" href="images/Okami_Designs_HeadWhite.png" type="image/png">
     <link rel="stylesheet" href="styles.css?v=20261117a">
+    <link rel="stylesheet" href="theme-studio.css?v=20261117a">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;family=Montserrat:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
 </head>
 
-<body class="home-page">
+<body class="home-page theme-studio">
 
     <header class="header">
 
@@ -97,145 +98,116 @@
     </header>
 
     <main class="main">
-
         <div class="container">
 
-            <div class="hero-section">
-
-                <div class="hero-content">
-
-                    <div class="hero-badge">OKAMI DESIGNS</div>
-
-                    <h1 class="hero-headline">Where Production Experience Meets <span class="title-accent">Engineering Creativity</span></h1>
-
-                    <p class="hero-tagline">Practical tools, automation, and custom solutions built from real-world AV and event production challenges.</p>
-
-                    <div class="hero-actions">
-
-                        <div class="hero-stats">
-
-                            <div class="stat-item">
-
-                                <div class="stat-number">AV</div>
-
-                                <div class="stat-label">Production Tools</div>
-
-                            </div>
-
-                            <div class="stat-item">
-
-                                <div class="stat-number">AUTO</div>
-
-                                <div class="stat-label">Automation</div>
-
-                            </div>
-
-                            <div class="stat-item">
-
-                                <div class="stat-number">3D</div>
-
-                                <div class="stat-label">Fabrication</div>
-
-                            </div>
-
-                        </div>
-
-                        <div class="hero-cta-row">
-
-                            <a href="/tools" class="cta-button">Explore Tools</a>
-
-                            <a href="/contact" class="cta-button cta-button-secondary">Custom Projects</a>
-
-                        </div>
-
-                        <aside class="hero-flagship" aria-label="Featured tool">
-
-                            <div class="hero-flagship-inner">
-
-                                <span class="hero-flagship-eyebrow">Featured Tool</span>
-
-                                <p class="hero-flagship-title">LED Video Wall Calculator</p>
-
-                                <p class="hero-flagship-meta">Free &bull; Browser Based &bull; No Login Required</p>
-
-                                <a href="/tools/led-video-wall-calculator" class="hero-flagship-btn">Launch Calculator</a>
-
-                            </div>
-
-                        </aside>
-
-                    </div>
-
+            <section class="ts-hero" aria-labelledby="home-headline">
+                <span class="ts-eyebrow" data-reveal>AV tools · Automation · Fabrication</span>
+                <h1 id="home-headline" class="ts-title" data-reveal>Where Production Experience Meets Engineering Creativity</h1>
+                <p class="ts-lead" data-reveal>Practical <strong>tools</strong>, <strong>automation</strong>, and <strong>custom solutions</strong> built from real-world AV and event production challenges.</p>
+                <div class="ts-btn-row" data-reveal>
+                    <a href="/tools" class="ts-btn ts-btn--primary">Explore Tools <span class="ts-btn-icon" aria-hidden="true">→</span></a>
+                    <a href="/contact" class="ts-btn">Custom Projects <span class="ts-btn-icon" aria-hidden="true">↗</span></a>
                 </div>
+                <ul class="ts-chips" aria-label="Highlights" data-reveal>
+                    <li class="ts-chip ts-chip--live">Free · Browser based · No login</li>
+                    <li class="ts-chip ts-chip--accent">LED Walls · Signal Testing</li>
+                    <li class="ts-chip">Smart Systems &amp; Automation</li>
+                    <li class="ts-chip">3D Printing · Custom Builds</li>
+                </ul>
+            </section>
 
-                
-
-                <!-- Floating Elements Background -->
-
-                <div class="hero-visual" aria-hidden="true">
-
-                    <div class="floating-elements home-floating-elements">
-
-                        <div class="tech-element home-floating-tag home-floating-tag--1">
-                            <div class="element-icon">📺</div>
-                            <div class="element-text">LED Walls</div>
-                        </div>
-
-                        <div class="tech-element home-floating-tag home-floating-tag--2">
-                            <div class="element-icon">🎛️</div>
-                            <div class="element-text">AV Tools</div>
-                        </div>
-
-                        <div class="tech-element home-floating-tag home-floating-tag--3">
-                            <div class="element-icon">🖨️</div>
-                            <div class="element-text">3D Print</div>
-                        </div>
-
-                        <div class="tech-element home-floating-tag home-floating-tag--4">
-                            <div class="element-icon">⚙️</div>
-                            <div class="element-text">Automation</div>
-                        </div>
-
-                        <div class="tech-element home-floating-tag home-floating-tag--5">
-                            <div class="element-icon">🎬</div>
-                            <div class="element-text">Production</div>
-                        </div>
-
-                        <div class="tech-element home-floating-tag home-floating-tag--6">
-                            <div class="element-icon">🛠️</div>
-                            <div class="element-text">Custom Builds</div>
-                        </div>
-
-                    </div>
-
+            <!-- Featured tool showcase (illustration of the LED Video Wall Calculator) -->
+            <section class="ts-console ts-panel" aria-label="Featured tool: LED Video Wall Calculator" data-reveal>
+                <div class="ts-console-bar">
+                    <span class="ts-console-status">Featured tool: LED Video Wall Calculator</span>
+                    <span class="ts-console-tags">
+                        <span class="ts-tag">Free</span>
+                        <span class="ts-tag ts-tag--muted">Browser based</span>
+                    </span>
                 </div>
+                <div class="ts-console-screen" aria-hidden="true">
+                    <div class="ts-readouts">
+                        <div>
+                            <span class="ts-readout">WALL: <b>6 × 4</b></span>
+                            <span class="ts-readout">CABINET: <b>500×500</b></span>
+                        </div>
+                        <div>
+                            <span class="ts-readout">RES: <b>1152×768</b></span>
+                            <span class="ts-readout">ASPECT: <b>3:2</b></span>
+                        </div>
+                    </div>
+                    <div class="ts-wall">
+                        <span></span><span></span><span></span><span></span><span></span><span></span>
+                        <span></span><span></span><span></span><span></span><span></span><span></span>
+                        <span></span><span></span><span></span><span></span><span></span><span></span>
+                        <span></span><span></span><span></span><span></span><span></span><span></span>
+                    </div>
+                    <div class="ts-console-foot">
+                        <div class="ts-segment">
+                            <span class="is-on">Flat</span>
+                            <span>Curved</span>
+                            <span>Build sheet</span>
+                        </div>
+                        <span class="ts-readout">Layouts · Resolution · Processor ports</span>
+                    </div>
+                </div>
+                <div class="ts-console-cta">
+                    <p><strong>Plan a wall in minutes</strong> — layouts, resolution, aspect ratios, and processor requirements.</p>
+                    <a href="/tools/led-video-wall-calculator" class="ts-btn ts-btn--primary ts-btn--sm">Launch Calculator <span class="ts-btn-icon" aria-hidden="true">→</span></a>
+                </div>
+            </section>
 
-            </div>
-
-            <section class="featured-tools featured-projects" aria-labelledby="featured-projects-heading">
-
-                <div class="featured-tools-panel">
-
-                <header class="featured-tools-header">
-
-                    <h2 id="featured-projects-heading" class="featured-tools-title">Featured Projects</h2>
-
-                    <p class="featured-tools-intro">Apps, calculators, tools, printable designs, and custom builds — from real production work.</p>
-
+            <section class="ts-section" aria-labelledby="capabilities-heading">
+                <header class="ts-section-head" data-reveal>
+                    <p class="ts-kicker">Built from real production work</p>
+                    <h2 id="capabilities-heading" class="ts-title">Engineering creativity into custom solutions</h2>
+                    <p class="ts-lead">Born from the event production world — we understand the demands of live environments.</p>
                 </header>
-
-                <div class="featured-tools-grid" id="featured-projects-grid" aria-live="polite" aria-busy="true">
-                    <p class="tools-hub-empty">Loading featured projects…</p>
+                <div class="ts-features">
+                    <article class="ts-feature" data-reveal>
+                        <span class="ts-icon-tile" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></span>
+                        <h3>Event Systems &amp; Production Tools</h3>
+                        <p>Engineering meets the stage — from concept to control. Free browser tools for LED walls, signal testing, and production workflows.</p>
+                        <span class="ts-feature-meta">LED Calculator · Signal Lab</span>
+                    </article>
+                    <article class="ts-feature" data-reveal>
+                        <span class="ts-icon-tile" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></span>
+                        <h3>Smart Systems &amp; Automation</h3>
+                        <p>Adding intelligence to custom builds — from behind-the-scenes automation to fully interactive setups for hardware and production environments.</p>
+                        <span class="ts-feature-meta">Control · Integration</span>
+                    </article>
+                    <article class="ts-feature" data-reveal>
+                        <span class="ts-icon-tile" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4a2 2 0 0 0 1-1.7z"/><path d="M3.3 7 12 12l8.7-5M12 22V12"/></svg></span>
+                        <h3>Custom Engineering &amp; Fabrication</h3>
+                        <p>One-of-a-kind builds for projects that don't fit the mold — from prototype development to printable adapters and functional hardware.</p>
+                        <span class="ts-feature-meta">3D Prints · Prototypes</span>
+                    </article>
                 </div>
+            </section>
 
-                <p class="home-contact-note">Need something built for your show or venue? <a href="/contact">Start a custom project</a> — we still take on one-of-a-kind automation and fabrication work.</p>
-
+            <section class="ts-section featured-tools featured-projects" aria-labelledby="featured-projects-heading">
+                <div class="featured-tools-panel">
+                    <header class="ts-section-head" data-reveal>
+                        <p class="ts-kicker">Featured projects</p>
+                        <h2 id="featured-projects-heading" class="ts-title">Apps, tools &amp; builds</h2>
+                        <p class="ts-lead">Apps, calculators, tools, printable designs, and custom builds — from real production work.</p>
+                    </header>
+                    <div class="featured-tools-grid" id="featured-projects-grid" aria-live="polite" aria-busy="true">
+                        <p class="tools-hub-empty">Loading featured projects…</p>
+                    </div>
                 </div>
+            </section>
 
+            <section class="ts-cta ts-panel" aria-labelledby="home-cta-heading" data-reveal>
+                <h2 id="home-cta-heading" class="ts-title">Need something built for your show or venue?</h2>
+                <p class="ts-lead">We still take on one-of-a-kind automation and fabrication work — from idea to prototype, let's build it together.</p>
+                <div class="ts-btn-row">
+                    <a href="/contact" class="ts-btn ts-btn--primary">Start a Custom Project <span class="ts-btn-icon" aria-hidden="true">→</span></a>
+                    <a href="/services" class="ts-btn">View Services <span class="ts-btn-icon" aria-hidden="true">↗</span></a>
+                </div>
             </section>
 
         </div>
-
     </main>
 
 <!-- Animated background particles -->
@@ -252,8 +224,9 @@
     <script src="site-layout.js"></script>
     <script src="site-kofi.js"></script>
     <script src="script.js?v=20260625"></script>
-    <script src="client/home/featured-projects.js?v=20261117a"></script>
+    <script src="client/home/featured-projects.js?v=20261117b"></script>
 
+    <script src="client/theme/reveal.js?v=20261117a"></script>
 </body>
 
 </html>
