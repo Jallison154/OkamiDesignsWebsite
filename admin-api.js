@@ -176,6 +176,32 @@ async function getManagedTools() {
     return await response.json();
 }
 
+async function getProjectSources() {
+    const response = await fetchWithTimeout(`${API_BASE}/tools/sources`, {
+        credentials: 'same-origin',
+        cache: 'no-store'
+    });
+    if (!response.ok) {
+        throw new Error(`Failed to fetch project sources (${response.status})`);
+    }
+    return await response.json();
+}
+
+async function syncPortainerNow() {
+    const response = await fetchWithTimeout(`${API_BASE}/tools/portainer/sync`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        cache: 'no-store'
+    });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        throw new Error(body.error === 'portainer_not_configured'
+            ? 'Portainer is not configured (set PORTAINER_URL and PORTAINER_API_KEY in .env).'
+            : (body.error || `Portainer sync failed (${response.status})`));
+    }
+    return body;
+}
+
 async function saveManagedTools(catalog) {
     const response = await fetchWithTimeout(`${API_BASE}/tools`, {
         method: 'PUT',

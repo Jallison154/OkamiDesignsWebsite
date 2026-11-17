@@ -2,6 +2,8 @@
 
 A modern, responsive website for Okami Designs with AV tools (Signal Lab, LED Video Wall Calculator), admin panel, and API backend.
 
+**Adding a project?** Drop a Markdown file in `projects/` or label a container in Portainer. See [Adding & updating projects](docs/ADDING-A-PROJECT.md).
+
 **Developer docs:** [Contributing](docs/CONTRIBUTING.md) · [Script load order](docs/SCRIPT-LOAD-ORDER.md) · [Admin login setup](docs/ADMIN-LOGIN-SETUP.md) · [Commercial architecture](ARCHITECTURE-COMMERCIAL.md)
 
 ## Current Status

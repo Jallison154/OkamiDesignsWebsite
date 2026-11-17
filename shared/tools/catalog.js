@@ -301,9 +301,42 @@
             screenshots: asStringArray(raw?.screenshots),
             supportUrl: asString(raw?.supportUrl).trim(),
             heroImageUrl: asString(raw?.heroImageUrl).trim(),
+            // Where this entry comes from: manual (admin), file (projects/*.md), portainer (container labels)
+            source: normalizeSource(raw?.source),
+            sourcePath: asString(raw?.sourcePath).trim(),
+            status: normalizeStatus(raw?.status),
+            version: asString(raw?.version).trim(),
+            tags: asStringArray(raw?.tags),
+            bodyHtml: asString(raw?.bodyHtml),
+            repoUrl: asString(raw?.repoUrl).trim(),
+            runtimeStatus: normalizeRuntimeStatus(raw?.runtimeStatus),
+            lastSyncedAt: asString(raw?.lastSyncedAt).trim(),
             createdAt,
             updatedAt
         };
+    }
+
+    const PROJECT_SOURCES = new Set(['manual', 'file', 'portainer']);
+    const PROJECT_STATUSES = new Set(['live', 'beta', 'alpha', 'coming-soon', 'archived']);
+    const RUNTIME_STATUSES = new Set(['online', 'offline', 'degraded', 'removed']);
+
+    function normalizeSource(value) {
+        const raw = asString(value).trim().toLowerCase();
+        return PROJECT_SOURCES.has(raw) ? raw : 'manual';
+    }
+
+    function normalizeStatus(value) {
+        const raw = asString(value).trim().toLowerCase().replace(/[\s_]+/g, '-');
+        return PROJECT_STATUSES.has(raw) ? raw : '';
+    }
+
+    function normalizeRuntimeStatus(value) {
+        const raw = asString(value).trim().toLowerCase();
+        return RUNTIME_STATUSES.has(raw) ? raw : '';
+    }
+
+    function isManagedExternally(tool) {
+        return Boolean(tool) && (tool.source === 'file' || tool.source === 'portainer');
     }
 
     function isWebsiteLogoStale(tool, nowMs = Date.now()) {
@@ -494,7 +527,7 @@
             return '#';
         }
         if (tool.detailPageEnabled && tool.slug && !RESERVED_APP_SLUGS.has(tool.slug)) {
-            return `/tools/${tool.slug}`;
+            return `/projects/${tool.slug}`;
         }
         return tool.url || '#';
     }
@@ -552,7 +585,11 @@
         resolveToolImageUrl,
         isWebsiteLogoStale,
         isReservedAppSlug,
-        validateToolForSave
+        validateToolForSave,
+        isManagedExternally,
+        normalizeSource,
+        normalizeStatus,
+        PROJECT_STATUSES
     };
 
     if (typeof module !== 'undefined' && module.exports) {

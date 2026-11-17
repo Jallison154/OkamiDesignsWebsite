@@ -114,9 +114,31 @@
         return 'Internal';
     }
 
+    function sourceLabel(tool) {
+        if (tool?.source === 'file') {
+            return 'Markdown file';
+        }
+        if (tool?.source === 'portainer') {
+            return tool.runtimeStatus === 'removed' ? 'Portainer (container removed)' : 'Portainer';
+        }
+        return '';
+    }
+
     function toolMetaLine(tool) {
         const category = (tool?.category || 'Tool').trim() || 'Tool';
-        return `${category} · ${linkTypeLabel(tool)}`;
+        const source = sourceLabel(tool);
+        return `${category} · ${linkTypeLabel(tool)}${source ? ` · ${source}` : ''}`;
+    }
+
+    // File/Portainer projects: content is edited at the source; admin controls visibility & order.
+    function sourceNoteHtml(tool) {
+        if (tool?.source === 'file') {
+            return `<p class="tools-admin-source-note">This project's content comes from <code>${escapeHtml(tool.sourcePath || 'projects/*.md')}</code>. Edit that file to change the text, links, or images. From here you can publish/hide it, feature it on the homepage, and change its order.</p>`;
+        }
+        if (tool?.source === 'portainer') {
+            return `<p class="tools-admin-source-note">This project is synced from Portainer (<code>${escapeHtml(tool.sourcePath || 'container')}</code>). Change its Docker labels to update the text or link. From here you can publish/hide it, feature it on the homepage, and change its order.</p>`;
+        }
+        return '';
     }
 
     function closeOpenMenus(exceptRow = null) {
@@ -463,6 +485,7 @@
         const form = document.createElement('form');
         form.className = 'modal-form tools-admin-form';
         form.innerHTML = `
+            ${sourceNoteHtml(tool)}
             <div class="modal-field">
                 <label for="tool-field-title">Title</label>
                 <input id="tool-field-title" type="text" maxlength="120" value="${escapeHtml(tool.title || '')}" required>
@@ -889,14 +912,22 @@
         if (!tool) {
             return;
         }
+        const isExternal = tool.source === 'file' || tool.source === 'portainer';
         const confirmed = await ui().showConfirmModal?.(
-            `Delete "${tool.title}"? This removes it from Tools and Featured Projects after you save.`,
+            isExternal
+                ? `Hide "${tool.title}"? It comes from ${tool.source === 'file' ? `${tool.sourcePath}` : 'Portainer'}, so it will be unpublished rather than deleted. Delete the file or remove the container label to remove it for good.`
+                : `Delete "${tool.title}"? This removes it from Tools and Featured Projects after you save.`,
             { title: 'Delete Tool', confirmText: 'Delete', confirmVariant: 'primary' }
         );
         if (!confirmed) {
             return;
         }
-        toolsState = toolsState.filter((item) => item.id !== toolId);
+        if (isExternal) {
+            // Content lives in a file/container, so "delete" means unpublish.
+            toolsState = toolsState.map((item) => (item.id === toolId ? { ...item, enabled: false, featured: false } : item));
+        } else {
+            toolsState = toolsState.filter((item) => item.id !== toolId);
+        }
         sortState();
         markDirty();
         renderToolsList();
@@ -910,6 +941,10 @@
             id: catalogApi()?.createId?.(tool.title) || `${tool.id}-copy`,
             title: `${tool.title} Copy`,
             slug: slugify(`${tool.slug || tool.title}-copy`),
+            // A copy is always a normal admin-managed entry.
+            source: 'manual',
+            sourcePath: '',
+            runtimeStatus: '',
             featured: false,
             homepageOrder: 999,
             createdAt: new Date().toISOString(),
@@ -942,6 +977,51 @@
         renderToolsList();
     }
 
+    // "Where projects come from" line + Portainer sync button.
+    async function renderProjectSources() {
+        const wrap = document.getElementById('tools-sources');
+        const text = document.getElementById('tools-sources-text');
+        const button = document.getElementById('tools-portainer-sync');
+        if (!wrap || !text || typeof getProjectSources !== 'function') {
+            return;
+        }
+        try {
+            const sources = await getProjectSources();
+            const parts = [`${sources.file} from projects/*.md`, `${sources.manual} manual`];
+            const p = sources.portainer || {};
+            if (p.configured) {
+                const synced = p.syncedAt ? `synced ${new Date(p.syncedAt).toLocaleString()}` : 'not synced yet';
+                parts.push(`${p.listed || 0} from Portainer (${synced}${p.error ? ` · last attempt failed: ${p.error}` : ''})`);
+            } else {
+                parts.push('Portainer not connected');
+            }
+            text.textContent = `Projects: ${parts.join(' · ')}`;
+            button.hidden = !p.configured;
+            wrap.hidden = false;
+        } catch (error) {
+            console.warn('[Okami Admin Tools] sources unavailable', error);
+            wrap.hidden = true;
+        }
+    }
+
+    async function runPortainerSync() {
+        if (toolsDirty) {
+            ui().showToast?.('Save or discard your Tools changes before syncing.', 'error');
+            return;
+        }
+        const button = document.getElementById('tools-portainer-sync');
+        if (button) button.disabled = true;
+        try {
+            const result = await syncPortainerNow();
+            ui().showToast?.(result.error ? `Portainer: ${result.error}` : `Portainer synced (${result.count} containers).`, result.error ? 'error' : 'success');
+            await loadToolsCatalog({ force: true });
+        } catch (error) {
+            ui().showToast?.(error.message || 'Portainer sync failed', 'error');
+        } finally {
+            if (button) button.disabled = false;
+        }
+    }
+
     async function loadToolsCatalog({ force = false } = {}) {
         if (toolsDirty && !force) {
             const confirmed = await ui().showConfirmModal?.(
@@ -970,6 +1050,7 @@
                 ? `Last saved ${new Date(toolsLastSavedAt).toLocaleString()}`
                 : '');
             setFeaturedStatus('Loaded successfully');
+            renderProjectSources();
             console.info('[Okami Admin Tools] loaded', {
                 count: toolsState.length,
                 updatedAt: data.updatedAt || null
@@ -1056,6 +1137,7 @@
         document.getElementById('add-tool-btn')?.addEventListener('click', () => openToolEditor(null));
         document.getElementById('save-tools-catalog')?.addEventListener('click', saveToolsCatalog);
         document.getElementById('reload-tools-catalog')?.addEventListener('click', () => loadToolsCatalog({ force: false }));
+        document.getElementById('tools-portainer-sync')?.addEventListener('click', runPortainerSync);
         document.getElementById('save-featured-catalog')?.addEventListener('click', saveToolsCatalog);
         updateSaveButtonsState();
 

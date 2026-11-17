@@ -319,10 +319,32 @@ pageRegistry.getPublicServeRoutes().forEach(({ publicPath, filePath }) => {
     });
 });
 
-app.get('/tools/:slug', async (req, res, next) => {
+// Self-contained tools: tools/<slug>/index.html is served at /tools/<slug> with no
+// registry edit needed. Reference assets with absolute paths (/tools/<slug>/app.js).
+const TOOLS_DIR = path.join(__dirname, 'tools');
+app.get(['/tools/:slug', '/tools/:slug/'], async (req, res, next) => {
+    const slug = String(req.params.slug || '').toLowerCase();
+    if (!/^[a-z0-9][a-z0-9-]*$/.test(slug)) {
+        return next();
+    }
+    const indexPath = path.join(TOOLS_DIR, slug, 'index.html');
+    try {
+        await fs.access(indexPath);
+    } catch {
+        return next();
+    }
+    if (req.path.endsWith('/')) {
+        return res.redirect(301, `/tools/${slug}`);
+    }
+    setNoCacheHeaders(res);
+    return res.sendFile(indexPath);
+});
+
+// Project detail pages: /projects/<slug> (canonical) and legacy /tools/<slug>.
+app.get(['/projects/:slug', '/tools/:slug'], async (req, res, next) => {
     try {
         const slug = String(req.params.slug || '').toLowerCase();
-        if (!slug || toolsCatalog.isReservedAppSlug(slug)) {
+        if (!slug || toolsCatalog.isReservedAppSlug(slug) || slug === 'assets') {
             return next();
         }
 
@@ -1085,6 +1107,18 @@ async function prepareServer() {
     logAdminAuthStartup();
     logCommercialValidation(validateCommercialConfig(readCommercialConfig()));
     await logStartupSiteRouting();
+    // Project catalog: write the static fallback snapshot and start Portainer sync.
+    try {
+        await toolsCatalogService.refreshPublicSnapshot();
+    } catch (error) {
+        console.warn('Could not write projects-public.json snapshot:', error.message || error);
+    }
+    if (process.env.OKAMI_DISABLE_BACKGROUND_SYNC !== 'true') {
+        const { startPortainerSync } = require('./server/projects/portainer-sync');
+        startPortainerSync({
+            onSynced: () => toolsCatalogService.refreshPublicSnapshot().catch(() => {})
+        });
+    }
     // Warm website logo cache (PACK and other website-source tools).
     try {
         const { refreshStaleWebsiteLogos } = require('./server/tools/logo-service');

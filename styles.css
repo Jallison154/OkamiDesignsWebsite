@@ -10063,3 +10063,177 @@ body.signal-lab-page:has(.signal-lab-stage:fullscreen) .signal-lab-preview-frame
     font-size: 0.875rem;
     color: rgba(255, 255, 255, 0.85);
 }
+/* Project cards & detail pages — status, live container state, version, tags */
+.tools-hub-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 8px;
+    margin: 0;
+}
+
+.project-badge,
+.project-runtime,
+.project-version {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    line-height: 1.6;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: var(--secondary-text);
+}
+
+.project-badge--beta,
+.project-badge--alpha {
+    color: var(--warning-color);
+    border-color: rgba(255, 170, 0, 0.4);
+}
+
+.project-badge--coming-soon {
+    color: var(--accent-secondary);
+    border-color: rgba(255, 136, 51, 0.4);
+}
+
+.project-badge--archived {
+    opacity: 0.75;
+}
+
+.project-runtime::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.project-runtime--online {
+    color: #5fd38a;
+    border-color: rgba(95, 211, 138, 0.35);
+}
+
+.project-runtime--degraded {
+    color: var(--warning-color);
+    border-color: rgba(255, 170, 0, 0.4);
+}
+
+.project-runtime--offline {
+    color: #ff8f8f;
+    border-color: rgba(255, 143, 143, 0.35);
+}
+
+.project-version {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-weight: 600;
+}
+
+.project-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    list-style: none;
+    margin: 14px 0 0;
+    padding: 0;
+}
+
+.project-tags li {
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--secondary-text);
+}
+
+.project-body h2,
+.project-body h3 {
+    color: var(--primary-text);
+    margin: 1.6em 0 0.5em;
+    line-height: 1.3;
+}
+
+.project-body h2 { font-size: 1.3rem; }
+.project-body h3 { font-size: 1.1rem; }
+
+.project-body p,
+.project-body ul,
+.project-body ol {
+    margin: 0 0 1em;
+}
+
+.project-body ul,
+.project-body ol {
+    padding-left: 1.2rem;
+}
+
+.project-body a {
+    color: var(--accent-color);
+}
+
+.project-body img {
+    max-width: 100%;
+    border-radius: 10px;
+}
+
+.project-body code {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.88em;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.07);
+}
+
+.project-body pre {
+    overflow-x: auto;
+    padding: 14px;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.35);
+}
+
+.project-body pre code {
+    padding: 0;
+    background: none;
+}
+
+/* Admin: where a project's content comes from */
+.tools-admin-badge--file,
+.tools-admin-badge--portainer {
+    margin-left: 6px;
+}
+
+.tools-admin-source-note {
+    margin: 0 0 14px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    background: rgba(255, 106, 45, 0.08);
+    border: 1px solid rgba(255, 106, 45, 0.25);
+    color: var(--secondary-text);
+}
+
+.tools-admin-source-note code {
+    color: var(--primary-text);
+}
+
+.tools-admin-sources {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 16px;
+    margin: 0 0 14px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.tools-admin-sources-text {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--secondary-text);
+}

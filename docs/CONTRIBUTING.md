@@ -19,11 +19,16 @@ Keep business logic in the right layer. This prevents licensing secrets from lea
 3. Add the [standard script block](SCRIPT-LOAD-ORDER.md) before `site-visibility.js`.
 4. Admin visibility toggles and analytics pick it up automatically from the registry.
 
+## Adding or updating a project (cards on /tools, homepage, detail pages)
+
+Every project is one Markdown file in `projects/`. See **[ADDING-A-PROJECT.md](ADDING-A-PROJECT.md)** — it also covers Portainer containers, which show up automatically from Docker labels.
+
 ## Adding a tool
 
 1. Put portable logic in `engine/` or `led-wall-calculator/`-style modules.
 2. Keep UI in `app.js` or `*-visualizer.js`.
 3. Register the tool page in `shared/registry/pages.js` with a `productId` when commercial metadata applies.
+   Then add its card with a `projects/<slug>.md` file (see ADDING-A-PROJECT.md).
 4. Use `full-height-tool` on `main` for full-viewport tool layouts.
 
 ## Commercial / licensing

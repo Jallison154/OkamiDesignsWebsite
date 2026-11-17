@@ -2,7 +2,7 @@
     'use strict';
 
     const API_URL = '/api/tools';
-    const FALLBACK_URL = '/files/tools.json';
+    const FALLBACK_URL = '/files/projects-public.json';
     const catalogApi = window.OkamiShared?.ToolsCatalog;
 
     function escapeHtml(value) {
@@ -36,7 +36,7 @@
             return catalogApi.resolveToolHref(tool);
         }
         if (tool.detailPageEnabled && tool.slug) {
-            return `/tools/${tool.slug}`;
+            return `/projects/${tool.slug}`;
         }
         return tool.url || '#';
     }
@@ -94,6 +94,41 @@
         return thumb;
     }
 
+    const STATUS_LABELS = {
+        beta: 'Beta',
+        alpha: 'Alpha',
+        'coming-soon': 'Coming soon',
+        archived: 'Archived'
+    };
+    const RUNTIME_LABELS = {
+        online: 'Online',
+        degraded: 'Degraded',
+        offline: 'Offline'
+    };
+
+    // Status chip (beta, coming soon, …) and live container status for Portainer projects.
+    function appendProjectBadges(parent, tool) {
+        if (STATUS_LABELS[tool.status]) {
+            const badge = document.createElement('span');
+            badge.className = `project-badge project-badge--${tool.status}`;
+            badge.textContent = STATUS_LABELS[tool.status];
+            parent.appendChild(badge);
+        }
+        if (RUNTIME_LABELS[tool.runtimeStatus]) {
+            const runtime = document.createElement('span');
+            runtime.className = `project-runtime project-runtime--${tool.runtimeStatus}`;
+            runtime.textContent = RUNTIME_LABELS[tool.runtimeStatus];
+            runtime.title = tool.lastSyncedAt ? `Checked ${new Date(tool.lastSyncedAt).toLocaleString()}` : '';
+            parent.appendChild(runtime);
+        }
+        if (tool.version) {
+            const version = document.createElement('span');
+            version.className = 'project-version';
+            version.textContent = /^\d/.test(tool.version) ? `v${tool.version}` : tool.version;
+            parent.appendChild(version);
+        }
+    }
+
     function createToolCard(tool) {
         const href = resolveHref(tool);
         const card = document.createElement('a');
@@ -115,10 +150,14 @@
 
         card.appendChild(createToolThumb(tool));
 
+        const meta = document.createElement('span');
+        meta.className = 'tools-hub-card-meta';
         const tag = document.createElement('span');
         tag.className = 'tools-hub-card-tag';
         tag.textContent = tool.category || 'Tool';
-        card.appendChild(tag);
+        meta.appendChild(tag);
+        appendProjectBadges(meta, tool);
+        card.appendChild(meta);
 
         const title = document.createElement('h2');
         title.className = 'tools-hub-card-title';

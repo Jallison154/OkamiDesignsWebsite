@@ -8,6 +8,8 @@ const crypto = require('crypto');
 const toolsCatalog = require('../../shared/tools/catalog');
 const { readToolsCatalog, writeToolsCatalog, ensureToolsFile } = require('./catalog-service');
 const { refreshToolLogoById, refreshStaleWebsiteLogos } = require('./logo-service');
+const { syncPortainer, getPortainerStatus } = require('../projects/portainer-sync');
+const { refreshPublicSnapshot } = require('./catalog-service');
 
 const FILES_DIR = path.join(__dirname, '..', '..', 'files');
 const TOOL_ICONS_DIR = path.join(FILES_DIR, 'tool-icons');
@@ -97,6 +99,41 @@ function createToolsRouter({ requireAdmin, setNoCacheHeaders }) {
         } catch (error) {
             console.error('Error reading managed tools catalog:', error);
             res.status(500).json({ error: 'Failed to read tools catalog' });
+        }
+    });
+
+    // Where projects come from (admin): Markdown files + Portainer sync status.
+    router.get('/sources', requireAdmin, async (_req, res) => {
+        try {
+            const catalog = await readToolsCatalog();
+            const count = (source) => catalog.tools.filter((tool) => tool.source === source).length;
+            res.json({
+                manual: count('manual'),
+                file: count('file'),
+                portainer: { ...(await getPortainerStatus()), listed: count('portainer') }
+            });
+        } catch (error) {
+            console.error('Error reading project sources:', error);
+            res.status(500).json({ error: 'Failed to read project sources' });
+        }
+    });
+
+    router.post('/portainer/sync', requireAdmin, async (_req, res) => {
+        try {
+            const result = await syncPortainer();
+            if (result.skipped) {
+                return res.status(400).json({ error: 'portainer_not_configured' });
+            }
+            await refreshPublicSnapshot();
+            const catalog = await readToolsCatalog();
+            return res.status(result.error ? 502 : 200).json({
+                ...result,
+                status: await getPortainerStatus(),
+                tools: toolsCatalog.sortTools(catalog.tools)
+            });
+        } catch (error) {
+            console.error('Portainer sync error:', error);
+            return res.status(500).json({ error: 'Portainer sync failed' });
         }
     });
 
@@ -241,10 +278,11 @@ function createToolsRouter({ requireAdmin, setNoCacheHeaders }) {
                 return res.status(404).json({ error: 'tool_not_found' });
             }
 
-            const nextCatalog = toolsCatalog.normalizeCatalog({
-                ...catalog,
-                tools: catalog.tools.filter((tool) => tool.id !== existing.id)
-            });
+            // File/Portainer projects would reappear on the next read — hide them instead.
+            const nextTools = toolsCatalog.isManagedExternally(existing)
+                ? catalog.tools.map((tool) => (tool.id === existing.id ? { ...tool, enabled: false } : tool))
+                : catalog.tools.filter((tool) => tool.id !== existing.id);
+            const nextCatalog = toolsCatalog.normalizeCatalog({ ...catalog, tools: nextTools });
             const saved = await writeToolsCatalog(nextCatalog);
             res.json({
                 success: true,

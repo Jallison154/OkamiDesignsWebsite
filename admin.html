@@ -9,7 +9,7 @@
     <title>Admin - Okami Designs</title>
     <meta name="description" content="Okami Designs Admin Panel">
     <link rel="icon" href="images/Okami_Designs_HeadWhite.png" type="image/png">
-    <link rel="stylesheet" href="styles.css?v=20260718f">
+    <link rel="stylesheet" href="styles.css?v=20261117a">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -138,7 +138,7 @@
                                 <div class="tools-admin-toolbar-primary">
                                     <div class="tools-admin-heading">
                                         <h2 class="tools-admin-title" id="tools-admin-heading">Tools</h2>
-                                        <p class="tools-admin-desc">Manage Tools for the public Tools page. Homepage controls Featured Projects separately.</p>
+                                        <p class="tools-admin-desc">Projects from <code>projects/*.md</code>, Portainer, and manual entries. Content of file/Portainer projects is edited at the source; here you control publishing, homepage, and order.</p>
                                     </div>
                                     <button type="button" id="add-tool-btn" class="tools-admin-btn tools-admin-btn--primary">Add Tool</button>
                                 </div>
@@ -154,6 +154,10 @@
                                 </div>
                             </div>
 
+                            <div id="tools-sources" class="tools-admin-sources" hidden>
+                                <p id="tools-sources-text" class="tools-admin-sources-text"></p>
+                                <button type="button" id="tools-portainer-sync" class="tools-admin-btn tools-admin-btn--ghost" hidden>Sync Portainer now</button>
+                            </div>
                             <div id="tools-admin-list" class="tools-admin-list" aria-live="polite" aria-labelledby="tools-admin-heading"></div>
                         </section>
                     </section>
@@ -299,9 +303,9 @@
     <script src="shared/visibility/access-policy.js"></script>
     <script src="shared/tools/catalog.js"></script>
     <script src="page-registry.js"></script>
-    <script src="admin-api.js?v=20260718f"></script>
+    <script src="admin-api.js?v=20261117a"></script>
     <script src="admin.js?v=20260718f"></script>
-    <script src="admin-tools.js?v=20260718f"></script>
+    <script src="admin-tools.js?v=20261117a"></script>
     <script src="admin-tabs.js?v=20260718f"></script>
 </body>
 </html>

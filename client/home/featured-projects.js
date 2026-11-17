@@ -2,7 +2,7 @@
     'use strict';
 
     const API_URL = '/api/tools';
-    const FALLBACK_URL = '/files/tools.json';
+    const FALLBACK_URL = '/files/projects-public.json';
     const SETTINGS_URL = '/api/site-settings';
     const SETTINGS_FALLBACK_URL = '/files/site-settings.json';
     const catalogApi = window.OkamiShared?.ToolsCatalog;

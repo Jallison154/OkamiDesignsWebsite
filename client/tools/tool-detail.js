@@ -14,19 +14,19 @@
 
     function getSlugFromPath() {
         const parts = window.location.pathname.split('/').filter(Boolean);
-        const toolsIndex = parts.indexOf('tools');
-        if (toolsIndex === -1 || !parts[toolsIndex + 1]) {
+        const baseIndex = parts.findIndex((part) => part === 'projects' || part === 'tools');
+        if (baseIndex === -1 || !parts[baseIndex + 1]) {
             return '';
         }
-        return parts[toolsIndex + 1].toLowerCase();
+        return parts[baseIndex + 1].toLowerCase();
     }
 
     function renderError(container, message) {
         container.innerHTML = `
             <div class="tool-detail-empty">
-                <h1 class="tool-title">Tool unavailable</h1>
+                <h1 class="tool-title">Project unavailable</h1>
                 <p class="tool-subtitle">${escapeHtml(message)}</p>
-                <a class="featured-tool-btn" href="/tools">Back to Tools</a>
+                <a class="featured-tool-btn" href="/tools">Back to all projects</a>
             </div>
         `;
     }
@@ -48,24 +48,45 @@
                </section>`
             : '';
 
+        const statusLabels = { live: 'Live', beta: 'Beta', alpha: 'Alpha', 'coming-soon': 'Coming soon', archived: 'Archived' };
+        const runtimeLabels = { online: 'Online', degraded: 'Degraded', offline: 'Offline' };
+        const metaChips = [
+            statusLabels[tool.status] ? `<span class="project-badge project-badge--${escapeHtml(tool.status)}">${statusLabels[tool.status]}</span>` : '',
+            runtimeLabels[tool.runtimeStatus] ? `<span class="project-runtime project-runtime--${escapeHtml(tool.runtimeStatus)}">${runtimeLabels[tool.runtimeStatus]}</span>` : '',
+            tool.version ? `<span class="project-version">${escapeHtml(/^\d/.test(tool.version) ? `v${tool.version}` : tool.version)}</span>` : ''
+        ].join('');
+        const tags = Array.isArray(tool.tags) && tool.tags.length
+            ? `<ul class="project-tags" aria-label="Tags">${tool.tags.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`
+            : '';
+        const repoLink = tool.repoUrl
+            ? `<a class="tool-detail-support" href="${escapeHtml(tool.repoUrl)}" target="_blank" rel="noopener noreferrer">Source code</a>`
+            : '';
+        // bodyHtml is rendered server-side from the project's Markdown file (trusted, repo-authored).
+        const body = tool.bodyHtml
+            ? `<section class="tool-detail-long project-body">${tool.bodyHtml}</section>`
+            : (tool.longDescription ? `<section class="tool-detail-long"><p>${escapeHtml(tool.longDescription)}</p></section>` : '');
+        const isSelfLink = !tool.url || tool.url === window.location.pathname;
+
         const supportLink = tool.supportUrl
             ? `<a class="tool-detail-support" href="${escapeHtml(tool.supportUrl)}">Get support</a>`
             : '';
 
         container.innerHTML = `
             <header class="tool-detail-hero">
-                <p class="tools-hub-card-tag">${escapeHtml(tool.category || 'Tool')}</p>
+                <p class="tools-hub-card-meta"><span class="tools-hub-card-tag">${escapeHtml(tool.category || 'Tool')}</span>${metaChips}</p>
                 <h1 class="tool-title">${escapeHtml(tool.title || 'Tool')}</h1>
                 <p class="tool-subtitle">${escapeHtml(tool.shortDescription || '')}</p>
+                ${tags}
                 <div class="tool-detail-actions">
-                    <a class="featured-tool-btn" href="${escapeHtml(actionHref)}"${actionTarget}>${escapeHtml(tool.buttonLabel || 'Open')}</a>
-                    <a class="tool-detail-back" href="/tools">All Tools</a>
+                    ${isSelfLink ? '' : `<a class="featured-tool-btn" href="${escapeHtml(actionHref)}"${actionTarget}>${escapeHtml(tool.buttonLabel || 'Open')}</a>`}
+                    <a class="tool-detail-back" href="/tools">All projects</a>
+                    ${repoLink}
                     ${supportLink}
                 </div>
             </header>
             ${hero ? `<div class="tool-detail-media"><img src="${escapeHtml(hero)}" alt="" class="tool-detail-hero-image"></div>` : ''}
-            ${tool.longDescription ? `<section class="tool-detail-long"><p>${escapeHtml(tool.longDescription)}</p></section>` : ''}
             ${featureList}
+            ${body}
             ${screenshotBlock}
         `;
 
