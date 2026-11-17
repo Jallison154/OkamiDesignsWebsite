@@ -36,7 +36,8 @@
         const actionTarget = tool.openInNewTab ? ' target="_blank" rel="noopener noreferrer"' : '';
         const features = Array.isArray(tool.features) ? tool.features : [];
         const screenshots = Array.isArray(tool.screenshots) ? tool.screenshots : [];
-        const hero = tool.heroImageUrl || tool.iconUrl || '';
+        // Only a real hero image — a small card icon blown up to banner size looks broken.
+        const hero = tool.heroImageUrl || '';
 
         const featureList = features.length
             ? `<ul class="tool-detail-features">${features.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`
